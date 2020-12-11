@@ -1,4 +1,4 @@
-open Lib
+open Lib.Timer
 
 let () =
-  Timer.run 5
+  run (Work (workTime, 0))
