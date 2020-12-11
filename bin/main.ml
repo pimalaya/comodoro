@@ -1,4 +1,3 @@
 open Lib.Timer
 
-let () =
-  run (Work (workTime, 0))
+let () = run @@ Work (workTime, 0)
