@@ -13,7 +13,7 @@ let int_of_timer = function
   | ShortBreak (n, _) -> n
   | LongBreak (n, _) -> n
 
-let string_of_timer timer =
+let to_string timer =
   let mins = int_of_timer timer / 60 in
   let secs = int_of_timer timer mod 60 in
   let symbol =
@@ -33,7 +33,11 @@ let next = function
   | LongBreak (1, n) -> Work (workTime, n + 1)
   | LongBreak (t, n) -> LongBreak (t - 1, n)
 
-let rec run timer =
-  print_endline (string_of_timer timer);
+let rec run handler timer =
+  let timer_str = to_string timer in
+  handler timer_str;
+  print_endline timer_str;
   Unix.sleep 1;
-  run (next timer)
+  run handler @@ next timer
+
+let start handler = run handler @@ Work (workTime, 0)
