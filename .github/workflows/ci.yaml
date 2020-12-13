@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    # tags:
+    #   - v*
+
+jobs:
+  build:
+    runs-on: ${{matrix.os}}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+        - ubuntu-latest
+        - macos-latest
+        - windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Cache _build folder
+        uses: actions/cache@v2
+        with:
+          path: _build
+          key: dune-build
+          restore-keys: dune-build
+
+      - name: Set up OCaml
+        uses: avsm/setup-ocaml@v1
+        with:
+          ocaml-version: 4.11.1
+
+      - name: Install deps
+        run: opam install . --deps-only
+
+      - name: Build executable
+        run: opam exec -- dune build
+
+      - name: Compress unix executable
+        if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
+        run: |
+          cp _build/default/bin/main.exe comodoro
+          tar czf comodoro.tar.gz comodoro
+
+      - name: Compress windows executable
+        if: matrix.os == 'windows-latest'
+        run: |
+          copy _build/default/bin/main.exe comodoro.exe
+          7z a comodoro.zip comodoro.exe
+
+      - name: Upload linux artifact
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v2
+        with:
+          name: comodoro-linux.tar.gz
+          path: comodoro.tar.gz
+
+      - name: Upload macos artifact
+        if: matrix.os == 'macos-latest'
+        uses: actions/upload-artifact@v2
+        with:
+          name: comodoro-macos.tar.gz
+          path: comodoro.tar.gz
+
+      - name: Upload windows artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: comodoro-windows.zip
+          path: comodoro.zip
