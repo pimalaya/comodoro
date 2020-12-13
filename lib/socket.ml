@@ -47,11 +47,16 @@ let create_and_accept () =
   Thread.create handle_conns () |> ignore;
   broadcast
 
-let connect_and_listen handle =
-  let sock = socket PF_UNIX SOCK_STREAM 0 in
-  let in_ch = in_channel_of_descr sock in
-  connect sock sock_addr;
+let rec connect_and_listen handle =
+  try
+    let sock = socket PF_UNIX SOCK_STREAM 0 in
+    let in_ch = in_channel_of_descr sock in
+    connect sock sock_addr;
 
-  while true do
-    handle @@ input_line in_ch
-  done
+    while true do
+      handle @@ input_line in_ch
+    done
+  with _ ->
+    print_endline "Comodoro";
+    sleep 1;
+    connect_and_listen handle
