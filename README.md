@@ -1,7 +1,7 @@
 # 🍅 🐪 Comodoro [![gh-actions](https://github.com/soywod/comodoro/workflows/CI/badge.svg)](https://github.com/soywod/comodoro/actions?query=workflow%3ACI)
 
-[Pomodoro](https://en.wikipedia.org/wiki/Pomodoro_Technique) timer, written in
-[OCaml](https://ocaml.org/index.fr.html).
+[Pomodoro](https://en.wikipedia.org/wiki/Pomodoro_Technique) timer CLI, written
+in [OCaml](https://ocaml.org/index.fr.html).
 
 ## Table of contents
 
@@ -25,7 +25,7 @@
 Comodoro is a Pomodoro timer CLI. It helps you fight procrastination by
 spliting work times from break times.
 
-The timer can be divided into 6 steps:
+The timer is divided into 6 periods:
 
 1. Work time (25 min)
 2. Short break time (5 min)
@@ -37,6 +37,7 @@ The timer can be divided into 6 steps:
 Hooks can be set up for each period, to integrate any kind of workflow.
 
 ## Installation
+
 ### From binaries
 
 ```bash
@@ -56,20 +57,23 @@ TODO
 
 ## Configuration
 
-Comodoro is customizable via a [TOML](https://github.com/toml-lang/toml) file
-(`~/.config/comodoro/config.toml`):
+`$XDG_CONFIG_HOME/comodoro/config.toml`:
 
 ```toml
 # Commands to execute when entering break times (short or long)
 # Default: []
 exec-on-break = ["notify-send Comodoro 'BREAK TIME'"]
 
-# Commands to execute when re-entering work times (not the first one)
+# Commands to execute when re-entering work times (except the first one)
 # Default: []
 exec-on-resume = ["notify-send Comodoro 'WORK TIME'"]
 ```
 
+*Note: read more about the TOML file format
+[here](https://github.com/toml-lang/toml).*
+
 ## Usage
+
 ### Start
 
 Start the timer.
