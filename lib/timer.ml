@@ -33,11 +33,21 @@ let next = function
   | LongBreak (1, n) -> Work (workTime, n + 1)
   | LongBreak (t, n) -> LongBreak (t - 1, n)
 
-let rec run handler timer =
+let exec_hooks (config : Config.t) timer =
+  let exec = Array.iter Process.exec_silent in
+  match timer with
+  | Work (t, n) when t == workTime && n > 0 -> exec config.exec_on_resume
+  | ShortBreak (t, _) when t == shortBreakTime -> exec config.exec_on_break
+  | LongBreak (t, _) when t == shortBreakTime -> exec config.exec_on_break
+  | _ -> ()
+
+let rec run handle timer =
+  let config = Config.read_file () in
   let timer_str = to_string timer in
-  handler timer_str;
+  handle timer_str;
   print_endline timer_str;
+  exec_hooks config timer;
   Unix.sleep 1;
-  run handler @@ next timer
+  run handle @@ next timer
 
 let start handler = run handler @@ Work (workTime, 0)

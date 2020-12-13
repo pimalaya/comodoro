@@ -1,5 +1,10 @@
 open Unix
 
+let exec_silent cmd =
+  let fd_null = descr_of_out_channel @@ open_out "/dev/null" in
+  let args = [| "/bin/bash"; "-c"; cmd |] in
+  create_process args.(0) args fd_null fd_null stderr |> ignore
+
 let start () =
   let fd_null = descr_of_out_channel @@ open_out "/dev/null" in
   let args = [| "comodoro"; "run" |] in
