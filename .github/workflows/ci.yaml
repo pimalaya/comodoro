@@ -2,8 +2,8 @@ name: CI
 
 on:
   push:
-    # tags:
-    #   - v*
+    tags:
+      - v*
 
 jobs:
   build:
@@ -70,3 +70,57 @@ jobs:
         with:
           name: comodoro-windows.zip
           path: comodoro.zip
+
+  release:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:          
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        with:
+          tag_name: ${{github.ref}}
+          release_name: ${{github.ref}}
+          draft: false
+          prerelease: false
+
+      - uses: actions/download-artifact@v2
+        with:
+          name: comodoro-linux.tar.gz
+      - name: Upload linux artifact to release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        with:
+          upload_url: ${{steps.create_release.outputs.upload_url}}
+          asset_path: comodoro.tar.gz
+          asset_name: comodoro-linux.tar.gz
+          asset_content_type: application/tar+gzip
+
+      - uses: actions/download-artifact@v2
+        with:
+          name: comodoro-macos.tar.gz
+      - name: Upload macos artifact to release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        with:
+          upload_url: ${{steps.create_release.outputs.upload_url}}
+          asset_path: comodoro.tar.gz
+          asset_name: comodoro-macos.tar.gz
+          asset_content_type: application/tar+gzip
+
+      - uses: actions/download-artifact@v2
+        with:
+          name: comodoro-windows.zip
+      - name: Upload windows artifact to release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        with:
+          upload_url: ${{steps.create_release.outputs.upload_url}}
+          asset_path: comodoro.zip
+          asset_name: comodoro-windows.zip
+          asset_content_type: application/zip
