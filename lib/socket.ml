@@ -3,55 +3,55 @@ open Unix
 let sock_addr = ADDR_UNIX "/tmp/comodoro.sock"
 
 let create_and_accept () =
-  let sock = socket PF_UNIX SOCK_STREAM 0 in
-  let mutex = Mutex.create () in
-  let conns : file_descr list ref = ref [] in
+  let sock = socket PF_UNIX SOCK_STREAM 0
+  and mutex = Mutex.create ()
+  and conns = ref [] in
 
-  let client_thread conn =
+  let handle_conn conn =
     let in_ch = in_channel_of_descr conn in
     while true do
       try input_line in_ch |> ignore
       with End_of_file ->
-        print_endline "Client disconnected!";
         Mutex.lock mutex;
-        conns := List.filter (fun conn -> conn != conn) !conns;
+        conns := List.filter (( <> ) conn) !conns;
         Mutex.unlock mutex;
-        close_in_noerr in_ch;
+        close_in in_ch;
         Thread.exit ()
     done
   in
 
-  let add_conn () =
+  let handle_conns () =
     while true do
       let conn, _ = accept sock in
       Mutex.lock mutex;
       conns := conn :: !conns;
       Mutex.unlock mutex;
-      Thread.create client_thread conn |> ignore;
-      print_endline "Connection added!"
+      Thread.create handle_conn conn |> ignore
     done
   in
 
-  let broadcast str =
-    let send_str conn =
+  let broadcast data =
+    let send_data conn =
       let out_ch = out_channel_of_descr conn in
-      output_string out_ch (str ^ "\n");
+      output_string out_ch @@ data ^ "\n";
       flush out_ch
     in
+
     Mutex.lock mutex;
-    List.iter send_str !conns;
+    List.iter send_data !conns;
     Mutex.unlock mutex
   in
+
   bind sock sock_addr;
-  listen sock 1024;
-  print_endline "Socket open!";
-  ignore @@ Thread.create add_conn ();
+  listen sock 8;
+  Thread.create handle_conns () |> ignore;
   broadcast
 
-let connect_and_listen handler =
+let connect_and_listen handle =
   let sock = socket PF_UNIX SOCK_STREAM 0 in
-  connect sock sock_addr;
   let in_ch = in_channel_of_descr sock in
+  connect sock sock_addr;
+
   while true do
-    handler @@ input_line in_ch
+    handle @@ input_line in_ch
   done
