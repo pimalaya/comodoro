@@ -6,15 +6,32 @@ let create_and_accept () =
   let sock = socket PF_UNIX SOCK_STREAM 0 in
   let mutex = Mutex.create () in
   let conns : file_descr list ref = ref [] in
+
+  let client_thread conn =
+    let in_ch = in_channel_of_descr conn in
+    while true do
+      try input_line in_ch |> ignore
+      with End_of_file ->
+        print_endline "Client disconnected!";
+        Mutex.lock mutex;
+        conns := List.filter (fun conn -> conn != conn) !conns;
+        Mutex.unlock mutex;
+        close_in_noerr in_ch;
+        Thread.exit ()
+    done
+  in
+
   let add_conn () =
     while true do
       let conn, _ = accept sock in
       Mutex.lock mutex;
       conns := conn :: !conns;
       Mutex.unlock mutex;
+      Thread.create client_thread conn |> ignore;
       print_endline "Connection added!"
     done
   in
+
   let broadcast str =
     let send_str conn =
       let out_ch = out_channel_of_descr conn in
