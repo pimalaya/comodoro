@@ -47,18 +47,17 @@ let create_and_accept () =
   Thread.create handle_conns () |> ignore;
   broadcast
 
-let rec connect_and_listen ?(uppercase_idx = 0) handle =
-  try
-    let sock = socket PF_UNIX SOCK_STREAM 0 in
-    connect sock sock_addr;
+let connect_and_listen handle =
+  while true do
+    try
+      let sock = socket PF_UNIX SOCK_STREAM 0 in
+      connect sock sock_addr;
 
-    let in_ch = in_channel_of_descr sock in
-    while true do
-      handle @@ input_line in_ch
-    done
-  with _ ->
-    let loader = "comodoro" in
-    print_endline @@ Utils.uppercase_at uppercase_idx loader;
-    sleep 5;
-    let uppercase_idx = (uppercase_idx + 1) mod String.length loader in
-    connect_and_listen handle ~uppercase_idx
+      let in_ch = in_channel_of_descr sock in
+      while true do
+        handle @@ input_line in_ch
+      done
+    with _ ->
+      print_endline "Comodoro";
+      sleep 1
+  done
