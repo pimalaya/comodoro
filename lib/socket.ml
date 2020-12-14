@@ -47,7 +47,7 @@ let create_and_accept () =
   Thread.create handle_conns () |> ignore;
   broadcast
 
-let rec connect_and_listen handle =
+let rec connect_and_listen ?(loader = " Comodoro") handle =
   try
     let sock = socket PF_UNIX SOCK_STREAM 0 in
     let in_ch = in_channel_of_descr sock in
@@ -57,6 +57,6 @@ let rec connect_and_listen handle =
       handle @@ input_line in_ch
     done
   with _ ->
-    print_endline "Comodoro";
+    print_endline loader;
     sleep 1;
-    connect_and_listen handle
+    connect_and_listen handle ~loader:(Utils.lift_str loader)
