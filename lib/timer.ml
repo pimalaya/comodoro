@@ -38,16 +38,13 @@ let exec_hooks (config : Config.t) timer =
   match timer with
   | Work (t, n) when t == workTime && n > 0 -> exec config.exec_on_resume
   | ShortBreak (t, _) when t == shortBreakTime -> exec config.exec_on_break
-  | LongBreak (t, _) when t == shortBreakTime -> exec config.exec_on_break
+  | LongBreak (t, _) when t == longBreakTime -> exec config.exec_on_break
   | _ -> ()
 
-let rec run handle timer =
-  let config = Config.read_file () in
+let rec run ?(timer = Work (workTime, 0)) config handle =
   let timer_str = to_string timer in
   handle timer_str;
   print_endline timer_str;
   exec_hooks config timer;
   Unix.sleep 1;
-  run handle @@ next timer
-
-let start handler = run handler @@ Work (workTime, 0)
+  run config handle ~timer:(next timer)

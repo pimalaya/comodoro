@@ -9,8 +9,9 @@ let stop () =
   print_endline "Timer stopped."
 
 let run () =
+  let config = Config.read_file () in
   let broadcast_str = Socket.create_and_accept () in
-  Timer.start broadcast_str
+  Timer.run config broadcast_str
 
 let watch () =
   let handler data = print_endline data in
