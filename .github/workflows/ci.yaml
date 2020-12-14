@@ -6,17 +6,34 @@ on:
       - v*
 
 jobs:
+  create_release:
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{steps.create_release.outputs.upload_url}}
+    steps:
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        with:
+          tag_name: ${{github.ref}}
+          release_name: ${{github.ref}}
+          draft: false
+          prerelease: false
   build:
+    needs: create_release
     runs-on: ${{matrix.os}}
-
     strategy:
       fail-fast: false
       matrix:
-        os:
-        - ubuntu-latest
-        - macos-latest
-        - windows-latest
-
+        include:
+        - os: ubuntu-latest
+          os_name: linux
+        - os: macos-latest
+          os_name: macos
+        - os: windows-latest
+          os_name: windows
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -40,87 +57,23 @@ jobs:
         run: opam exec -- dune build
 
       - name: Compress unix executable
-        if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
+        if: matrix.os_name == 'linux' || matrix.os_name == 'macos'
         run: |
           cp _build/default/bin/main.exe comodoro
           tar czf comodoro.tar.gz comodoro
 
       - name: Compress windows executable
-        if: matrix.os == 'windows-latest'
+        if: matrix.os_name == 'windows'
         run: |
           copy _build/default/bin/main.exe comodoro.exe
-          7z a comodoro.zip comodoro.exe
+          tar czf comodoro.tar.gz comodoro.exe
 
-      - name: Upload linux artifact
-        if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v2
-        with:
-          name: comodoro-linux.tar.gz
-          path: comodoro.tar.gz
-
-      - name: Upload macos artifact
-        if: matrix.os == 'macos-latest'
-        uses: actions/upload-artifact@v2
-        with:
-          name: comodoro-macos.tar.gz
-          path: comodoro.tar.gz
-
-      - name: Upload windows artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: comodoro-windows.zip
-          path: comodoro.zip
-
-  release:
-    runs-on: ubuntu-latest
-    needs: build
-    steps:          
-      - name: Create release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-        with:
-          tag_name: ${{github.ref}}
-          release_name: ${{github.ref}}
-          draft: false
-          prerelease: false
-
-      - uses: actions/download-artifact@v2
-        with:
-          name: comodoro-linux.tar.gz
-      - name: Upload linux artifact to release
+      - name: Upload release asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
         with:
-          upload_url: ${{steps.create_release.outputs.upload_url}}
+          upload_url: ${{needs.create_release.outputs.upload_url}}
           asset_path: comodoro.tar.gz
-          asset_name: comodoro-linux.tar.gz
-          asset_content_type: application/tar+gzip
-
-      - uses: actions/download-artifact@v2
-        with:
-          name: comodoro-macos.tar.gz
-      - name: Upload macos artifact to release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-        with:
-          upload_url: ${{steps.create_release.outputs.upload_url}}
-          asset_path: comodoro.tar.gz
-          asset_name: comodoro-macos.tar.gz
-          asset_content_type: application/tar+gzip
-
-      - uses: actions/download-artifact@v2
-        with:
-          name: comodoro-windows.zip
-      - name: Upload windows artifact to release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-        with:
-          upload_url: ${{steps.create_release.outputs.upload_url}}
-          asset_path: comodoro.zip
-          asset_name: comodoro-windows.zip
-          asset_content_type: application/zip
+          asset_name: comodoro-${{matrix.os_name}}.tar.gz
+          asset_content_type: application/gzip
