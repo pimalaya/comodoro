@@ -1,10 +1,10 @@
 # 🍅 🐪 Comodoro [![gh-actions](https://github.com/soywod/comodoro/workflows/CI/badge.svg)](https://github.com/soywod/comodoro/actions?query=workflow%3ACI)
 
-Socket-based CLI timer following the [Pomodoro
-Technique](https://en.wikipedia.org/wiki/Pomodoro_Technique) principles,
+Socket-based CLI timer following the
+[Pomodoro](https://en.wikipedia.org/wiki/Pomodoro_Technique) principles,
 written in [OCaml](https://ocaml.org/index.fr.html).
 
-![ezgif com-optimize](https://user-images.githubusercontent.com/10437171/102267466-3c66c600-3f1a-11eb-8fef-8281a7c800f7.gif)
+![gif](https://user-images.githubusercontent.com/10437171/102267466-3c66c600-3f1a-11eb-8fef-8281a7c800f7.gif)
 
 ## Table of contents
 
@@ -17,6 +17,8 @@ written in [OCaml](https://ocaml.org/index.fr.html).
   * [Start](#start)
   * [Stop](#stop)
   * [Watch](#watch)
+* [Integration](#integration)
+  * [Polybar](#polybar)
 * [Contributing](#contributing)
 * [Changelog](https://github.com/soywod/comodoro/blob/master/CHANGELOG.md#changelog)
 * [Credits](#credits)
@@ -67,12 +69,7 @@ opam install .
 opam exec -- dune build
 ```
 
-The executable is available at `_build/default/bin/main.exe`. To have globally
-access you can link it this way:
-
-```bash
-ln -s /path/to/comodoro/_build/default/bin/main.exe /usr/local/bin/comodoro
-```
+*Note: The executable is available at `_build/default/bin/main.exe`.*
 
 ## Configuration
 
@@ -125,6 +122,24 @@ Watch the timer (blocking).
 
 ```bash
 comodoro watch
+```
+
+## Integration
+
+### [Polybar](https://github.com/polybar/polybar)
+
+![gif](https://user-images.githubusercontent.com/10437171/102276187-bf8e1900-3f26-11eb-97b3-9571ccec8f81.gif)
+
+```config
+[bar/top]
+modules-right = comodoro
+
+[module/comodoro]
+type = custom/script
+exec = comodoro watch 
+label = %output%
+tail = true
+click-left = if [ -e /tmp/comodoro.pid ]; then comodoro stop; else comodoro start; fi
 ```
 
 ## Contributing
