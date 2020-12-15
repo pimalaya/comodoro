@@ -7,4 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Use OS specific `tmp` and `xdg` dirs [#3]
+
 [unreleased]: https://github.com/soywod/comodoro
+
+[#3]: https://github.com/soywod/comodoro/issues/3

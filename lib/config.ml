@@ -20,7 +20,7 @@ let of_table key value config =
 
 let read_file () =
   try
-    match Parser.from_filename "/home/soywod/.config/comodoro/config.toml" with
+    match Parser.from_filename @@ Path.xdg_file "config.toml" with
     | `Ok table -> TomlTypes.Table.fold of_table table empty
     | `Error (_, _) -> empty
   with _ -> empty
