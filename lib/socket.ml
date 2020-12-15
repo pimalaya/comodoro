@@ -1,9 +1,12 @@
 open Unix
 
-let sock_addr = ADDR_UNIX "/tmp/comodoro.sock"
+let get_sock_addr () =
+  let path = Path.tmp_file "comodoro.sock" in
+  ADDR_UNIX path
 
 let create_and_accept () =
   let sock = socket PF_UNIX SOCK_STREAM 0
+  and sock_addr = get_sock_addr ()
   and mutex = Mutex.create ()
   and conns = ref [] in
 
@@ -51,6 +54,7 @@ let connect_and_listen handle =
   while true do
     try
       let sock = socket PF_UNIX SOCK_STREAM 0 in
+      let sock_addr = get_sock_addr () in
       connect sock sock_addr;
 
       let in_ch = in_channel_of_descr sock in
