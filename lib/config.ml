@@ -7,7 +7,7 @@ type t = {
   exec_on_stop : string array;
 }
 
-let empty : t =
+let empty =
   {
     exec_on_start = [||];
     exec_on_break = [||];

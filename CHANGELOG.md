@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Installation script
+- `.mli` files [#2]
 
 ### Changed
 
@@ -18,8 +19,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Use OS specific `tmp` and `xdg` dirs [#3]
+- Send CI artifacts to releases [#6]
 
 [unreleased]: https://github.com/soywod/comodoro
 
+[#2]: https://github.com/soywod/comodoro/issues/2
 [#3]: https://github.com/soywod/comodoro/issues/3
+[#6]: https://github.com/soywod/comodoro/issues/6
 [#8]: https://github.com/soywod/comodoro/issues/8
