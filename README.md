@@ -14,7 +14,6 @@ in [OCaml](https://ocaml.org/index.fr.html).
 * [Usage](#usage)
   * [Start](#start)
   * [Stop](#stop)
-  * [Run](#run)
   * [Watch](#watch)
 * [Contributing](#contributing)
 * [Changelog](https://github.com/soywod/comodoro/blob/master/CHANGELOG.md#changelog)
@@ -49,7 +48,26 @@ section](https://github.com/soywod/comodoro/releases).*
 
 ### From sources
 
-TODO
+First install [`opam`](https://opam.ocaml.org/):
+
+```bash
+sh <(curl -sL https://raw.githubusercontent.com/ocaml/opam/master/shell/install.sh)
+```
+
+Then build from sources:
+
+```bash
+git clone https://github.com/soywod/comodoro.git
+cd comodoro
+opam install .
+```
+
+The executable is available at `_build/default/bin/main.exe`. To have globally
+access you can link it this way:
+
+```bash
+ln -s `pwd`/_build/default/bin/main.exe /usr/local/bin/comodoro
+```
 
 ### Completion
 
@@ -68,6 +86,8 @@ exec-on-break = ["notify-send Comodoro 'BREAK TIME'"]
 # Default: []
 exec-on-resume = ["notify-send Comodoro 'WORK TIME'"]
 ```
+
+*Note: `$XDG_CONFIG_HOME` is usually set to `~/.config`.*
 
 *Note: read more about the TOML file format
 [here](https://github.com/toml-lang/toml).*
@@ -88,14 +108,6 @@ Stop the timer.
 
 ```bash
 comodoro stop
-```
-
-### Run
-
-Run the timer loop (blocking).
-
-```bash
-comodoro run
 ```
 
 ### Watch

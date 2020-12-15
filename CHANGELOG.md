@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Installation script
 
+### Changed
+
+- README.md [#8]
+
 ### Fixed
 
 - Use OS specific `tmp` and `xdg` dirs [#3]
@@ -18,3 +22,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [unreleased]: https://github.com/soywod/comodoro
 
 [#3]: https://github.com/soywod/comodoro/issues/3
+[#8]: https://github.com/soywod/comodoro/issues/8
