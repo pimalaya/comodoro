@@ -1,7 +1,10 @@
 # 🍅 🐪 Comodoro [![gh-actions](https://github.com/soywod/comodoro/workflows/CI/badge.svg)](https://github.com/soywod/comodoro/actions?query=workflow%3ACI)
 
-[Pomodoro](https://en.wikipedia.org/wiki/Pomodoro_Technique) timer CLI, written
-in [OCaml](https://ocaml.org/index.fr.html).
+Socket-based CLI timer following the [Pomodoro
+Technique](https://en.wikipedia.org/wiki/Pomodoro_Technique) principles,
+written in [OCaml](https://ocaml.org/index.fr.html).
+
+![ezgif com-optimize](https://user-images.githubusercontent.com/10437171/102267466-3c66c600-3f1a-11eb-8fef-8281a7c800f7.gif)
 
 ## Table of contents
 
@@ -9,7 +12,6 @@ in [OCaml](https://ocaml.org/index.fr.html).
 * [Installation](#installation)
   * [From binaries](#from-binaries)
   * [From sources](#from-sources)
-  * [Completion](#completion)
 * [Configuration](#configuration)
 * [Usage](#usage)
   * [Start](#start)
@@ -21,10 +23,11 @@ in [OCaml](https://ocaml.org/index.fr.html).
 
 ## Concept
 
-Comodoro is a Pomodoro timer CLI. It helps you fight procrastination by
-spliting work times from break times.
+Comodoro is a socket-based CLI timer following the principles of the Pomodoro
+Technique. It helps you fight procrastination by spliting work times from break
+times.
 
-The timer is divided into 6 periods:
+The timer is divided into 6 consecutive periods that repeat indefinitely:
 
 1. Work time (25 min)
 2. Short break time (5 min)
@@ -33,7 +36,8 @@ The timer is divided into 6 periods:
 5. Work time (25 min)
 6. Long break time (15 min)
 
-Hooks can be set up for each period, to integrate any kind of workflow.
+The timer uses Unix sockets. Clients who connect to it receive the timer in
+real time. This way, the timer can be integrated in all kind of workflow.
 
 ## Installation
 
@@ -43,7 +47,7 @@ Hooks can be set up for each period, to integrate any kind of workflow.
 curl -sSL https://raw.githubusercontent.com/soywod/comodoro/master/install.sh | bash
 ```
 
-*Note: Linux, OSX and Windows are supported. See the [releases
+*Note: Linux, MacOS and Windows are supported. See the [releases
 section](https://github.com/soywod/comodoro/releases).*
 
 ### From sources
@@ -60,31 +64,36 @@ Then build from sources:
 git clone https://github.com/soywod/comodoro.git
 cd comodoro
 opam install .
+opam exec -- dune build
 ```
 
 The executable is available at `_build/default/bin/main.exe`. To have globally
 access you can link it this way:
 
 ```bash
-ln -s `pwd`/_build/default/bin/main.exe /usr/local/bin/comodoro
+ln -s /path/to/comodoro/_build/default/bin/main.exe /usr/local/bin/comodoro
 ```
-
-### Completion
-
-TODO
 
 ## Configuration
 
-`$XDG_CONFIG_HOME/comodoro/config.toml`:
+Edit `$XDG_CONFIG_HOME/comodoro/config.toml`:
 
 ```toml
-# Commands to execute when entering break times (short or long)
-# Default: []
-exec-on-break = ["notify-send Comodoro 'BREAK TIME'"]
+# Commands to execute when starting the timer.
+# Should be a list of string.
+exec-on-start = []
 
-# Commands to execute when re-entering work times (except the first one)
-# Default: []
-exec-on-resume = ["notify-send Comodoro 'WORK TIME'"]
+# Commands to execute when entering break times (short or long).
+# Should be a list of string.
+exec-on-break = []
+
+# Commands to execute when re-entering work times (except the first one).
+# Should be a list of string.
+exec-on-resume = []
+
+# Commands to execute when stopping the timer.
+# Should be a list of string.
+exec-on-stop = []
 ```
 
 *Note: `$XDG_CONFIG_HOME` is usually set to `~/.config`.*
