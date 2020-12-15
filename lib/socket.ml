@@ -11,14 +11,15 @@ let create_and_accept () =
   and conns = ref [] in
 
   let handle_conn conn =
-    let in_ch = in_channel_of_descr conn in
+    let chan_in = in_channel_of_descr conn in
+
     while true do
-      try input_line in_ch |> ignore
+      try input_line chan_in |> ignore
       with End_of_file ->
         Mutex.lock mutex;
         conns := List.filter (( <> ) conn) !conns;
         Mutex.unlock mutex;
-        close_in in_ch;
+        close_in chan_in;
         Thread.exit ()
     done
   in
@@ -35,9 +36,9 @@ let create_and_accept () =
 
   let broadcast data =
     let send_data conn =
-      let out_ch = out_channel_of_descr conn in
-      output_string out_ch @@ data ^ "\n";
-      flush out_ch
+      let chan_out = out_channel_of_descr conn in
+      output_string chan_out @@ data ^ "\n";
+      flush chan_out
     in
 
     Mutex.lock mutex;
@@ -52,16 +53,17 @@ let create_and_accept () =
 
 let connect_and_listen handle =
   while true do
-    try
-      let sock = socket PF_UNIX SOCK_STREAM 0 in
-      let sock_addr = get_sock_addr () in
-      connect sock sock_addr;
+    let sock = socket PF_UNIX SOCK_STREAM 0 in
+    let sock_addr = get_sock_addr () in
+    let chan_in = in_channel_of_descr sock in
 
-      let in_ch = in_channel_of_descr sock in
+    try
+      connect sock sock_addr;
       while true do
-        handle @@ input_line in_ch
+        handle @@ input_line chan_in
       done
     with _ ->
+      close_in_noerr chan_in;
       print_endline "Comodoro";
       sleep 1
   done
