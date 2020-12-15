@@ -3,6 +3,7 @@ open Unix
 let exec_silent cmd = Sys.command (cmd ^ "&") |> ignore
 
 let start () =
+  let config = Config.read_file () in
   let out_null = open_out Filename.null in
   let fd_null = descr_of_out_channel out_null in
   let args = [| "/bin/bash"; "-c"; "comodoro run" |] in
@@ -11,16 +12,19 @@ let start () =
   output_string out_ch @@ string_of_int pid;
   close_out out_ch;
   close_out out_null;
+  Array.iter exec_silent config.exec_on_start;
   pid
 
 let stop () =
   try
-    let pid_file_path = Path.tmp_file "comodoro.pid"
-    and sock_file_path = Path.tmp_file "comodoro.sock" in
+    let config = Config.read_file () in
+    let pid_file_path = Path.tmp_file "comodoro.pid" in
+    let sock_file_path = Path.tmp_file "comodoro.sock" in
     let in_ch = open_in pid_file_path in
     let pid = int_of_string (input_line in_ch) in
     close_in in_ch;
     kill pid Sys.sigterm;
+    Array.iter exec_silent config.exec_on_stop;
     Sys.remove pid_file_path;
     Sys.remove sock_file_path
   with
