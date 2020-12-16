@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - README.md [#8]
+- Make timers customizable [#4]
 
 ### Fixed
 
@@ -25,5 +26,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [#2]: https://github.com/soywod/comodoro/issues/2
 [#3]: https://github.com/soywod/comodoro/issues/3
+[#4]: https://github.com/soywod/comodoro/issues/4
 [#6]: https://github.com/soywod/comodoro/issues/6
 [#8]: https://github.com/soywod/comodoro/issues/8

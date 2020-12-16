@@ -1,14 +1,22 @@
 open Toml
 
 type t = {
+  work_time : int;
+  short_break_time : int;
+  long_break_time : int;
   exec_on_start : string array;
   exec_on_break : string array;
   exec_on_resume : string array;
   exec_on_stop : string array;
 }
 
+let min = 60
+
 let empty =
   {
+    work_time = 25 * min;
+    short_break_time = 5 * min;
+    long_break_time = 15 * min;
     exec_on_start = [||];
     exec_on_break = [||];
     exec_on_resume = [||];
@@ -16,12 +24,26 @@ let empty =
   }
 
 let of_table key value config =
+  let parse_int handle = function
+    | TomlTypes.TInt n -> handle n
+    | _ -> config
+  in
+
   let parse_cmds handle = function
     | TomlTypes.TArray (TomlTypes.NodeString lst) -> handle (Array.of_list lst)
     | _ -> config
   in
 
   match TomlTypes.Table.Key.to_string key with
+  | "work-time" ->
+      let handle n = { config with work_time = n } in
+      parse_int handle value
+  | "short-break-time" ->
+      let handle n = { config with short_break_time = n } in
+      parse_int handle value
+  | "long-break-time" ->
+      let handle n = { config with long_break_time = n } in
+      parse_int handle value
   | "exec-on-start" ->
       let handle cmds = { config with exec_on_start = cmds } in
       parse_cmds handle value

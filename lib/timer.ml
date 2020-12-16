@@ -1,12 +1,6 @@
 type t = Work of int * int | ShortBreak of int * int | LongBreak of int * int
 
-let min = 60
-
-let workTime = 25 * min
-
-let shortBreakTime = 5 * min
-
-let longBreakTime = 15 * min
+let initial_timer (config : Config.t) = Work (config.work_time, 0)
 
 let int_of_timer = function
   | Work (n, _) -> n
@@ -24,27 +18,31 @@ let to_string timer =
   in
   Format.sprintf "%.2d:%.2d [%s]" mins secs symbol
 
-let next = function
-  | Work (1, n) when n mod 6 == 4 -> LongBreak (shortBreakTime, n + 1)
-  | Work (1, n) -> ShortBreak (shortBreakTime, n + 1)
+let next (config : Config.t) = function
+  | Work (1, n) when n mod 6 == 4 -> LongBreak (config.long_break_time, n + 1)
+  | Work (1, n) -> ShortBreak (config.short_break_time, n + 1)
   | Work (t, n) -> Work (t - 1, n)
-  | ShortBreak (1, n) -> Work (workTime, n + 1)
+  | ShortBreak (1, n) -> Work (config.work_time, n + 1)
   | ShortBreak (t, n) -> ShortBreak (t - 1, n)
-  | LongBreak (1, n) -> Work (workTime, n + 1)
+  | LongBreak (1, n) -> Work (config.work_time, n + 1)
   | LongBreak (t, n) -> LongBreak (t - 1, n)
 
 let exec_hooks (config : Config.t) timer =
   let exec = Array.iter Process.exec_silent in
   match timer with
-  | Work (t, n) when t == workTime && n > 0 -> exec config.exec_on_resume
-  | ShortBreak (t, _) when t == shortBreakTime -> exec config.exec_on_break
-  | LongBreak (t, _) when t == longBreakTime -> exec config.exec_on_break
+  | Work (t, n) when t == config.work_time && n > 0 ->
+      exec config.exec_on_resume
+  | ShortBreak (t, _) when t == config.short_break_time ->
+      exec config.exec_on_break
+  | LongBreak (t, _) when t == config.long_break_time ->
+      exec config.exec_on_break
   | _ -> ()
 
-let rec run ?(timer = Work (workTime, 0)) config handle =
+let rec run config timer handle =
   let timer_str = to_string timer in
+  let next_timer = next config timer in
   handle timer_str;
   print_endline timer_str;
   exec_hooks config timer;
   Unix.sleep 1;
-  run config handle ~timer:(next timer)
+  run config next_timer handle

@@ -6,8 +6,9 @@ let start () =
 
 let run () =
   let config = Config.read_file () in
-  let broadcast_str = Socket.create_and_accept () in
-  Timer.run config broadcast_str
+  let initial_timer = Timer.initial_timer config in
+  let broadcaster = Socket.create_and_accept () in
+  Timer.run config initial_timer broadcaster
 
 let watch () =
   let handler data = print_endline data in
