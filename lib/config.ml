@@ -10,13 +10,11 @@ type t = {
   exec_on_stop : string array;
 }
 
-let min = 60
-
 let empty =
   {
-    work_time = 25 * min;
-    short_break_time = 5 * min;
-    long_break_time = 15 * min;
+    work_time = 25 * 60;
+    short_break_time = 5 * 60;
+    long_break_time = 15 * 60;
     exec_on_start = [||];
     exec_on_break = [||];
     exec_on_resume = [||];
@@ -36,13 +34,13 @@ let of_table key value config =
 
   match TomlTypes.Table.Key.to_string key with
   | "work-time" ->
-      let handle n = { config with work_time = n } in
+      let handle n = { config with work_time = n * 60 } in
       parse_int handle value
   | "short-break-time" ->
-      let handle n = { config with short_break_time = n } in
+      let handle n = { config with short_break_time = n * 60 } in
       parse_int handle value
   | "long-break-time" ->
-      let handle n = { config with long_break_time = n } in
+      let handle n = { config with long_break_time = n * 60 } in
       parse_int handle value
   | "exec-on-start" ->
       let handle cmds = { config with exec_on_start = cmds } in

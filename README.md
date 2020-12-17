@@ -76,6 +76,15 @@ opam exec -- dune build
 Edit `$XDG_CONFIG_HOME/comodoro/config.toml`:
 
 ```toml
+# Work time in minutes.
+work-time = 25
+
+# Short break time in minutes.
+shor-break-time = 5
+
+# Long break time in minutes.
+long-break-time = 15
+
 # Commands to execute when starting the timer.
 # Should be a list of string.
 exec-on-start = []
