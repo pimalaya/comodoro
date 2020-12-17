@@ -1,4 +1,4 @@
-val exec_silent : string -> unit
+val exec_silent_all : string array -> unit
 
 val start : unit -> int
 

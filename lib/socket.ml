@@ -51,19 +51,23 @@ let create_and_accept () =
   Thread.create handle_conns () |> ignore;
   broadcast
 
-let connect_and_listen handle =
-  while true do
-    let sock = socket PF_UNIX SOCK_STREAM 0 in
-    let sock_addr = get_sock_addr () in
-    let chan_in = in_channel_of_descr sock in
+let rec connect_and_listen handle =
+  let sock = socket PF_UNIX SOCK_STREAM 0 in
+  let sock_addr = get_sock_addr () in
+  let chan_in = in_channel_of_descr sock in
 
-    try
-      connect sock sock_addr;
-      while true do
-        handle @@ input_line chan_in
-      done
-    with _ ->
+  try
+    connect sock sock_addr;
+    while true do
+      handle @@ input_line chan_in
+    done
+  with
+  | End_of_file ->
       close_in_noerr chan_in;
-      print_endline "Comodoro";
-      sleep 1
-  done
+      connect_and_listen handle
+  | Unix.Unix_error (Unix.ENOENT, "connect", "") ->
+      print_endline "Comodoro OFF";
+      close sock;
+      sleep 1;
+      connect_and_listen handle
+  | err -> raise err

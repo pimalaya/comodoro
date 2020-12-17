@@ -27,15 +27,13 @@ let next (config : Config.t) = function
   | LongBreak (1, n) -> Work (config.work_time, n + 1)
   | LongBreak (t, n) -> LongBreak (t - 1, n)
 
-let exec_hooks (config : Config.t) timer =
-  let exec = Array.iter Process.exec_silent in
-  match timer with
+let exec_hooks (config : Config.t) = function
   | Work (t, n) when t == config.work_time && n > 0 ->
-      exec config.exec_on_resume
+      Process.exec_silent_all config.exec_on_resume
   | ShortBreak (t, _) when t == config.short_break_time ->
-      exec config.exec_on_break
+      Process.exec_silent_all config.exec_on_break
   | LongBreak (t, _) when t == config.long_break_time ->
-      exec config.exec_on_break
+      Process.exec_silent_all config.exec_on_break
   | _ -> ()
 
 let rec run config timer handle =
