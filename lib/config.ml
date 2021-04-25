@@ -23,16 +23,16 @@ let empty =
 
 let of_table key value config =
   let parse_int handle = function
-    | TomlTypes.TInt n -> handle n
+    | Types.TInt n -> handle n
     | _ -> config
   in
 
   let parse_cmds handle = function
-    | TomlTypes.TArray (TomlTypes.NodeString lst) -> handle (Array.of_list lst)
+    | Types.TArray (Types.NodeString lst) -> handle (Array.of_list lst)
     | _ -> config
   in
 
-  match TomlTypes.Table.Key.to_string key with
+  match Types.Table.Key.to_string key with
   | "work-time" ->
       let handle n = { config with work_time = n * 60 } in
       parse_int handle value
@@ -59,6 +59,6 @@ let of_table key value config =
 let read_file () =
   try
     match Parser.from_filename @@ Path.xdg_file "config.toml" with
-    | `Ok table -> TomlTypes.Table.fold of_table table empty
+    | `Ok table -> Types.Table.fold of_table table empty
     | `Error (_, _) -> empty
   with _ -> empty
