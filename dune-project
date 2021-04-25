@@ -15,6 +15,7 @@
   (ocaml (>= 4.11.1))
   (dune (>= 2.7.1))
   base
+  core
   stdio
   toml
  ))
