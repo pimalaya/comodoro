@@ -80,7 +80,7 @@ Edit `$XDG_CONFIG_HOME/comodoro/config.toml`:
 work-time = 25
 
 # Short break time in minutes.
-shor-break-time = 5
+short-break-time = 5
 
 # Long break time in minutes.
 long-break-time = 15
