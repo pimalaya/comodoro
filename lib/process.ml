@@ -19,7 +19,7 @@ let start () =
   let config = Config.read_file () in
   let out_null = open_out Filename.null in
   let fd_null = descr_of_out_channel out_null in
-  let args = [| "/bin/bash"; "-c"; "comodoro run" |] in
+  let args = [| "/bin/bash"; "-c"; Sys.argv.(0) ^ " run" |] in
   let pid = create_process args.(0) args fd_null fd_null stderr in
   let out_ch = open_out @@ Path.tmp_file "comodoro.pid" in
   output_string out_ch @@ string_of_int pid;
