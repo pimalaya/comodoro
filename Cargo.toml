@@ -17,5 +17,15 @@ default = []
 [dev-dependencies]
 
 [dependencies]
-pimalaya = { path = "/home/soywod/sourcehut/pimalaya", default-features = false, features = ["pomodoro"] }
+anyhow = "1.0.70"
+chrono = "0.4.24"
+dialoguer = "0.10.3"
+clap = "4.2.1"
+clap_complete = "4.2.0"
+clap_mangen = "0.2.10"
+dirs = "5.0.0"
+env_logger = "0.10.0"
 log = "0.4.17"
+toml = "0.7.3"
+pimalaya = { path = "/home/soywod/sourcehut/pimalaya", default-features = false, features = ["pomodoro"] }
+serde = "1.0.159"
