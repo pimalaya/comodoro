@@ -1,174 +1,91 @@
-# 🍅 🐪 Comodoro [![gh-actions](https://github.com/soywod/comodoro/workflows/CI/badge.svg)](https://github.com/soywod/comodoro/actions?query=workflow%3ACI)
+# 🍅 Comodoro
 
-Socket-based CLI timer following the
-[Pomodoro](https://en.wikipedia.org/wiki/Pomodoro_Technique) principles,
-written in [OCaml](https://ocaml.org/index.fr.html).
+CLI for managing your time using the
+[Pomodoro](https://en.wikipedia.org/wiki/Pomodoro_Technique)
+technique, based on the [pimalaya](https://sr.ht/~soywod/pimalaya/)
+library.
 
-![gif](https://user-images.githubusercontent.com/10437171/102267466-3c66c600-3f1a-11eb-8fef-8281a7c800f7.gif)
+*Disclaimer: the project is under active development, do not use in
+production before the `v1.0.0`.*
 
-## Table of contents
+## Features
 
-* [Concept](#concept)
-* [Installation](#installation)
-  * [From binaries](#from-binaries)
-  * [From sources](#from-sources)
-* [Configuration](#configuration)
-* [Usage](#usage)
-  * [Start](#start)
-  * [Stop](#stop)
-  * [Watch](#watch)
-* [Integration](#integration)
-  * [Polybar](#polybar)
-* [Contributing](#contributing)
-* [Changelog](https://github.com/soywod/comodoro/blob/master/CHANGELOG.md#changelog)
-* [Credits](#credits)
-
-## Concept
-
-Comodoro is a socket-based CLI timer following the principles of the Pomodoro
-Technique. It helps you fight procrastination by spliting work times from break
-times.
-
-The timer is divided into 6 consecutive periods that repeat indefinitely:
-
-1. Work time (25 min)
-2. Short break time (5 min)
-3. Work time (25 min)
-4. Short break time (5 min)
-5. Work time (25 min)
-6. Long break time (15 min)
-
-The timer uses Unix sockets. Clients who connect to it receive the timer in
-real time. This way, the timer can be integrated in all kind of workflow.
+*TODO*
 
 ## Installation
 
-### From binaries
+<table align="center">
+<tr>
+<td width="50%">
+<a href="https://repology.org/project/comodoro/versions">
+<img src="https://repology.org/badge/vertical-allrepos/comodoro.svg" alt="Packaging status" />
+</a>
+</td>
+<td width="50%">
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/soywod/comodoro/master/install.sh | bash
+# Cargo
+$ cargo install comodoro
+
+# Nix
+$ nix-env -i comodoro
 ```
 
-*Note: Linux, MacOS and Windows are supported. See the [releases
-section](https://github.com/soywod/comodoro/releases).*
+*See the
+[documentation](https://pimalaya.org/comodoro/docs/cli/installation.html)
+for other installation methods.*
 
-### From sources
-
-First install [`opam`](https://opam.ocaml.org/):
-
-```bash
-sh <(curl -sL https://raw.githubusercontent.com/ocaml/opam/master/shell/install.sh)
-```
-
-Then build from sources:
-
-```bash
-git clone https://github.com/soywod/comodoro.git
-cd comodoro
-opam install .
-opam exec -- dune build
-```
-
-*Note: The executable is available at `_build/default/bin/main.exe`.*
+</td>
+</tr>
+</table>
 
 ## Configuration
 
-Edit `$XDG_CONFIG_HOME/comodoro/config.toml`:
-
-```toml
-# Work time in minutes.
-work-time = 25
-
-# Short break time in minutes.
-short-break-time = 5
-
-# Long break time in minutes.
-long-break-time = 15
-
-# Commands to execute when starting the timer.
-# Should be a list of string.
-exec-on-start = []
-
-# Commands to execute when entering break times (short or long).
-# Should be a list of string.
-exec-on-break = []
-
-# Commands to execute when re-entering work times (except the first one).
-# Should be a list of string.
-exec-on-resume = []
-
-# Commands to execute when stopping the timer.
-# Should be a list of string.
-exec-on-stop = []
-```
-
-*Note: `$XDG_CONFIG_HOME` is usually set to `~/.config`.*
-
-*Note: read more about the TOML file format
-[here](https://github.com/toml-lang/toml).*
-
-## Usage
-
-### Start
-
-Start the timer.
-
-```bash
-comodoro start
-```
-
-### Stop
-
-Stop the timer.
-
-```bash
-comodoro stop
-```
-
-### Watch
-
-Watch the timer (blocking).
-
-```bash
-comodoro watch
-```
-
-## Integration
-
-### [Polybar](https://github.com/polybar/polybar)
-
-![gif](https://user-images.githubusercontent.com/10437171/102276187-bf8e1900-3f26-11eb-97b3-9571ccec8f81.gif)
-
-```config
-[bar/top]
-modules-right = comodoro
-
-[module/comodoro]
-type = custom/script
-exec = comodoro watch 
-label = %output%
-tail = true
-click-left = if [ -e /tmp/comodoro.pid ]; then comodoro stop; else comodoro start; fi
-```
+Please read the
+[documentation](https://pimalaya.org/comodoro/docs/cli/configuration.html).
 
 ## Contributing
 
-Git commit messages follow the [Angular
-Convention](https://gist.github.com/stephenparish/9941e89d80e2bc58a153), but
-contain only a subject.
+If you find a **bug** that [does not exist
+yet](https://todo.sr.ht/~soywod/pimalaya?search=status%3Aopen%20label%3A%222%3Acomodoro%22),
+please send an email at
+[~soywod/pimalaya@todo.sr.ht](mailto:~soywod/pimalaya@todo.sr.ht).
 
-  > Use imperative, present tense: “change” not “changed” nor
-  > “changes”<br>Don't capitalize first letter<br>No dot (.) at the end
+If you have a **question**, please send an email at
+[~soywod/pimalaya@lists.sr.ht](mailto:~soywod/pimalaya@lists.sr.ht).
 
-Code should be as clean as possible, variables and functions use the snake case
-convention. A line should be as short as possible to improve readability.
+If you want to **propose a feature** or **fix a bug**, please send a
+patch at
+[~soywod/pimalaya@lists.sr.ht](mailto:~soywod/pimalaya@lists.sr.ht)
+using [git send-email](https://git-scm.com/docs/git-send-email) (see
+[this guide](https://git-send-email.io/) on how to configure it).
 
-Tests should be added for each new functionality. Be sure to run tests before
-proposing a pull request.
+If you want to **subscribe** to the mailing list, please send an email
+at
+[~soywod/pimalaya+subscribe@lists.sr.ht](mailto:~soywod/pimalaya+subscribe@lists.sr.ht).
+
+If you want to **unsubscribe** to the mailing list, please send an
+email at
+[~soywod/pimalaya+unsubscribe@lists.sr.ht](mailto:~soywod/pimalaya+unsubscribe@lists.sr.ht).
+
+If you want to **discuss** about the project, feel free to join the
+[Matrix](https://matrix.org/) workspace
+[#pimalaya.comodoro](https://matrix.to/#/#pimalaya.comodoro:matrix.org)
+or contact me directly
+[@soywod](https://matrix.to/#/@soywod:matrix.org).
 
 ## Credits
 
-- [Francesco Cirillo](https://francescocirillo.com/), the creator of the Pomodoro technique
+- [Francesco Cirillo](https://francescocirillo.com/), the creator of
+  the Pomodoro technique
 - [Wikipedia](https://en.wikipedia.org/wiki/Pomodoro_Technique)
 - [pomodoro-technique.fr](http://www.pomodoro-technique.fr/)
 - [pymodoro](https://github.com/rogeralmeida/pymodoro), a python CLI
+
+## Sponsoring
+
+[![GitHub](https://img.shields.io/badge/-GitHub%20Sponsors-fafbfc?logo=GitHub%20Sponsors)](https://github.com/sponsors/soywod)
+[![PayPal](https://img.shields.io/badge/-PayPal-0079c1?logo=PayPal&logoColor=ffffff)](https://www.paypal.com/paypalme/soywod)
+[![Ko-fi](https://img.shields.io/badge/-Ko--fi-ff5e5a?logo=Ko-fi&logoColor=ffffff)](https://ko-fi.com/soywod)
+[![Buy Me a Coffee](https://img.shields.io/badge/-Buy%20Me%20a%20Coffee-ffdd00?logo=Buy%20Me%20A%20Coffee&logoColor=000000)](https://www.buymeacoffee.com/soywod)
+[![Liberapay](https://img.shields.io/badge/-Liberapay-f6c915?logo=Liberapay&logoColor=222222)](https://liberapay.com/soywod)

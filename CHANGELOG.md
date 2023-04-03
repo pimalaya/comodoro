@@ -7,22 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Rewrote the project in Rust.
+
+## [0.0.1] - 2020-12-15
+
 ### Added
 
-- Installation script
-- `.mli` files [#2]
+- Added installation script.
+- Added `.mli` files [#2].
 
 ### Changed
 
-- README.md [#8]
-- Make timers customizable [#4]
+- Improved README [#8].
+- Made timers customizable [#4].
 
 ### Fixed
 
-- Use OS specific `tmp` and `xdg` dirs [#3]
-- Send CI artifacts to releases [#6]
+- Fixed OS specific `tmp` and `xdg` dirs [#3].
+- Fixed missing CI artifacts from releases [#6].
 
-[unreleased]: https://github.com/soywod/comodoro
+[Unreleased]: https://github.com/soywod/comodoro/compare/v0.0.1...master
+[0.0.1]: https://github.com/soywod/comodoro/releases/tag/v0.0.1
 
 [#2]: https://github.com/soywod/comodoro/issues/2
 [#3]: https://github.com/soywod/comodoro/issues/3

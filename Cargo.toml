@@ -1,0 +1,21 @@
+[package]
+name = "comodoro"
+description = "CLI for managing your time using the Pomodoro technique, based on the pimalaya library."
+version = "0.0.0"
+authors = ["soywod <clement.douin@posteo.net>"]
+edition = "2021"
+license = "MIT"
+categories = ["command-line-utilities", "network-programming"]
+keywords = ["cli", "pomodoro", "pim", "client", "time"]
+homepage = "https://pimalaya.org/comodoro/docs/"
+documentation = "https://pimalaya.org/comodoro/docs/"
+repository = "https://github.com/soywod/comodoro"
+
+[features]
+default = []
+
+[dev-dependencies]
+
+[dependencies]
+pimalaya = { path = "/home/soywod/sourcehut/pimalaya", default-features = false, features = ["pomodoro"] }
+log = "0.4.17"
