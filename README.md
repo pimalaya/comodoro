@@ -1,4 +1,4 @@
-# 🍅 Comodoro
+# 🍅 [Comodoro](https://pimalaya.org/comodoro/docs/) [![Crates.io](https://img.shields.io/crates/v/comodoro)](https://crates.io/crates/comodoro) [![Matrix](https://img.shields.io/matrix/pimalaya.comodoro:matrix.org?color=success&label=chat)](https://matrix.to/#/#pimalaya.comodoro:matrix.org)
 
 CLI for managing your time using the
 [Pomodoro](https://en.wikipedia.org/wiki/Pomodoro_Technique)
@@ -10,7 +10,10 @@ production before the `v1.0.0`.*
 
 ## Features
 
-*TODO*
+- Multi clients controlling the same centralized timer
+- Multi protocols (TCP, UDP, Socket, custom etc)
+- Work and break durations customizable via config file
+- …
 
 ## Installation
 
