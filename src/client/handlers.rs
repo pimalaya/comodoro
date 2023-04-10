@@ -1,26 +1,28 @@
 use anyhow::Result;
+use pimalaya::time::pomodoro::Client;
 
-pub fn start() -> Result<()> {
-    // TODO
+pub fn start(client: &dyn Client) -> Result<()> {
+    client.start()?;
     Ok(())
 }
 
-pub fn get() -> Result<()> {
-    // TODO
+pub fn get(client: &dyn Client) -> Result<()> {
+    let timer = client.get()?;
+    println!("{}", timer.value);
     Ok(())
 }
 
-pub fn pause() -> Result<()> {
-    // TODO
+pub fn pause(client: &dyn Client) -> Result<()> {
+    client.pause()?;
     Ok(())
 }
 
-pub fn resume() -> Result<()> {
-    // TODO
+pub fn resume(client: &dyn Client) -> Result<()> {
+    client.resume()?;
     Ok(())
 }
 
-pub fn stop() -> Result<()> {
-    // TODO
+pub fn stop(client: &dyn Client) -> Result<()> {
+    client.stop()?;
     Ok(())
 }

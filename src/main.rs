@@ -1,9 +1,9 @@
 use anyhow::Result;
 use clap::Command;
 use comodoro::{
-    account, client, compl,
-    config::{self, DeserializedConfig},
-    man, server,
+    client, compl,
+    config::{self, Config},
+    man, server, Protocol,
 };
 use std::env;
 
@@ -15,7 +15,6 @@ fn create_app() -> Command {
         .propagate_version(true)
         .infer_subcommands(true)
         .arg(config::args::arg())
-        .arg(account::args::arg())
         .subcommands(client::args::subcmds())
         .subcommand(compl::args::subcmd())
         .subcommand(man::args::subcmd())
@@ -46,37 +45,39 @@ fn main() -> Result<()> {
         _ => (),
     }
 
-    // inits config
-    let config = DeserializedConfig::from_opt_path(config::args::parse_arg(&m))?;
-    let _account_config = config.to_account_config(account::args::parse_arg(&m))?;
+    // init config
+    let config = Config::from_opt_path(config::args::parse_arg(&m))?;
 
-    // checks server commands
+    // check server commands
     match server::args::matches(&m)? {
-        Some(server::args::Cmd::Start) => {
-            return server::handlers::start();
-        }
-        Some(server::args::Cmd::Stop) => {
-            return server::handlers::stop();
+        Some(server::args::Cmd::Start(protocols)) => {
+            let binders = Protocol::to_binders(&config, protocols);
+            return server::handlers::start(binders);
         }
         _ => (),
     }
 
     // checks client commands
     match client::args::matches(&m)? {
-        Some(client::args::Cmd::Start) => {
-            return client::handlers::start();
+        Some(client::args::Cmd::Start(protocol)) => {
+            let client = protocol.to_client(&config)?;
+            return client::handlers::start(client.as_ref());
         }
-        Some(client::args::Cmd::Get) => {
-            return client::handlers::get();
+        Some(client::args::Cmd::Get(protocol)) => {
+            let client = protocol.to_client(&config)?;
+            return client::handlers::get(client.as_ref());
         }
-        Some(client::args::Cmd::Pause) => {
-            return client::handlers::pause();
+        Some(client::args::Cmd::Pause(protocol)) => {
+            let client = protocol.to_client(&config)?;
+            return client::handlers::pause(client.as_ref());
         }
-        Some(client::args::Cmd::Resume) => {
-            return client::handlers::resume();
+        Some(client::args::Cmd::Resume(protocol)) => {
+            let client = protocol.to_client(&config)?;
+            return client::handlers::resume(client.as_ref());
         }
-        Some(client::args::Cmd::Stop) => {
-            return client::handlers::stop();
+        Some(client::args::Cmd::Stop(protocol)) => {
+            let client = protocol.to_client(&config)?;
+            return client::handlers::stop(client.as_ref());
         }
         _ => (),
     }

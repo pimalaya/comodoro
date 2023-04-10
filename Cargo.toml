@@ -12,7 +12,11 @@ documentation = "https://pimalaya.org/comodoro/docs/"
 repository = "https://github.com/soywod/comodoro"
 
 [features]
-default = []
+tcp-client = ["pimalaya/pomodoro-tcp-client"]
+tcp-binder = ["pimalaya/pomodoro-tcp-binder"]
+tcp = ["tcp-client", "tcp-binder"]
+
+default = ["tcp"]
 
 [dev-dependencies]
 

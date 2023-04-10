@@ -6,25 +6,28 @@
 use anyhow::{anyhow, Context, Result};
 use dirs::{config_dir, home_dir};
 use log::{debug, trace};
-use pimalaya::time::pomodoro::AccountConfig;
+use pimalaya::time::pomodoro::ServerBind;
+#[cfg(feature = "tcp-binder")]
+use pimalaya::time::pomodoro::TcpBind;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, fs, path::PathBuf};
+use std::{fs, path::PathBuf};
 use toml;
 
-use crate::account::DeserializedAccountConfig;
+use super::DurationsConfig;
+#[cfg(any(feature = "tcp-client", feature = "tcp-binder"))]
+use super::TcpConfig;
 
 /// Represents the user config file.
 #[derive(Clone, Debug, Default, Eq, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
-pub struct DeserializedConfig {
-    pub work_duration: Option<usize>,
-    pub short_break_duration: Option<usize>,
-    pub long_break_duration: Option<usize>,
+pub struct Config {
     #[serde(flatten)]
-    pub accounts: HashMap<String, DeserializedAccountConfig>,
+    pub durations: DurationsConfig,
+    #[cfg(any(feature = "tcp-client", feature = "tcp-binder"))]
+    pub tcp: Option<TcpConfig>,
 }
 
-impl DeserializedConfig {
+impl Config {
     /// Tries to create a config from an optional path.
     pub fn from_opt_path(path: Option<&str>) -> Result<Self> {
         debug!("path: {:?}", path);
@@ -36,10 +39,6 @@ impl DeserializedConfig {
             }
             None => return Err(anyhow!("cannot find config file")),
         };
-
-        if config.accounts.is_empty() {
-            return Err(anyhow!("config file must contain at least one account"));
-        }
 
         trace!("config: {:#?}", config);
         Ok(config)
@@ -65,48 +64,14 @@ impl DeserializedConfig {
             .filter(|p| p.exists())
     }
 
-    pub fn to_account_config(&self, account_name: Option<&str>) -> Result<AccountConfig> {
-        let default_config = AccountConfig::default();
+    pub fn to_binders(&self) -> Vec<Box<dyn ServerBind>> {
+        let mut binders: Vec<Box<dyn ServerBind>> = Vec::new();
 
-        let (name, deserialized_account_config) = match account_name {
-            Some("default") | Some("") | None => self
-                .accounts
-                .iter()
-                .find_map(|(name, account)| {
-                    if let Some(true) = account.default {
-                        Some((name.clone(), account))
-                    } else {
-                        None
-                    }
-                })
-                .ok_or_else(|| anyhow!("cannot find default account")),
-            Some(name) => self
-                .accounts
-                .get(name)
-                .map(|account| (name.to_string(), account))
-                .ok_or_else(|| anyhow!(format!("cannot find account {}", name))),
-        }?;
+        #[cfg(feature = "tcp-binder")]
+        if let Some(ref config) = self.tcp {
+            binders.push(TcpBind::new(&config.host, config.port))
+        }
 
-        Ok(AccountConfig {
-            name,
-            work_duration: deserialized_account_config
-                .work_duration
-                .as_ref()
-                .map(ToOwned::to_owned)
-                .or_else(|| self.work_duration.as_ref().map(ToOwned::to_owned))
-                .unwrap_or_else(|| default_config.work_duration),
-            short_break_duration: deserialized_account_config
-                .short_break_duration
-                .as_ref()
-                .map(ToOwned::to_owned)
-                .or_else(|| self.short_break_duration.as_ref().map(ToOwned::to_owned))
-                .unwrap_or_else(|| default_config.short_break_duration),
-            long_break_duration: deserialized_account_config
-                .long_break_duration
-                .as_ref()
-                .map(ToOwned::to_owned)
-                .or_else(|| self.long_break_duration.as_ref().map(ToOwned::to_owned))
-                .unwrap_or_else(|| default_config.long_break_duration),
-        })
+        binders
     }
 }
