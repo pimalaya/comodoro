@@ -49,7 +49,7 @@ jobs:
           path: '**/target/release'
           key: cargo-release-${{ hashFiles('**/Cargo.toml') }}
       - name: Install Nix
-        uses: cachix/install-nix-action@v18
+        uses: cachix/install-nix-action@v20
         with:
           nix_path: nixpkgs=channel:nixos-22.11
           extra_nix_config: |
@@ -130,7 +130,7 @@ jobs:
           path: '**/target/release'
           key: cargo-release-${{ hashFiles('**/Cargo.toml') }}
       - name: Install Nix
-        uses: cachix/install-nix-action@v18
+        uses: cachix/install-nix-action@v20
         with:
           nix_path: nixpkgs=channel:nixos-22.11
           extra_nix_config: |
@@ -141,7 +141,7 @@ jobs:
       - name: Publish library to crates.io
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-        run: nix develop -c cargo publish --token ${CARGO_REGISTRY_TOKEN} --dry-run
+        run: nix develop -c cargo publish --token ${CARGO_REGISTRY_TOKEN}
       - name: Export Nix store cache
         if: ${{ steps.nix-cache.outputs.cache-hit != 'true' }}
         run: nix-store --export $(find /nix/store -maxdepth 1 -name '*-*') > /tmp/nix-cache
