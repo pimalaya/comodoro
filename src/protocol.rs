@@ -18,17 +18,8 @@ impl Protocol {
     pub fn to_server(config: &Config, protocols: Vec<Self>) -> Server {
         let mut server = ServerBuilder::new();
 
-        if let Some(duration) = config.durations.work_duration {
-            server = server.with_work_duration(duration);
-        }
-
-        if let Some(duration) = config.durations.short_break_duration {
-            server = server.with_short_break_duration(duration);
-        }
-
-        if let Some(duration) = config.durations.long_break_duration {
-            server = server.with_long_break_duration(duration);
-        }
+        server = config.durations.apply(server);
+        server = config.hooks.apply(server);
 
         let protocols = if protocols.is_empty() {
             vec![
@@ -45,18 +36,8 @@ impl Protocol {
                 Protocol::Tcp => {
                     if let Some(ref config) = config.tcp {
                         server = server.with_binder(TcpBind::new(&config.host, config.port));
-
-                        if let Some(duration) = config.durations.work_duration {
-                            server = server.with_work_duration(duration);
-                        }
-
-                        if let Some(duration) = config.durations.short_break_duration {
-                            server = server.with_short_break_duration(duration);
-                        }
-
-                        if let Some(duration) = config.durations.long_break_duration {
-                            server = server.with_long_break_duration(duration);
-                        }
+                        server = config.durations.apply(server);
+                        server = config.hooks.apply(server);
                     }
                 }
                 Protocol::None => (),

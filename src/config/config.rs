@@ -6,16 +6,13 @@
 use anyhow::{anyhow, Context, Result};
 use dirs::{config_dir, home_dir};
 use log::{debug, trace};
-use pimalaya::time::pomodoro::ServerBind;
-#[cfg(feature = "tcp-binder")]
-use pimalaya::time::pomodoro::TcpBind;
 use serde::{Deserialize, Serialize};
 use std::{fs, path::PathBuf};
 use toml;
 
-use super::DurationsConfig;
 #[cfg(any(feature = "tcp-client", feature = "tcp-binder"))]
 use super::TcpConfig;
+use super::{DurationsConfig, HooksConfig};
 
 /// Represents the user config file.
 #[derive(Clone, Debug, Default, Eq, PartialEq, Deserialize, Serialize)]
@@ -23,6 +20,8 @@ use super::TcpConfig;
 pub struct Config {
     #[serde(flatten)]
     pub durations: DurationsConfig,
+    #[serde(flatten)]
+    pub hooks: HooksConfig,
     #[cfg(any(feature = "tcp-client", feature = "tcp-binder"))]
     pub tcp: Option<TcpConfig>,
 }
@@ -62,16 +61,5 @@ impl Config {
             .filter(|p| p.exists())
             .or_else(|| home_dir().map(|p| p.join(".comodororc")))
             .filter(|p| p.exists())
-    }
-
-    pub fn to_binders(&self) -> Vec<Box<dyn ServerBind>> {
-        let mut binders: Vec<Box<dyn ServerBind>> = Vec::new();
-
-        #[cfg(feature = "tcp-binder")]
-        if let Some(ref config) = self.tcp {
-            binders.push(TcpBind::new(&config.host, config.port))
-        }
-
-        binders
     }
 }
