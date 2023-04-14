@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.4] - 2023-04-14
+
 ### Fixed
 
 - Fixed hooks not triggered properly.
@@ -47,7 +49,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed OS specific `tmp` and `xdg` dirs [#3].
 - Fixed missing CI artifacts from releases [#6].
 
-[Unreleased]: https://github.com/soywod/comodoro/compare/v0.0.2...master
+[Unreleased]: https://github.com/soywod/comodoro/compare/v0.0.4...master
+[0.0.4]: https://github.com/soywod/comodoro/compare/v0.0.3...v0.0.4
+[0.0.3]: https://github.com/soywod/comodoro/compare/v0.0.2...v0.0.3
 [0.0.2]: https://github.com/soywod/comodoro/compare/v0.0.1...v0.0.2
 [0.0.1]: https://github.com/soywod/comodoro/releases/tag/v0.0.1
 
