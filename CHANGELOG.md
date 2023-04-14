@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed hooks not triggered properly.
+
 ## [0.0.3] - 2023-04-14
 
 ### Added
