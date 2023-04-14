@@ -14,6 +14,7 @@ fn create_app() -> Command {
         .author(env!("CARGO_PKG_AUTHORS"))
         .propagate_version(true)
         .infer_subcommands(true)
+        .arg_required_else_help(true)
         .arg(config::args::arg())
         .subcommands(client::args::subcmds())
         .subcommand(compl::args::subcmd())
