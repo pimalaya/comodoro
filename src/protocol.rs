@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
 use clap::{builder::PossibleValue, ValueEnum};
-use pimalaya::time::pomodoro::{Client, ServerBind, TcpBind, TcpClient};
+use pimalaya::time::pomodoro::{Client, Server, ServerBuilder, TcpBind, TcpClient};
 use serde::{Deserialize, Serialize};
 
 use crate::Config;
@@ -15,7 +15,21 @@ pub enum Protocol {
 }
 
 impl Protocol {
-    pub fn to_binders(config: &Config, protocols: Vec<Self>) -> Vec<Box<dyn ServerBind>> {
+    pub fn to_server(config: &Config, protocols: Vec<Self>) -> Server {
+        let mut server = ServerBuilder::new();
+
+        if let Some(duration) = config.durations.work_duration {
+            server = server.with_work_duration(duration);
+        }
+
+        if let Some(duration) = config.durations.short_break_duration {
+            server = server.with_short_break_duration(duration);
+        }
+
+        if let Some(duration) = config.durations.long_break_duration {
+            server = server.with_long_break_duration(duration);
+        }
+
         let protocols = if protocols.is_empty() {
             vec![
                 #[cfg(feature = "tcp-binder")]
@@ -25,20 +39,31 @@ impl Protocol {
             protocols
         };
 
-        protocols
-            .iter()
-            .filter_map(|protocol| match protocol {
+        for protocol in protocols {
+            match protocol {
                 #[cfg(feature = "tcp-binder")]
                 Protocol::Tcp => {
                     if let Some(ref config) = config.tcp {
-                        Some(TcpBind::new(&config.host, config.port))
-                    } else {
-                        None
+                        server = server.with_binder(TcpBind::new(&config.host, config.port));
+
+                        if let Some(duration) = config.durations.work_duration {
+                            server = server.with_work_duration(duration);
+                        }
+
+                        if let Some(duration) = config.durations.short_break_duration {
+                            server = server.with_short_break_duration(duration);
+                        }
+
+                        if let Some(duration) = config.durations.long_break_duration {
+                            server = server.with_long_break_duration(duration);
+                        }
                     }
                 }
-                Protocol::None => None,
-            })
-            .collect()
+                Protocol::None => (),
+            }
+        }
+
+        server.build()
     }
 
     pub fn to_client(&self, config: &Config) -> Result<Box<dyn Client>> {

@@ -51,8 +51,8 @@ fn main() -> Result<()> {
     // check server commands
     match server::args::matches(&m)? {
         Some(server::args::Cmd::Start(protocols)) => {
-            let binders = Protocol::to_binders(&config, protocols);
-            return server::handlers::start(binders);
+            let server = Protocol::to_server(&config, protocols);
+            return server::handlers::start(server);
         }
         _ => (),
     }

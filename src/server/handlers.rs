@@ -1,7 +1,7 @@
 use anyhow::Result;
-use pimalaya::time::pomodoro::{Server, ServerBind};
+use pimalaya::time::pomodoro::Server;
 
-pub fn start(binders: Vec<Box<dyn ServerBind>>) -> Result<()> {
-    Server::new(binders).bind()?;
+pub fn start(server: Server) -> Result<()> {
+    server.bind()?;
     Ok(())
 }

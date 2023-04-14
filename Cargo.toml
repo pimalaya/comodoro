@@ -30,6 +30,6 @@ dialoguer = "0.10.3"
 dirs = "5.0.0"
 env_logger = "0.10.0"
 log = "0.4.17"
-pimalaya = { version = "0.0.1", default-features = false, features = ["pomodoro"] }
+pimalaya = { version = "0.0.3", default-features = false, features = ["pomodoro"] }
 serde = "1.0.159"
 toml = "0.7.3"

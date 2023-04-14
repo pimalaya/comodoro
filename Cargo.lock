@@ -524,9 +524,9 @@ checksum = "b7e5500299e16ebb147ae15a00a942af264cf3688f47923b8fc2cd5858f23ad3"
 
 [[package]]
 name = "pimalaya"
-version = "0.0.1"
+version = "0.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6bc8f63f0b974c2d26eae6b61c99e2402360d4a7a8c11552168302539b1cacfe"
+checksum = "48bdaf98a5177fac4f207302fe6ba1177e803bdbb53f5f1f08a8ceaf244c69fb"
 dependencies = [
  "log",
  "serde",
