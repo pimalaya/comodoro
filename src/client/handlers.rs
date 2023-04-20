@@ -1,5 +1,5 @@
 use anyhow::Result;
-use pimalaya::time::pomodoro::{Client, TimerCycle, TimerState};
+use pimalaya_pomodoro::{Client, TimerCycle, TimerState};
 
 pub fn start(client: &dyn Client) -> Result<()> {
     client.start()?;

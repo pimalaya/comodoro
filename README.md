@@ -1,18 +1,22 @@
-# 🍅 [Comodoro](https://pimalaya.org/comodoro/docs/) [![Crates.io](https://img.shields.io/crates/v/comodoro)](https://crates.io/crates/comodoro) [![Matrix](https://img.shields.io/matrix/pimalaya.comodoro:matrix.org?color=success&label=chat)](https://matrix.to/#/#pimalaya.comodoro:matrix.org)
+# 🍅 Comodoro [![Crates.io](https://img.shields.io/crates/v/comodoro)](https://crates.io/crates/comodoro) [![Matrix](https://img.shields.io/matrix/pimalaya.comodoro:matrix.org?color=success&label=chat)](https://matrix.to/#/#pimalaya.comodoro:matrix.org)
 
-CLI for managing your time using the
+https://pimalaya.org/comodoro/
+
+CLI to manage your time using the
 [Pomodoro](https://en.wikipedia.org/wiki/Pomodoro_Technique)
-technique, based on the [pimalaya](https://sr.ht/~soywod/pimalaya/)
-library.
+technique, based on the
+[pimalaya-pomodoro](https://sr.ht/~soywod/pimalaya/) library.
 
 *Disclaimer: the project is under active development, do not use in
 production before the `v1.0.0`.*
 
 ## Features
 
-- Multi clients controlling the same centralized timer
-- Multi protocols (TCP, UDP, Socket, custom etc)
+- Centralized server timer controllable by multiple clients at the
+  same time
+- Multi protocols (only TCP for now, but you can build your own)
 - Work and break durations customizable via config file
+- Server and timer hooks customizable via config file
 - …
 
 ## Installation
@@ -35,7 +39,7 @@ $ nix-env -i comodoro
 ```
 
 *See the
-[documentation](https://pimalaya.org/comodoro/docs/cli/installation.html)
+[documentation](https://pimalaya.org/comodoro/cli/installation.html)
 for other installation methods.*
 
 </td>
@@ -45,13 +49,12 @@ for other installation methods.*
 ## Configuration
 
 Please read the
-[documentation](https://pimalaya.org/comodoro/docs/cli/configuration.html).
+[documentation](https://pimalaya.org/comodoro/cli/configuration.html).
 
 ## Contributing
 
 If you find a **bug** that [does not exist
-yet](https://todo.sr.ht/~soywod/pimalaya?search=status%3Aopen%20label%3A%222%3Acomodoro%22),
-please send an email at
+yet](https://todo.sr.ht/~soywod/pimalaya), please send an email at
 [~soywod/pimalaya@todo.sr.ht](mailto:~soywod/pimalaya@todo.sr.ht).
 
 If you have a **question**, please send an email at

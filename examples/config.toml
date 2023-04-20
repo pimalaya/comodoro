@@ -1,0 +1,9 @@
+work-duration = 1500
+short-break-duration = 300
+long-break-duration = 900
+
+timer-started-hook = "notify-send '🍅 Pomodoro' 'Timer started!'"
+
+[tcp]
+host = "localhost"
+port = 9999

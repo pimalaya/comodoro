@@ -181,7 +181,7 @@ dependencies = [
  "dirs",
  "env_logger",
  "log",
- "pimalaya",
+ "pimalaya-pomodoro",
  "serde",
  "toml",
 ]
@@ -523,10 +523,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b7e5500299e16ebb147ae15a00a942af264cf3688f47923b8fc2cd5858f23ad3"
 
 [[package]]
-name = "pimalaya"
+name = "pimalaya-pomodoro"
 version = "0.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "48bdaf98a5177fac4f207302fe6ba1177e803bdbb53f5f1f08a8ceaf244c69fb"
+checksum = "21a5ed5866c5842c207e4f60a24252aca7774b47ad5bc38a94b1f648c858ac47"
 dependencies = [
  "log",
  "serde",

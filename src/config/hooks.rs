@@ -1,12 +1,10 @@
 use log::{debug, warn};
-use pimalaya::time::pomodoro::{ServerBuilder, ServerEvent, TimerCycle, TimerEvent};
+use pimalaya_pomodoro::{ServerBuilder, ServerEvent, TimerCycle, TimerEvent};
 use serde::{Deserialize, Serialize};
 use std::{
     env, io,
     process::{Command, Stdio},
 };
-
-use crate::Config;
 
 #[derive(Clone, Debug, Default, Eq, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
@@ -98,141 +96,8 @@ impl HooksConfig {
         Ok(())
     }
 
-    pub fn merge_with(mut self, config: &Config) -> Self {
-        self.server_started_hook = self
-            .server_started_hook
-            .or_else(|| config.hooks.server_started_hook.clone());
-        self.server_stopping_hook = self
-            .server_stopping_hook
-            .or_else(|| config.hooks.server_stopping_hook.clone());
-        self.server_stopped_hook = self
-            .server_stopped_hook
-            .or_else(|| config.hooks.server_stopped_hook.clone());
-
-        self.timer_started_hook = self
-            .timer_started_hook
-            .or_else(|| config.hooks.timer_started_hook.clone());
-        self.timer_stopped_hook = self
-            .timer_stopped_hook
-            .or_else(|| config.hooks.timer_stopped_hook.clone());
-
-        self.work_began_hook = self
-            .work_began_hook
-            .or_else(|| config.hooks.work_began_hook.clone());
-        self.work_running_hook = self
-            .work_running_hook
-            .or_else(|| config.hooks.work_running_hook.clone());
-        self.work_paused_hook = self
-            .work_paused_hook
-            .or_else(|| config.hooks.work_paused_hook.clone());
-        self.work_resumed_hook = self
-            .work_resumed_hook
-            .or_else(|| config.hooks.work_resumed_hook.clone());
-        self.work_ended_hook = self
-            .work_ended_hook
-            .or_else(|| config.hooks.work_ended_hook.clone());
-
-        self.first_work_began_hook = self
-            .first_work_began_hook
-            .or_else(|| config.hooks.first_work_began_hook.clone());
-        self.first_work_running_hook = self
-            .first_work_running_hook
-            .or_else(|| config.hooks.first_work_running_hook.clone());
-        self.first_work_paused_hook = self
-            .first_work_paused_hook
-            .or_else(|| config.hooks.first_work_paused_hook.clone());
-        self.first_work_resumed_hook = self
-            .first_work_resumed_hook
-            .or_else(|| config.hooks.first_work_resumed_hook.clone());
-        self.first_work_ended_hook = self
-            .first_work_ended_hook
-            .or_else(|| config.hooks.first_work_ended_hook.clone());
-
-        self.second_work_began_hook = self
-            .second_work_began_hook
-            .or_else(|| config.hooks.second_work_began_hook.clone());
-        self.second_work_running_hook = self
-            .second_work_running_hook
-            .or_else(|| config.hooks.second_work_running_hook.clone());
-        self.second_work_paused_hook = self
-            .second_work_paused_hook
-            .or_else(|| config.hooks.second_work_paused_hook.clone());
-        self.second_work_resumed_hook = self
-            .second_work_resumed_hook
-            .or_else(|| config.hooks.second_work_resumed_hook.clone());
-        self.second_work_ended_hook = self
-            .second_work_ended_hook
-            .or_else(|| config.hooks.second_work_ended_hook.clone());
-
-        self.short_break_began_hook = self
-            .short_break_began_hook
-            .or_else(|| config.hooks.short_break_began_hook.clone());
-        self.short_break_running_hook = self
-            .short_break_running_hook
-            .or_else(|| config.hooks.short_break_running_hook.clone());
-        self.short_break_paused_hook = self
-            .short_break_paused_hook
-            .or_else(|| config.hooks.short_break_paused_hook.clone());
-        self.short_break_resumed_hook = self
-            .short_break_resumed_hook
-            .or_else(|| config.hooks.short_break_resumed_hook.clone());
-        self.short_break_ended_hook = self
-            .short_break_ended_hook
-            .or_else(|| config.hooks.short_break_ended_hook.clone());
-
-        self.first_short_break_began_hook = self
-            .first_short_break_began_hook
-            .or_else(|| config.hooks.first_short_break_began_hook.clone());
-        self.first_short_break_running_hook = self
-            .first_short_break_running_hook
-            .or_else(|| config.hooks.first_short_break_running_hook.clone());
-        self.first_short_break_paused_hook = self
-            .first_short_break_paused_hook
-            .or_else(|| config.hooks.first_short_break_paused_hook.clone());
-        self.first_short_break_resumed_hook = self
-            .first_short_break_resumed_hook
-            .or_else(|| config.hooks.first_short_break_resumed_hook.clone());
-        self.first_short_break_ended_hook = self
-            .first_short_break_ended_hook
-            .or_else(|| config.hooks.first_short_break_ended_hook.clone());
-
-        self.second_short_break_began_hook = self
-            .second_short_break_began_hook
-            .or_else(|| config.hooks.second_short_break_began_hook.clone());
-        self.second_short_break_running_hook = self
-            .second_short_break_running_hook
-            .or_else(|| config.hooks.second_short_break_running_hook.clone());
-        self.second_short_break_paused_hook = self
-            .second_short_break_paused_hook
-            .or_else(|| config.hooks.second_short_break_paused_hook.clone());
-        self.second_short_break_resumed_hook = self
-            .second_short_break_resumed_hook
-            .or_else(|| config.hooks.second_short_break_resumed_hook.clone());
-        self.second_short_break_ended_hook = self
-            .second_short_break_ended_hook
-            .or_else(|| config.hooks.second_short_break_ended_hook.clone());
-
-        self.long_break_began_hook = self
-            .long_break_began_hook
-            .or_else(|| config.hooks.long_break_began_hook.clone());
-        self.long_break_running_hook = self
-            .long_break_running_hook
-            .or_else(|| config.hooks.long_break_running_hook.clone());
-        self.long_break_paused_hook = self
-            .long_break_paused_hook
-            .or_else(|| config.hooks.long_break_paused_hook.clone());
-        self.long_break_resumed_hook = self
-            .long_break_resumed_hook
-            .or_else(|| config.hooks.long_break_resumed_hook.clone());
-        self.long_break_ended_hook = self
-            .long_break_ended_hook
-            .or_else(|| config.hooks.long_break_ended_hook.clone());
-
-        self
-    }
-
-    pub fn apply(&self, config: &Config, server: ServerBuilder) -> ServerBuilder {
-        let config = self.clone().merge_with(config);
+    pub fn apply(&self, server: ServerBuilder) -> ServerBuilder {
+        let config = self.clone();
 
         server
             .with_server_handler(move |event: ServerEvent| match event {

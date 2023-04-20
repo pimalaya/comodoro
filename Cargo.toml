@@ -1,14 +1,14 @@
 [package]
 name = "comodoro"
-description = "CLI for managing your time using the Pomodoro technique, based on the pimalaya library."
+description = "CLI to manage your time using the Pomodoro technique."
 version = "0.0.4"
 authors = ["soywod <clement.douin@posteo.net>"]
 edition = "2021"
 license = "MIT"
 categories = ["command-line-utilities", "network-programming"]
 keywords = ["cli", "pomodoro", "pim", "client", "time"]
-homepage = "https://pimalaya.org/comodoro/docs/"
-documentation = "https://pimalaya.org/comodoro/docs/"
+homepage = "https://pimalaya.org/comodoro/"
+documentation = "https://pimalaya.org/comodoro/"
 repository = "https://github.com/soywod/comodoro"
 
 [package.metadata.docs.rs]
@@ -17,8 +17,8 @@ all-features = true
 [features]
 default = ["tcp"]
 
-tcp-client = ["pimalaya/pomodoro-tcp-client"]
-tcp-binder = ["pimalaya/pomodoro-tcp-binder"]
+tcp-client = ["pimalaya-pomodoro/tcp-client"]
+tcp-binder = ["pimalaya-pomodoro/tcp-binder"]
 tcp = ["tcp-client", "tcp-binder"]
 
 [dev-dependencies]
@@ -33,6 +33,6 @@ dialoguer = "0.10.3"
 dirs = "5.0.0"
 env_logger = "0.10.0"
 log = "0.4.17"
-pimalaya = { version = "0.0.3", features = ["pomodoro"] }
+pimalaya-pomodoro = "0.0.3"
 serde = "1.0.159"
 toml = "0.7.3"

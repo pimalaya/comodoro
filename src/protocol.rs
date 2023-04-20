@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
 use clap::{builder::PossibleValue, ValueEnum};
-use pimalaya::time::pomodoro::{Client, Server, ServerBuilder, TcpBind, TcpClient};
+use pimalaya_pomodoro::{Client, Server, ServerBuilder, TcpBind, TcpClient};
 use serde::{Deserialize, Serialize};
 
 use crate::Config;
@@ -18,6 +18,9 @@ impl Protocol {
     pub fn to_server(config: &Config, protocols: Vec<Self>) -> Server {
         let mut server = ServerBuilder::new();
 
+        server = config.durations.apply(server);
+        server = config.hooks.apply(server);
+
         let protocols = if protocols.is_empty() {
             vec![
                 #[cfg(feature = "tcp-binder")]
@@ -34,8 +37,6 @@ impl Protocol {
                     if let Some(ref tcp_config) = config.tcp {
                         let binder = TcpBind::new(&tcp_config.host, tcp_config.port);
                         server = server.with_binder(binder);
-                        server = tcp_config.durations.apply(config, server);
-                        server = tcp_config.hooks.apply(config, server);
                     }
                 }
                 Protocol::None => (),
