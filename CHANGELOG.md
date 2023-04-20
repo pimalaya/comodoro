@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.5] - 2023-04-20
+
+### Changed
+
+- Replaced `pimalaya` by `pimalaya-pomodoro`.
+
+### Removed
+
+- Removed durations and hooks from `TcpConfig`, since they conflicted
+  with the ones from the main config.
+
 ## [0.0.4] - 2023-04-14
 
 ### Fixed
