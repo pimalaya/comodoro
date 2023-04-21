@@ -1,7 +1,7 @@
 [package]
 name = "comodoro"
 description = "CLI to manage your time using the Pomodoro technique."
-version = "0.0.5"
+version = "0.0.6"
 authors = ["soywod <clement.douin@posteo.net>"]
 edition = "2021"
 license = "MIT"
