@@ -63,7 +63,8 @@ jobs:
           nix run .#${{ matrix.target }} completion powershell > ./completions/comodoro.powershell
           nix run .#${{ matrix.target }} completion zsh > ./completions/comodoro.zsh
           tar -czf comodoro.tar.gz comodoro* man completions
-      - name: Upload release asset
+          zip -r comodoro.zip comodoro* man completions
+      - name: Upload tar.gz release asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -72,6 +73,15 @@ jobs:
           asset_path: comodoro.tar.gz
           asset_name: comodoro-${{ matrix.target }}.tar.gz
           asset_content_type: application/gzip
+      - name: Upload zip release asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create_release.outputs.upload_url }}
+          asset_path: comodoro.zip
+          asset_name: comodoro-${{ matrix.target }}.zip
+          asset_content_type: application/zip
 
   deploy_crates:
     runs-on: ubuntu-latest
@@ -85,10 +95,6 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable
           extra_nix_config: |
             experimental-features = nix-command flakes
-      - uses: cachix/cachix-action@v12
-        with:
-          name: soywod
-          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
       - name: Publish library to crates.io
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
