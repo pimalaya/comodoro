@@ -2,7 +2,12 @@ work-duration = 1500
 short-break-duration = 300
 long-break-duration = 900
 
+server-started-hook  = "notify-send '🍅 Pomodoro' 'Server started!'"
+server-stopping-hook = "notify-send '🍅 Pomodoro' 'Server stopping…'"
+server-stopped-hook  = "notify-send '🍅 Pomodoro' 'Server stopped!'"
+
 timer-started-hook = "notify-send '🍅 Pomodoro' 'Timer started!'"
+timer-stopped-hook = "notify-send '🍅 Pomodoro' 'Timer stopped!'"
 
 [tcp]
 host = "localhost"
