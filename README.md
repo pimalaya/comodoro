@@ -1,11 +1,9 @@
-# 🍅 Comodoro [![Crates.io](https://img.shields.io/crates/v/comodoro)](https://crates.io/crates/comodoro) [![Matrix](https://img.shields.io/matrix/pimalaya.comodoro:matrix.org?color=success&label=chat)](https://matrix.to/#/#pimalaya.comodoro:matrix.org)
+# ⏳ Comodoro [![Crates.io](https://img.shields.io/crates/v/comodoro)](https://crates.io/crates/comodoro) [![Matrix](https://img.shields.io/matrix/pimalaya.comodoro:matrix.org?color=success&label=chat)](https://matrix.to/#/#pimalaya.comodoro:matrix.org)
 
 https://pimalaya.org/comodoro/
 
-CLI to manage your time using the
-[Pomodoro](https://en.wikipedia.org/wiki/Pomodoro_Technique)
-technique, based on the
-[pimalaya-pomodoro](https://sr.ht/~soywod/pimalaya/) library.
+CLI to manage your time, based on the
+[pimalaya-time](https://sr.ht/~soywod/pimalaya/) library.
 
 *Disclaimer: the project is under active development, do not use in
 production before the `v1.0.0`.*
@@ -15,7 +13,7 @@ production before the `v1.0.0`.*
 - Centralized server timer controllable by multiple clients at the
   same time
 - Multi protocols (only TCP for now, but you can build your own)
-- Work and break durations customizable via config file
+- Cycles customizable via config file (Pomodoro style, 52/17 style, custom)
 - Server and timer hooks customizable via config file
 - …
 
@@ -79,14 +77,6 @@ If you want to **discuss** about the project, feel free to join the
 [#pimalaya.comodoro](https://matrix.to/#/#pimalaya.comodoro:matrix.org)
 or contact me directly
 [@soywod](https://matrix.to/#/@soywod:matrix.org).
-
-## Credits
-
-- [Francesco Cirillo](https://francescocirillo.com/), the creator of
-  the Pomodoro technique
-- [Wikipedia](https://en.wikipedia.org/wiki/Pomodoro_Technique)
-- [pomodoro-technique.fr](http://www.pomodoro-technique.fr/)
-- [pymodoro](https://github.com/rogeralmeida/pymodoro), a python CLI
 
 ## Sponsoring
 

@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added option `preset` to get preconfigured timer. Available options: `pomodoro`, `52/17`.
+
+### Changed
+
+- Changed the aim of the project. The timer is not Pomodoro-specific anymore, it became generic (which allows you to turn it into a Pomodoro timer, or whatever).
+- Changed hooks name from `timer-started-hook` to `on-timer-start` and so on.
+
 ## [0.0.7] - 2023-04-24
 
 ### Added
@@ -27,8 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-- Removed durations and hooks from `TcpConfig`, since they conflicted
-  with the ones from the main config.
+- Removed durations and hooks from `TcpConfig`, since they conflicted with the ones from the main config.
 
 ## [0.0.4] - 2023-04-14
 
@@ -40,9 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Added hooks support (check
-  https://docs.rs/comodoro/0.0.3/comodoro/config/struct.HooksConfig.html
-  for the list of available hooks).
+- Added hooks support (check https://docs.rs/comodoro/0.0.3/comodoro/config/struct.HooksConfig.html for the list of available hooks).
 
 ### Changed
 
@@ -52,8 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Rewrote the project in Rust, using the
-  [Pimalaya](https://git.sr.ht/~soywod/pimalaya) library.
+- Rewrote the project in Rust, using the [Pimalaya](https://git.sr.ht/~soywod/pimalaya) library.
 
 ## [0.0.1] - 2020-12-15
 
