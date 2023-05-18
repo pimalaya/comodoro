@@ -51,8 +51,9 @@ fn main() -> Result<()> {
 
     // check server commands
     match server::args::matches(&m)? {
-        Some(server::args::Cmd::Start(protocols)) => {
-            let server = Protocol::to_server(&config, protocols);
+        Some(server::args::Cmd::Start(preset, protocols)) => {
+            let preset = config.get_preset(preset)?;
+            let server = Protocol::to_server(&preset, protocols)?;
             return server::handlers::start(server);
         }
         _ => (),
@@ -60,24 +61,29 @@ fn main() -> Result<()> {
 
     // checks client commands
     match client::args::matches(&m)? {
-        Some(client::args::Cmd::Start(protocol)) => {
-            let client = protocol.to_client(&config)?;
+        Some(client::args::Cmd::Start(preset, protocol)) => {
+            let preset = config.get_preset(preset)?;
+            let client = protocol.to_client(&preset)?;
             return client::handlers::start(client.as_ref());
         }
-        Some(client::args::Cmd::Get(protocol)) => {
-            let client = protocol.to_client(&config)?;
+        Some(client::args::Cmd::Get(preset, protocol)) => {
+            let preset = config.get_preset(preset)?;
+            let client = protocol.to_client(&preset)?;
             return client::handlers::get(client.as_ref());
         }
-        Some(client::args::Cmd::Pause(protocol)) => {
-            let client = protocol.to_client(&config)?;
+        Some(client::args::Cmd::Pause(preset, protocol)) => {
+            let preset = config.get_preset(preset)?;
+            let client = protocol.to_client(&preset)?;
             return client::handlers::pause(client.as_ref());
         }
-        Some(client::args::Cmd::Resume(protocol)) => {
-            let client = protocol.to_client(&config)?;
+        Some(client::args::Cmd::Resume(preset, protocol)) => {
+            let preset = config.get_preset(preset)?;
+            let client = protocol.to_client(&preset)?;
             return client::handlers::resume(client.as_ref());
         }
-        Some(client::args::Cmd::Stop(protocol)) => {
-            let client = protocol.to_client(&config)?;
+        Some(client::args::Cmd::Stop(preset, protocol)) => {
+            let preset = config.get_preset(preset)?;
+            let client = protocol.to_client(&preset)?;
             return client::handlers::stop(client.as_ref());
         }
         _ => (),

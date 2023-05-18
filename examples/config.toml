@@ -1,14 +1,14 @@
-work-duration = 1500
-short-break-duration = 300
-long-break-duration = 900
+[pomodoro]
+preset = "pomodoro"
 
-server-started-hook  = "notify-send '🍅 Pomodoro' 'Server started!'"
-server-stopping-hook = "notify-send '🍅 Pomodoro' 'Server stopping…'"
-server-stopped-hook  = "notify-send '🍅 Pomodoro' 'Server stopped!'"
+tcp-host = "localhost"
+tcp-port = 9999
 
-timer-started-hook = "notify-send '🍅 Pomodoro' 'Timer started!'"
-timer-stopped-hook = "notify-send '🍅 Pomodoro' 'Timer stopped!'"
+on-server-start  = "notify-send '🍅 Pomodoro' 'Server started!'"
+on-server-stopping = "notify-send '🍅 Pomodoro' 'Server stopping…'"
+on-server-stop  = "notify-send '🍅 Pomodoro' 'Server stopped!'"
 
-[tcp]
-host = "localhost"
-port = 9999
+on-timer-start = "notify-send '🍅 Pomodoro' 'Timer started!'"
+on-timer-stop = "notify-send '🍅 Pomodoro' 'Timer stopped!'"
+
+on-work-pause = "notify-send '🍅 Pomodoro' 'Timer paused!'"

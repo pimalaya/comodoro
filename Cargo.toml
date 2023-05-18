@@ -1,6 +1,6 @@
 [package]
 name = "comodoro"
-description = "CLI to manage your time using the Pomodoro technique."
+description = "CLI to manage your time."
 version = "0.0.7"
 authors = ["soywod <clement.douin@posteo.net>"]
 edition = "2021"
@@ -17,11 +17,12 @@ all-features = true
 [features]
 default = ["tcp"]
 
-tcp-client = ["pimalaya-pomodoro/tcp-client"]
-tcp-binder = ["pimalaya-pomodoro/tcp-binder"]
+tcp-client = ["pimalaya-time/tcp-client"]
+tcp-binder = ["pimalaya-time/tcp-binder"]
 tcp = ["tcp-client", "tcp-binder"]
 
 [dev-dependencies]
+tempfile = "3.3"
 
 [dependencies]
 anyhow = "1.0.70"
@@ -29,10 +30,12 @@ chrono = "0.4.24"
 clap = "4.2.1"
 clap_complete = "4.2.0"
 clap_mangen = "0.2.10"
+convert_case = "0.6.0"
 dialoguer = "0.10.3"
 dirs = "5.0.0"
 env_logger = "0.10.0"
 log = "0.4.17"
-pimalaya-pomodoro = "0.0.3"
+pimalaya-process = "0.0.1"
+pimalaya-time = "0.0.1"
 serde = "1.0.159"
 toml = "0.7.3"

@@ -177,12 +177,15 @@ dependencies = [
  "clap",
  "clap_complete",
  "clap_mangen",
+ "convert_case",
  "dialoguer",
  "dirs",
  "env_logger",
  "log",
- "pimalaya-pomodoro",
+ "pimalaya-process",
+ "pimalaya-time",
  "serde",
+ "tempfile",
  "toml",
 ]
 
@@ -212,6 +215,15 @@ dependencies = [
  "libc",
  "unicode-width",
  "windows-sys 0.42.0",
+]
+
+[[package]]
+name = "convert_case"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ec182b0ca2f35d8fc196cf3404988fd8b8c739a4d270ff118a398feb0cbec1ca"
+dependencies = [
+ "unicode-segmentation",
 ]
 
 [[package]]
@@ -523,10 +535,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b7e5500299e16ebb147ae15a00a942af264cf3688f47923b8fc2cd5858f23ad3"
 
 [[package]]
-name = "pimalaya-pomodoro"
-version = "0.0.3"
+name = "pimalaya-process"
+version = "0.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "21a5ed5866c5842c207e4f60a24252aca7774b47ad5bc38a94b1f648c858ac47"
+checksum = "a0da782387c071cc53be9bae23f178ba247f2cd2a5d39ab6ba56072adff0e6d4"
+dependencies = [
+ "log",
+ "thiserror",
+]
+
+[[package]]
+name = "pimalaya-time"
+version = "0.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "75939a3dbf79a7fd4a639651b3bc659ff35b8d043adfe2de4ea318f93f9d3eac"
 dependencies = [
  "log",
  "serde",
@@ -795,6 +817,12 @@ name = "unicode-ident"
 version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6ceab39d59e4c9499d4e5a8ee0e2735b891bb7308ac83dfb4e80cad195c9f6f3"
+
+[[package]]
+name = "unicode-segmentation"
+version = "1.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1dd624098567895118886609431a7c3b8f516e41d30e0643f03d94592a147e36"
 
 [[package]]
 name = "unicode-width"

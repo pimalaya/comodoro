@@ -1,5 +1,5 @@
 {
-  description = "CLI to manage your time using the Pomodoro technique.";
+  description = "CLI to manage your time.";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";

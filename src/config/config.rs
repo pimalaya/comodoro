@@ -7,23 +7,17 @@ use anyhow::{anyhow, Context, Result};
 use dirs::{config_dir, home_dir};
 use log::{debug, trace};
 use serde::{Deserialize, Serialize};
-use std::{fs, path::PathBuf};
+use std::{collections::HashMap, fs, path::PathBuf};
 use toml;
 
-#[cfg(any(feature = "tcp-client", feature = "tcp-binder"))]
-use super::TcpConfig;
-use super::{DurationsConfig, HooksConfig};
+use crate::PresetConfig;
 
 /// Represents the user config file.
 #[derive(Clone, Debug, Default, Eq, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct Config {
     #[serde(flatten)]
-    pub durations: DurationsConfig,
-    #[serde(flatten)]
-    pub hooks: HooksConfig,
-    #[cfg(any(feature = "tcp-client", feature = "tcp-binder"))]
-    pub tcp: Option<TcpConfig>,
+    pub presets: HashMap<String, PresetConfig>,
 }
 
 impl Config {
@@ -41,6 +35,22 @@ impl Config {
 
         trace!("config: {:#?}", config);
         Ok(config)
+    }
+
+    /// Finds the preset configuration associated to the given
+    /// name. If no preset found, returns an error.
+    pub fn get_preset(&self, name: &str) -> Result<PresetConfig> {
+        self.presets
+            .iter()
+            .find_map(|preset| {
+                if preset.0 == name {
+                    Some(preset.1)
+                } else {
+                    None
+                }
+            })
+            .cloned()
+            .ok_or_else(|| anyhow!("cannot find preset {name}"))
     }
 
     /// Tries to return a config path from a few default settings.
@@ -61,5 +71,149 @@ impl Config {
             .filter(|p| p.exists())
             .or_else(|| home_dir().map(|p| p.join(".comodororc")))
             .filter(|p| p.exists())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use anyhow::Result;
+    use pimalaya_time::TimerCycle;
+    use std::{collections::HashMap, io::prelude::*};
+    use tempfile::NamedTempFile;
+
+    use crate::{Config, PresetConfig, PresetKind, PresetKindOrCyclesConfig};
+
+    fn make_config(config: &str) -> Result<Config> {
+        let mut file = NamedTempFile::new().unwrap();
+        write!(file, "{}", config).unwrap();
+        Config::from_opt_path(file.into_temp_path().to_str())
+    }
+
+    #[test]
+    fn empty_config() {
+        let config = make_config("");
+        assert_eq!(config.unwrap(), Config::default());
+    }
+
+    #[test]
+    fn empty_preset_config() {
+        let config = make_config("[preset-1]");
+
+        assert!(config
+            .unwrap_err()
+            .root_cause()
+            .to_string()
+            .contains("no variant of enum PresetKindOrCyclesConfig found in flattened data"));
+    }
+
+    #[test]
+    fn pomodoro_preset_config() {
+        let config = make_config(
+            "[preset-1]
+            preset = \"pomodoro\"",
+        );
+
+        assert_eq!(
+            config.unwrap(),
+            Config {
+                presets: HashMap::from_iter([(
+                    String::from("preset-1"),
+                    PresetConfig {
+                        preset_or_cycles: PresetKindOrCyclesConfig::Preset(
+                            PresetKind::PresetPomodoro
+                        ),
+                        tcp: None,
+                        hooks: HashMap::default(),
+                    }
+                )])
+            }
+        );
+    }
+
+    #[test]
+    fn _52_17_preset_config() {
+        let config = make_config(
+            "[preset-1]
+            preset = \"52/17\"",
+        );
+
+        assert_eq!(
+            config.unwrap(),
+            Config {
+                presets: HashMap::from_iter([(
+                    String::from("preset-1"),
+                    PresetConfig {
+                        preset_or_cycles: PresetKindOrCyclesConfig::Preset(PresetKind::Preset52_17),
+                        tcp: None,
+                        hooks: HashMap::default(),
+                    }
+                )])
+            }
+        );
+    }
+
+    #[test]
+    fn cycles_preset_config() {
+        let config = make_config(
+            "[preset-1]
+
+            [[preset-1.cycles]]
+            name = \"work\"
+            duration = 10
+
+            [[preset-1.cycles]]
+            name = \"rest\"
+            duration = 5",
+        );
+
+        assert_eq!(
+            config.unwrap(),
+            Config {
+                presets: HashMap::from_iter([(
+                    String::from("preset-1"),
+                    PresetConfig {
+                        preset_or_cycles: PresetKindOrCyclesConfig::Cycles(vec![
+                            TimerCycle::new("work", 10),
+                            TimerCycle::new("rest", 5)
+                        ]),
+                        tcp: None,
+                        // FIXME: preset is also captured by hooks, serde bug?
+                        hooks: HashMap::default(),
+                    }
+                )])
+            }
+        );
+    }
+
+    #[test]
+    fn hooks_preset_config() {
+        let config = make_config(
+            "[preset-1]
+            on-timer-start = \"hook-1\"
+            on-server-stop = \"hook-2\"
+
+            [[preset-1.cycles]]
+            name = \"timer\"
+            duration = 10",
+        );
+
+        assert_eq!(
+            config.unwrap(),
+            Config {
+                presets: HashMap::from_iter([(
+                    String::from("preset-1"),
+                    PresetConfig {
+                        preset_or_cycles: PresetKindOrCyclesConfig::Cycles(vec![TimerCycle::new(
+                            "timer", 10
+                        )]),
+                        tcp: None,
+                        hooks: HashMap::from_iter([
+                            (String::from("on-timer-start"), String::from("hook-1")),
+                            (String::from("on-server-stop"), String::from("hook-2"))
+                        ]),
+                    }
+                )])
+            }
+        );
     }
 }
