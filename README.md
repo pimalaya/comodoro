@@ -37,7 +37,7 @@ $ nix-env -i comodoro
 ```
 
 *See the
-[documentation](https://pimalaya.org/comodoro/cli/installation.html)
+[documentation](https://pimalaya.org/comodoro/cli/installation/index.html)
 for other installation methods.*
 
 </td>
@@ -47,7 +47,7 @@ for other installation methods.*
 ## Configuration
 
 Please read the
-[documentation](https://pimalaya.org/comodoro/cli/configuration.html).
+[documentation](https://pimalaya.org/comodoro/cli/configuration/index.html).
 
 ## Contributing
 
