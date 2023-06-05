@@ -2,7 +2,7 @@
   description = "CLI to manage your time.";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-22.11";
     flake-utils.url = "github:numtide/flake-utils";
     gitignore = {
       url = "github:hercules-ci/gitignore.nix";
@@ -16,31 +16,22 @@
       url = "github:nix-community/naersk";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    flake-compat = {
+      url = "github:edolstra/flake-compat";
+      flake = false;
+    };
   };
 
-  outputs = { self, nixpkgs, flake-utils, gitignore, fenix, naersk }:
+  outputs = { self, nixpkgs, flake-utils, gitignore, fenix, naersk, ... }:
     let
       inherit (gitignore.lib) gitignoreSource;
 
-      mkToolchain = buildPlatform:
-        fenix.packages.${buildPlatform}.minimal.toolchain;
-
-      mkToolchainWithTarget = buildPlatform: targetPlatform:
-        with fenix.packages.${buildPlatform}; combine [
-          minimal.rustc
-          minimal.cargo
-          targets.${targetPlatform}.latest.rust-std
-        ];
+      mkToolchain = import ./rust-toolchain.nix fenix;
 
       mkDevShells = buildPlatform:
         let
           pkgs = import nixpkgs { system = buildPlatform; };
-          toolchain = fenix.packages.${buildPlatform}.default.withComponents [
-            "cargo"
-            "clippy"
-            "rustc"
-            "rustfmt"
-          ];
+          rust-toolchain = mkToolchain.fromFile { system = buildPlatform; };
         in
         {
           default = pkgs.mkShell {
@@ -50,18 +41,16 @@
               nixpkgs-fmt
 
               # Rust env
-              toolchain
-              rust-analyzer
+              rust-toolchain
             ];
           };
         };
 
       mkPackage = pkgs: buildPlatform: targetPlatform: package:
         let
-          toolchain =
-            if isNull targetPlatform
-            then mkToolchain buildPlatform
-            else mkToolchainWithTarget buildPlatform targetPlatform;
+          toolchain = mkToolchain.fromTarget {
+            inherit pkgs buildPlatform targetPlatform;
+          };
           naersk' = naersk.lib.${buildPlatform}.override {
             cargo = toolchain;
             rustc = toolchain;
