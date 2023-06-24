@@ -7,11 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.9] - 2023-06-24
+
 ### Added
 
 - Added preset option `preset` to get preconfigured timer. Available options: `pomodoro`, `52/17`.
 - Added preset option `cycles-count` to control how the timer loops. `0` means infinite, whereas any integer makes the timer stop automatically after n loops.
 - Added preset option `timer-precision` to customize the timer format. Available options: `second`, `minute` (default), `hour`.
+
+## [0.0.8] - 2023-05-18
 
 ### Changed
 
@@ -79,7 +83,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed OS specific `tmp` and `xdg` dirs [#3].
 - Fixed missing CI artifacts from releases [#6].
 
-[Unreleased]: https://github.com/soywod/comodoro/compare/v0.0.6...master
+[Unreleased]: https://github.com/soywod/comodoro/compare/v0.0.8...master
+[0.0.8]: https://github.com/soywod/comodoro/compare/v0.0.7...v0.0.8
+[0.0.7]: https://github.com/soywod/comodoro/compare/v0.0.6...v0.0.7
 [0.0.6]: https://github.com/soywod/comodoro/compare/v0.0.5...v0.0.6
 [0.0.5]: https://github.com/soywod/comodoro/compare/v0.0.4...v0.0.5
 [0.0.4]: https://github.com/soywod/comodoro/compare/v0.0.3...v0.0.4
