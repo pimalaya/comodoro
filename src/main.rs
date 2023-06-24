@@ -69,7 +69,7 @@ fn main() -> Result<()> {
         Some(client::args::Cmd::Get(preset, protocol)) => {
             let preset = config.get_preset(preset)?;
             let client = protocol.to_client(&preset)?;
-            return client::handlers::get(client.as_ref());
+            return client::handlers::get(&preset, client.as_ref());
         }
         Some(client::args::Cmd::Pause(preset, protocol)) => {
             let preset = config.get_preset(preset)?;

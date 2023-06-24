@@ -5,7 +5,7 @@
 
 use anyhow::{anyhow, Context, Result};
 use dirs::{config_dir, home_dir};
-use log::{debug, trace};
+use log::debug;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fs, path::PathBuf};
 use toml;
@@ -33,7 +33,7 @@ impl Config {
             None => return Err(anyhow!("cannot find config file")),
         };
 
-        trace!("config: {:#?}", config);
+        debug!("comodoro config: {:#?}", config);
         Ok(config)
     }
 
@@ -42,9 +42,9 @@ impl Config {
     pub fn get_preset(&self, name: &str) -> Result<PresetConfig> {
         self.presets
             .iter()
-            .find_map(|preset| {
-                if preset.0 == name {
-                    Some(preset.1)
+            .find_map(|(preset_name, preset)| {
+                if preset_name == name {
+                    Some(preset)
                 } else {
                     None
                 }
@@ -124,8 +124,11 @@ mod tests {
                         ),
                         tcp: None,
                         hooks: HashMap::default(),
+                        cycles_count: Default::default(),
+                        timer_precision: Default::default(),
                     }
-                )])
+                )]),
+                ..Default::default()
             }
         );
     }
@@ -146,8 +149,11 @@ mod tests {
                         preset_or_cycles: PresetKindOrCyclesConfig::Preset(PresetKind::Preset52_17),
                         tcp: None,
                         hooks: HashMap::default(),
+                        cycles_count: Default::default(),
+                        timer_precision: Default::default(),
                     }
-                )])
+                )]),
+                ..Default::default()
             }
         );
     }
@@ -179,8 +185,11 @@ mod tests {
                         tcp: None,
                         // FIXME: preset is also captured by hooks, serde bug?
                         hooks: HashMap::default(),
+                        cycles_count: Default::default(),
+                        timer_precision: Default::default(),
                     }
-                )])
+                )]),
+                ..Default::default()
             }
         );
     }
@@ -211,8 +220,11 @@ mod tests {
                             (String::from("on-timer-start"), String::from("hook-1")),
                             (String::from("on-server-stop"), String::from("hook-2"))
                         ]),
+                        cycles_count: Default::default(),
+                        timer_precision: Default::default(),
                     }
-                )])
+                )]),
+                ..Default::default()
             }
         );
     }

@@ -1,12 +1,14 @@
 use anyhow::Result;
 use pimalaya_time::{Client, TimerState};
 
+use crate::{PresetConfig, TimerPrecision};
+
 pub fn start(client: &dyn Client) -> Result<()> {
     client.start()?;
     Ok(())
 }
 
-pub fn get(client: &dyn Client) -> Result<()> {
+pub fn get(preset: &PresetConfig, client: &dyn Client) -> Result<()> {
     let timer = client.get()?;
     let cycle = &timer.cycle.name;
 
@@ -16,7 +18,30 @@ pub fn get(client: &dyn Client) -> Result<()> {
         TimerState::Running if timer.cycle.duration < 60 => {
             println!("[{cycle}] {}s", timer.cycle.duration)
         }
-        TimerState::Running => println!("[{cycle}] {}min", timer.cycle.duration / 60),
+        TimerState::Running if timer.cycle.duration < 3600 => match preset.timer_precision {
+            TimerPrecision::Second => println!(
+                "[{cycle}] {}min {}s",
+                timer.cycle.duration / 60,
+                timer.cycle.duration % 60
+            ),
+            TimerPrecision::Minute | TimerPrecision::Hour => {
+                println!("[{cycle}] {}min", timer.cycle.duration / 60,)
+            }
+        },
+        TimerState::Running => match preset.timer_precision {
+            TimerPrecision::Second => println!(
+                "[{cycle}] {}h {}min {}s",
+                timer.cycle.duration / 3600,
+                (timer.cycle.duration % 3600) / 60,
+                (timer.cycle.duration % 3600) % 60,
+            ),
+            TimerPrecision::Minute => println!(
+                "[{cycle}] {}h {}min",
+                timer.cycle.duration / 3600,
+                (timer.cycle.duration % 3600) / 60,
+            ),
+            TimerPrecision::Hour => println!("[{cycle}] {}h", timer.cycle.duration / 3600),
+        },
     };
 
     Ok(())

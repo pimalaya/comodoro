@@ -19,7 +19,7 @@ pub enum Protocol {
 
 impl Protocol {
     pub fn to_server(config: &PresetConfig, protocols: Vec<&Protocol>) -> Result<Server> {
-        let mut server = ServerBuilder::new();
+        let mut server = ServerBuilder::new().with_cycles_count(config.cycles_count);
 
         match &config.preset_or_cycles {
             PresetKindOrCyclesConfig::Preset(PresetKind::PresetPomodoro) => {

@@ -9,7 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Added option `preset` to get preconfigured timer. Available options: `pomodoro`, `52/17`.
+- Added preset option `preset` to get preconfigured timer. Available options: `pomodoro`, `52/17`.
+- Added preset option `cycles-count` to control how the timer loops. `0` means infinite, whereas any integer makes the timer stop automatically after n loops.
+- Added preset option `timer-precision` to customize the timer format. Available options: `second`, `minute` (default), `hour`.
 
 ### Changed
 

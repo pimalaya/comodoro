@@ -16,6 +16,28 @@ pub struct PresetConfig {
     pub tcp: Option<TcpConfig>,
     #[serde(flatten)]
     pub hooks: HashMap<String, String>,
+    #[serde(default)]
+    pub cycles_count: usize,
+    #[serde(default)]
+    pub timer_precision: TimerPrecision,
+}
+
+#[derive(Clone, Debug, Default, Eq, PartialEq, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum TimerPrecision {
+    #[serde(alias = "seconds")]
+    #[serde(alias = "sec")]
+    #[serde(alias = "s")]
+    Second,
+    #[default]
+    #[serde(alias = "minutes")]
+    #[serde(alias = "mins")]
+    #[serde(alias = "min")]
+    #[serde(alias = "m")]
+    Minute,
+    #[serde(alias = "hours")]
+    #[serde(alias = "h")]
+    Hour,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
