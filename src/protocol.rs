@@ -1,10 +1,11 @@
 use anyhow::{anyhow, Result};
 use clap::{builder::PossibleValue, ValueEnum};
 use convert_case::{Case, Casing};
-use pimalaya_process::Cmd;
-use pimalaya_time::{Client, Server, ServerBuilder, ServerEvent, TcpBind, TcpClient, TimerEvent};
+use process::Cmd;
 use serde::{Deserialize, Serialize};
 use std::io;
+use time::{Client, Server, ServerBuilder, ServerEvent, TcpBind, TcpClient, TimerEvent};
+use tokio::runtime::Handle;
 
 use crate::{PresetConfig, PresetKind, PresetKindOrCyclesConfig};
 
@@ -42,11 +43,13 @@ impl Protocol {
             };
 
             if let Some(cmd) = hooks.get(&hook_name) {
-                Cmd::from(cmd.as_str()).run().map_err(|err| {
-                    io::Error::new(
-                        io::ErrorKind::NotFound,
-                        format!("cannot execute server hook {hook_name}: {err}"),
-                    )
+                Handle::current().block_on(async move {
+                    Cmd::from(cmd.as_str()).run().await.map_err(|err| {
+                        io::Error::new(
+                            io::ErrorKind::NotFound,
+                            format!("cannot execute server hook {hook_name}: {err}"),
+                        )
+                    })
                 })?;
             }
 
@@ -75,11 +78,13 @@ impl Protocol {
             };
 
             if let Some(cmd) = hooks.get(&hook_name) {
-                Cmd::from(cmd.as_str()).run().map_err(|err| {
-                    io::Error::new(
-                        io::ErrorKind::NotFound,
-                        format!("cannot execute timer hook {hook_name}: {err}"),
-                    )
+                Handle::current().block_on(async move {
+                    Cmd::from(cmd.as_str()).run().await.map_err(|err| {
+                        io::Error::new(
+                            io::ErrorKind::NotFound,
+                            format!("cannot execute server hook {hook_name}: {err}"),
+                        )
+                    })
                 })?;
             }
 

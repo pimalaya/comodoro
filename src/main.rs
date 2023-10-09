@@ -23,7 +23,8 @@ fn create_app() -> Command {
 }
 
 #[allow(clippy::single_match)]
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let default_env_filter = env_logger::DEFAULT_FILTER_ENV;
     env_logger::init_from_env(env_logger::Env::default().filter_or(default_env_filter, "off"));
 

@@ -1,6 +1,6 @@
-use pimalaya_time::TimerCycle;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use time::TimerCycle;
 
 #[cfg(any(feature = "tcp-client", feature = "tcp-binder"))]
 use crate::TcpConfig;

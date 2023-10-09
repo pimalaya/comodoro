@@ -77,9 +77,9 @@ impl Config {
 #[cfg(test)]
 mod tests {
     use anyhow::Result;
-    use pimalaya_time::TimerCycle;
     use std::{collections::HashMap, io::prelude::*};
     use tempfile::NamedTempFile;
+    use time::TimerCycle;
 
     use crate::{Config, PresetConfig, PresetKind, PresetKindOrCyclesConfig};
 

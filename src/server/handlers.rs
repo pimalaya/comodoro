@@ -1,5 +1,5 @@
 use anyhow::Result;
-use pimalaya_time::Server;
+use time::Server;
 
 pub fn start(server: Server) -> Result<()> {
     server.bind()?;

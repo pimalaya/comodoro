@@ -1,5 +1,5 @@
 use anyhow::Result;
-use pimalaya_time::{Client, TimerState};
+use time::{Client, TimerState};
 
 use crate::{PresetConfig, TimerPrecision};
 

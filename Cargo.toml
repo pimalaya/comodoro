@@ -1,6 +1,6 @@
 [package]
 name = "comodoro"
-description = "CLI to manage your time."
+description = "CLI to manage timers."
 version = "0.0.9"
 authors = ["soywod <clement.douin@posteo.net>"]
 edition = "2021"
@@ -13,29 +13,66 @@ repository = "https://github.com/soywod/comodoro"
 
 [package.metadata.docs.rs]
 all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
-default = ["tcp"]
-
-tcp-client = ["pimalaya-time/tcp-client"]
-tcp-binder = ["pimalaya-time/tcp-binder"]
+default = [
+  "tcp"
+]
+tcp-client = ["time-lib/tcp-client"]
+tcp-binder = ["time-lib/tcp-binder"]
 tcp = ["tcp-client", "tcp-binder"]
 
-[dev-dependencies]
-tempfile = "3.3"
+# dev dependencies
 
-[dependencies]
-anyhow = "1.0.70"
-chrono = "0.4.24"
-clap = "4.2.1"
-clap_complete = "4.2.0"
-clap_mangen = "0.2.10"
-convert_case = "0.6.0"
-dialoguer = "0.10.3"
-dirs = "5.0.0"
-env_logger = "0.10.0"
-log = "0.4.17"
-pimalaya-process = "=0.0.2"
-pimalaya-time = "=0.0.2"
-serde = "1.0.159"
-toml = "0.7.3"
+[dev-dependencies.tempfile]
+version = "3.3"
+
+# dependencies
+
+[dependencies.anyhow]
+version = "1.0"
+
+[dependencies.chrono]
+version = "0.4"
+
+[dependencies.clap]
+version = "4.2"
+
+[dependencies.clap_complete]
+version = "4.2"
+
+[dependencies.clap_mangen]
+version = "0.2"
+
+[dependencies.convert_case]
+version = "0.6"
+
+[dependencies.dialoguer]
+version = "0.10"
+
+[dependencies.dirs]
+version = "5.0"
+
+[dependencies.env_logger]
+version = "0.10"
+
+[dependencies.log]
+version = "0.4"
+
+[dependencies.process-lib]
+version = "=0.1.0"
+
+[dependencies.time-lib]
+version = "=0.1.1"
+
+[dependencies.tokio]
+version = "1.33"
+default-features = false
+features = ["macros", "rt-multi-thread"]
+
+[dependencies.serde]
+version = "1.0"
+
+[dependencies.toml]
+version = "0.7"
