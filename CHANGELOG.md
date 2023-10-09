@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.10] - 2023-10-09
+
 ### Changed
 
 - Upgraded nixpkgs channel from `22.11` to `23.05`.
@@ -89,7 +91,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed OS specific `tmp` and `xdg` dirs [#3].
 - Fixed missing CI artifacts from releases [#6].
 
-[Unreleased]: https://github.com/soywod/comodoro/compare/v0.0.9...master
+[Unreleased]: https://github.com/soywod/comodoro/compare/v0.0.10...master
+[0.0.10]: https://github.com/soywod/comodoro/compare/v0.0.9...v0.0.10
 [0.0.9]: https://github.com/soywod/comodoro/compare/v0.0.8...v0.0.9
 [0.0.8]: https://github.com/soywod/comodoro/compare/v0.0.7...v0.0.8
 [0.0.7]: https://github.com/soywod/comodoro/compare/v0.0.6...v0.0.7
