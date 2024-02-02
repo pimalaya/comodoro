@@ -1,13 +1,22 @@
+pub mod arg;
+
 use anyhow::{anyhow, Result};
 use clap::{builder::PossibleValue, ValueEnum};
 use convert_case::{Case, Casing};
-use process::Cmd;
+use process::Command;
 use serde::{Deserialize, Serialize};
-use std::io;
-use time::{Client, Server, ServerBuilder, ServerEvent, TcpBind, TcpClient, TimerEvent};
-use tokio::runtime::Handle;
+use std::{io, sync::Arc};
+#[cfg(feature = "tcp-client")]
+use time::client::tcp::TcpClient;
+#[cfg(feature = "tcp-binder")]
+use time::server::tcp::TcpBind;
+use time::{
+    client::Client,
+    server::{Server, ServerBuilder, ServerEvent},
+    timer::TimerEvent,
+};
 
-use crate::{PresetConfig, PresetKind, PresetKindOrCyclesConfig};
+use crate::preset::config::{PresetConfig, PresetKind, PresetKindOrCyclesConfig};
 
 #[derive(Clone, Debug, Default, Eq, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
@@ -19,7 +28,10 @@ pub enum Protocol {
 }
 
 impl Protocol {
-    pub fn to_server(config: &PresetConfig, protocols: Vec<&Protocol>) -> Result<Server> {
+    pub async fn into_server(
+        config: Arc<PresetConfig>,
+        protocols: Vec<Protocol>,
+    ) -> Result<Server> {
         let mut server = ServerBuilder::new().with_cycles_count(config.cycles_count);
 
         match &config.preset_or_cycles {
@@ -34,7 +46,7 @@ impl Protocol {
             }
         }
 
-        let hooks = config.hooks.clone();
+        let config_clone = config.clone();
         server = server.with_server_handler(move |evt| {
             let hook_name = match evt {
                 ServerEvent::Started => String::from("on-server-start"),
@@ -42,21 +54,23 @@ impl Protocol {
                 ServerEvent::Stopped => String::from("on-server-stop"),
             };
 
-            if let Some(cmd) = hooks.get(&hook_name) {
-                Handle::current().block_on(async move {
-                    Cmd::from(cmd.as_str()).run().await.map_err(|err| {
+            let hook = config_clone.hooks.get(&hook_name).cloned();
+
+            async move {
+                if let Some(cmd) = hook {
+                    Command::from(cmd.as_str()).run().await.map_err(|err| {
                         io::Error::new(
                             io::ErrorKind::NotFound,
                             format!("cannot execute server hook {hook_name}: {err}"),
                         )
-                    })
-                })?;
-            }
+                    })?;
+                }
 
-            Ok(())
+                Ok(())
+            }
         });
 
-        let hooks = config.hooks.clone();
+        let config_clone = config.clone();
         server = server.with_timer_handler(move |evt| {
             let hook_name = match evt {
                 TimerEvent::Started => String::from("on-timer-start"),
@@ -77,24 +91,26 @@ impl Protocol {
                 TimerEvent::Stopped => String::from("on-timer-stop"),
             };
 
-            if let Some(cmd) = hooks.get(&hook_name) {
-                Handle::current().block_on(async move {
-                    Cmd::from(cmd.as_str()).run().await.map_err(|err| {
+            let hook = config_clone.hooks.get(&hook_name).cloned();
+
+            async move {
+                if let Some(cmd) = hook {
+                    Command::from(cmd.as_str()).run().await.map_err(|err| {
                         io::Error::new(
                             io::ErrorKind::NotFound,
                             format!("cannot execute server hook {hook_name}: {err}"),
                         )
-                    })
-                })?;
-            }
+                    })?;
+                }
 
-            Ok(())
+                Ok(())
+            }
         });
 
         let protocols = if protocols.is_empty() {
             vec![
                 #[cfg(feature = "tcp-binder")]
-                &Self::Tcp,
+                Self::Tcp,
             ]
         } else {
             protocols
@@ -134,7 +150,7 @@ impl Protocol {
 impl ValueEnum for Protocol {
     fn from_str(input: &str, ignore_case: bool) -> Result<Self, String> {
         match input {
-            #[cfg(any(feature = "tcp-binder", feature = "tcp-client"))]
+            #[cfg(feature = "tcp-any")]
             p if "tcp" == p || ignore_case && p.eq_ignore_ascii_case("tcp") => Ok(Self::Tcp),
             p => Err(format!("invalid protocol {p}")),
         }
@@ -142,14 +158,14 @@ impl ValueEnum for Protocol {
 
     fn value_variants<'a>() -> &'a [Self] {
         &[
-            #[cfg(any(feature = "tcp-binder", feature = "tcp-client"))]
+            #[cfg(feature = "tcp-any")]
             Self::Tcp,
         ]
     }
 
     fn to_possible_value(&self) -> Option<PossibleValue> {
         match self {
-            #[cfg(any(feature = "tcp-binder", feature = "tcp-client"))]
+            #[cfg(feature = "tcp-any")]
             Self::Tcp => Some(PossibleValue::new("tcp")),
             Self::None => None,
         }
@@ -159,7 +175,7 @@ impl ValueEnum for Protocol {
 impl ToString for Protocol {
     fn to_string(&self) -> String {
         match self {
-            #[cfg(any(feature = "tcp-binder", feature = "tcp-client"))]
+            #[cfg(feature = "tcp-any")]
             Self::Tcp => "tcp".into(),
             Self::None => "none".into(),
         }

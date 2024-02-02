@@ -2,7 +2,7 @@
 
 <https://pimalaya.org/comodoro/>
 
-CLI to manage timers, based on [time-lib](https://git.sr.ht/~soywod/pimalaya/tree/master/item/time/README.md).
+CLI to manage personal time, based on [time-lib](https://crates.io/crates/time-lib).
 
 ## Features
 
@@ -55,11 +55,15 @@ $ cargo build -p comodoro
 
 ## Contributing
 
-If you want to **report a bug** that [does not exist yet](https://todo.sr.ht/~soywod/pimalaya?search=status%3Aopen+label%3A%222%3Acomodoro%22), please send an email at [~soywod/pimalaya@todo.sr.ht](mailto:~soywod/pimalaya@todo.sr.ht).
+A **bug tracker** is available on [SourceHut](https://todo.sr.ht/~soywod/pimalaya). <sup>[[send an email](mailto:~soywod/pimalaya@todo.sr.ht)]</sup>
 
-If you want to **propose a feature** or **fix a bug**, please send a patch at [~soywod/pimalaya@lists.sr.ht](mailto:~soywod/pimalaya@lists.sr.ht) using [git send-email](https://git-scm.com/docs/git-send-email). Follow [this guide](https://git-send-email.io/) to configure git properly.
+A **mailing list** is available on [SourceHut](https://lists.sr.ht/~soywod/pimalaya). <sup>[[send an email](mailto:~soywod/pimalaya@lists.sr.ht)] [[subscribe](mailto:~soywod/pimalaya+subscribe@lists.sr.ht)] [[unsubscribe](mailto:~soywod/pimalaya+unsubscribe@lists.sr.ht)]</sup>
 
-If you just want to **discuss** about the project, feel free to join the [Matrix](https://matrix.org/) workspace [#pimalaya.comodoro](https://matrix.to/#/#pimalaya.comodoro:matrix.org) or contact me directly [@soywod](https://matrix.to/#/@soywod:matrix.org). You can also use the mailing list [[send an email](mailto:~soywod/pimalaya@lists.sr.ht)|[subscribe](mailto:~soywod/pimalaya+subscribe@lists.sr.ht)|[unsubscribe](mailto:~soywod/pimalaya+unsubscribe@lists.sr.ht)].
+If you want to **report a bug**, please send an email at [~soywod/pimalaya@todo.sr.ht](mailto:~soywod/pimalaya@todo.sr.ht).
+
+If you want to **propose a feature** or **fix a bug**, please send a patch at [~soywod/pimalaya@lists.sr.ht](mailto:~soywod/pimalaya@lists.sr.ht). The simplest way to send a patch is to use [git send-email](https://git-scm.com/docs/git-send-email), follow [this guide](https://git-send-email.io/) to configure git properly.
+
+If you just want to **discuss** about the project, feel free to join the [Matrix](https://matrix.org/) workspace [#pimalaya](https://matrix.to/#/#pimalaya:matrix.org) or contact me directly [@soywod](https://matrix.to/#/@soywod:matrix.org). You can also use the mailing list.
 
 ## Sponsoring
 
@@ -68,7 +72,7 @@ If you just want to **discuss** about the project, feel free to join the [Matrix
 Special thanks to the [NLnet foundation](https://nlnet.nl/project/Himalaya/index.html) and the [European Commission](https://www.ngi.eu/) that helped the project to receive financial support from:
 
 - [NGI Assure](https://nlnet.nl/assure/) in 2022
-- [NGI Zero Untrust](https://nlnet.nl/entrust/) in 2023
+- [NGI Zero Entrust](https://nlnet.nl/entrust/) in 2023
 
 If you appreciate the project, feel free to donate using one of the following providers:
 

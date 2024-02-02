@@ -1,7 +1,7 @@
 [package]
 name = "comodoro"
-description = "CLI to manage timers."
-version = "0.0.10"
+description = "CLI to manage personal time"
+version = "0.1.0"
 authors = ["soywod <clement.douin@posteo.net>"]
 edition = "2021"
 license = "MIT"
@@ -17,62 +17,39 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
 default = [
-  "tcp"
+  "client",
+  "server",
+  "tcp",
 ]
-tcp-client = ["time-lib/tcp-client"]
-tcp-binder = ["time-lib/tcp-binder"]
+
+client = ["time-lib/client"]
+server = ["time-lib/server"]
+
+tcp-any = []
+tcp-client = ["client", "tcp-any", "time-lib/tcp-client"]
+tcp-binder = ["server", "tcp-any", "time-lib/tcp-binder"]
 tcp = ["tcp-client", "tcp-binder"]
 
-# dev dependencies
+[dev-dependencies]
+tempfile = "3.3"
 
-[dev-dependencies.tempfile]
-version = "3.3"
+[dependencies]
+anyhow = "1"
+chrono = "0.4"
+clap = { version = "4.4", features = ["derive"] }
+clap_complete = "4.4"
+clap_mangen = "0.2"
+convert_case = "0.6"
+dialoguer = "0.10"
+dirs = "5"
+env_logger = "0.10"
+log = "0.4"
+process-lib = "=0.4.0"
+serde = "1"
+shellexpand-utils = "=0.2.0"
+time-lib = { version = "=0.2.0", default-features = false }
+tokio = { version = "1.33", default-features = false, features = ["macros", "rt-multi-thread"] }
+toml = "0.7"
 
-# dependencies
-
-[dependencies.anyhow]
-version = "1.0"
-
-[dependencies.chrono]
-version = "0.4"
-
-[dependencies.clap]
-version = "4.2"
-
-[dependencies.clap_complete]
-version = "4.2"
-
-[dependencies.clap_mangen]
-version = "0.2"
-
-[dependencies.convert_case]
-version = "0.6"
-
-[dependencies.dialoguer]
-version = "0.10"
-
-[dependencies.dirs]
-version = "5.0"
-
-[dependencies.env_logger]
-version = "0.10"
-
-[dependencies.log]
-version = "0.4"
-
-[dependencies.process-lib]
-version = "=0.1.0"
-
-[dependencies.time-lib]
-version = "=0.1.1"
-
-[dependencies.tokio]
-version = "1.33"
-default-features = false
-features = ["macros", "rt-multi-thread"]
-
-[dependencies.serde]
-version = "1.0"
-
-[dependencies.toml]
-version = "0.7"
+[target.'cfg(not(windows))'.dependencies]
+coredump = "0.1"

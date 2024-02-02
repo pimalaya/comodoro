@@ -1,9 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use time::TimerCycle;
-
-#[cfg(any(feature = "tcp-client", feature = "tcp-binder"))]
-use crate::TcpConfig;
+#[cfg(feature = "tcp-any")]
+use time::tcp::TcpConfig;
+use time::timer::TimerCycle;
 
 /// Represents the user config file.
 #[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
@@ -11,7 +10,7 @@ use crate::TcpConfig;
 pub struct PresetConfig {
     #[serde(flatten)]
     pub preset_or_cycles: PresetKindOrCyclesConfig,
-    #[cfg(any(feature = "tcp-client", feature = "tcp-binder"))]
+    #[cfg(feature = "tcp-any")]
     #[serde(flatten)]
     pub tcp: Option<TcpConfig>,
     #[serde(flatten)]

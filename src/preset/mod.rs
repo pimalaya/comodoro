@@ -1,4 +1,2 @@
-pub mod args;
-mod config;
-
-pub use config::*;
+pub mod arg;
+pub mod config;
