@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::Parser;
-use comodoro::{cli::Cli, config::TomlConfig};
+use comodoro::cli::Cli;
 use env_logger::{Builder as LoggerBuilder, Env, DEFAULT_FILTER_ENV};
 use log::{debug, warn};
 
@@ -18,9 +18,6 @@ async fn main() -> Result<()> {
         .init();
 
     let cli = Cli::parse();
-    let config = TomlConfig::from_some_path_or_default(cli.config_path.as_ref()).await?;
 
-    cli.command.execute(&config).await?;
-
-    Ok(())
+    cli.command.execute(cli.config_path.as_ref()).await
 }

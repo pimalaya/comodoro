@@ -53,12 +53,18 @@ pub enum ComodoroCommand {
 }
 
 impl ComodoroCommand {
-    pub async fn execute(self, config: &TomlConfig) -> Result<()> {
+    pub async fn execute(self, config_path: Option<&PathBuf>) -> Result<()> {
         match self {
             #[cfg(feature = "client")]
-            Self::Timer(cmd) => cmd.execute(config).await,
+            Self::Timer(cmd) => {
+                let config = TomlConfig::from_some_path_or_default(config_path).await?;
+                cmd.execute(&config).await
+            }
             #[cfg(feature = "server")]
-            Self::Server(cmd) => cmd.execute(config).await,
+            Self::Server(cmd) => {
+                let config = TomlConfig::from_some_path_or_default(config_path).await?;
+                cmd.execute(&config).await
+            }
             Self::Manual(cmd) => cmd.execute().await,
             Self::Completion(cmd) => cmd.execute().await,
         }
