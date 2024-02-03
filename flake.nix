@@ -68,17 +68,22 @@
       mkPackages = buildPlatform:
         let
           pkgs = import nixpkgs { system = buildPlatform; };
-          defaultPackage = mkPackage pkgs buildPlatform null { };
-          mkPackageWithTarget = mkPackage pkgs buildPlatform;
+          mkPackage' = mkPackage pkgs buildPlatform;
         in
-        {
-          default = defaultPackage;
-          linux = defaultPackage;
-          macos = defaultPackage;
-          musl = mkPackageWithTarget "x86_64-unknown-linux-musl" {
+        rec {
+          default = if pkgs.stdenv.isDarwin then macos else linux;
+          linux = mkPackage' null { };
+          linux-musl = mkPackage' "x86_64-unknown-linux-musl" {
             CARGO_BUILD_RUSTFLAGS = "-C target-feature=+crt-static";
           };
-          windows = mkPackageWithTarget "x86_64-pc-windows-gnu" {
+          macos = mkPackage' null (with pkgs.darwin.apple_sdk.frameworks; {
+            # NOTE: needed to prevent error Undefined symbols
+            # "_OBJC_CLASS_$_NSImage" and
+            # "_LSCopyApplicationURLsForBundleIdentifier"
+            NIX_LDFLAGS = "-F${AppKit}/Library/Frameworks -framework AppKit";
+            buildInputs = [ Cocoa ];
+          });
+          windows = mkPackage' "x86_64-pc-windows-gnu" {
             strictDeps = true;
             depsBuildBuild = with pkgs.pkgsCross.mingwW64; [
               stdenv.cc
@@ -95,8 +100,8 @@
       mkApps = buildPlatform: {
         default = mkApp self.packages.${buildPlatform}.default;
         linux = mkApp self.packages.${buildPlatform}.linux;
+        linux-musl = mkApp self.packages.${buildPlatform}.linux-musl;
         macos = mkApp self.packages.${buildPlatform}.macos;
-        musl = mkApp self.packages.${buildPlatform}.musl;
         windows =
           let
             pkgs = import nixpkgs { system = buildPlatform; };
