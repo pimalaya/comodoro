@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added hook support for system notifications. A hook can now either execute a shell command, send a system notification or both.
+- Added cargo feature `hook-command` to enable hook based on shell commands (enabled by default).
+- Added cargo feature `hook-notify` to enable hook based on system notifications (enabled by default).
+- Added `config.sample.toml` at <https://github.com/soywod/comodoro/blob/master/config.sample.toml>.
+
+### Changed
+
+- Moved top-level commands related to client to the `timer` subcommand.
+- Improved configuration API:
+
+  | Before                  | After                              |
+  |-------------------------|------------------------------------|
+  | `[example]`             | `[presets.example]`                |
+  | `tcp-host`              | `tcp.host`                         |
+  | `tcp-port`              | `tcp.port`                         |
+  | `on-time-begin = "cmd"` | `hooks.on-timer-begin.cmd = "cmd"` |
+
+  The main purpose is to improve error diagnostic line numbers, see <https://github.com/toml-rs/toml/issues/589>.
+
 ## [0.0.10] - 2023-10-09
 
 ### Changed

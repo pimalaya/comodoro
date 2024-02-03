@@ -1,8 +1,6 @@
 # ⏳ Comodoro [![Crates.io](https://img.shields.io/crates/v/comodoro)](https://crates.io/crates/comodoro) [![Matrix](https://img.shields.io/matrix/pimalaya.comodoro:matrix.org?color=success&label=chat)](https://matrix.to/#/#pimalaya.comodoro:matrix.org)
 
-<https://pimalaya.org/comodoro/>
-
-CLI to manage personal time, based on [time-lib](https://crates.io/crates/time-lib).
+Welcome to [**Comodoro CLI**](https://pimalaya.org/comodoro/cli/latest/), the Command-Line Interface to manage your personal time based on [time-lib](https://crates.io/crates/time-lib).
 
 ## Features
 

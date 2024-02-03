@@ -1,3 +1,8 @@
+use log::debug;
+#[cfg(feature = "hook-notify")]
+use notify_rust::Notification;
+#[cfg(feature = "hook-command")]
+use process::Command;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 #[cfg(feature = "tcp-any")]
@@ -8,43 +13,115 @@ use time::timer::TimerCycle;
 #[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct PresetConfig {
-    #[serde(flatten)]
-    pub preset_or_cycles: PresetKindOrCyclesConfig,
+    pub preset: Option<PresetKind>,
+
+    #[serde(default)]
+    pub cycles: Vec<TimerCycle>,
+
     #[cfg(feature = "tcp-any")]
-    #[serde(flatten)]
     pub tcp: Option<TcpConfig>,
-    #[serde(flatten)]
-    pub hooks: HashMap<String, String>,
+
+    #[cfg(feature = "hook-any")]
+    pub hooks: HashMap<String, HookConfig>,
+
     #[serde(default)]
     pub cycles_count: usize,
+
     #[serde(default)]
     pub timer_precision: TimerPrecision,
+}
+
+#[cfg(feature = "hook-any")]
+#[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct HookConfig {
+    /// The hook based on shell commands.
+    #[cfg(feature = "hook-command")]
+    pub cmd: Option<Command>,
+
+    /// The hook based on system notifications.
+    #[cfg(feature = "hook-notify")]
+    pub notify: Option<NotifyConfig>,
+}
+
+#[cfg(feature = "hook-any")]
+impl HookConfig {
+    pub async fn exec(&self, name: &str) {
+        if let Some(cmd) = self.cmd.as_ref() {
+            let res = cmd.run().await;
+
+            if let Err(err) = res {
+                debug!("error while executing command for hook {name}");
+                debug!("{err:?}");
+            }
+        }
+
+        #[cfg(target_os = "linux")]
+        if let Some(notify) = self.notify.as_ref() {
+            let notif = Notification::new()
+                .summary(&notify.summary)
+                .body(&notify.body)
+                .show_async()
+                .await;
+
+            if let Err(err) = notif {
+                debug!("error while sending system notification for hook {name}");
+                debug!("{err:?}");
+            }
+        }
+
+        #[cfg(not(target_os = "linux"))]
+        if let Some(notify) = self.notify.as_ref() {
+            let summary = notify.summary.clone();
+            let body = notify.body.clone();
+
+            let res = tokio::task::spawn_blocking(move || {
+                Notification::new().summary(&summary).body(&body).show()
+            })
+            .await;
+
+            if let Err(err) = res {
+                debug!("cannot send notification for hook {name}");
+                debug!("{err:?}");
+            } else {
+                let notif = res.unwrap();
+
+                if let Err(err) = notif {
+                    debug!("error while sending system notification for hook {name}");
+                    debug!("{err:?}");
+                }
+            }
+        }
+    }
+}
+
+/// The configuration of the notify hook variant.
+///
+/// The structure tries to match the [`notify_rust::Notification`] API
+/// and may evolve in the future.
+#[cfg(feature = "hook-notify")]
+#[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct NotifyConfig {
+    /// The summary (or the title) of the notification.
+    pub summary: String,
+
+    /// The body of the notification.
+    pub body: String,
 }
 
 #[derive(Clone, Debug, Default, Eq, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum TimerPrecision {
-    #[serde(alias = "seconds")]
-    #[serde(alias = "sec")]
-    #[serde(alias = "s")]
+    #[serde(alias = "seconds", alias = "secs", alias = "sec", alias = "s")]
     Second,
-    #[default]
-    #[serde(alias = "minutes")]
-    #[serde(alias = "mins")]
-    #[serde(alias = "min")]
-    #[serde(alias = "m")]
-    Minute,
-    #[serde(alias = "hours")]
-    #[serde(alias = "h")]
-    Hour,
-}
 
-#[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
-pub enum PresetKindOrCyclesConfig {
-    #[serde(rename = "preset")]
-    Preset(PresetKind),
-    #[serde(rename = "cycles")]
-    Cycles(Vec<TimerCycle>),
+    #[default]
+    #[serde(alias = "minutes", alias = "mins", alias = "min", alias = "m")]
+    Minute,
+
+    #[serde(alias = "hours", alias = "h")]
+    Hour,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]

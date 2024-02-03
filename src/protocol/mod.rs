@@ -3,9 +3,8 @@ pub mod arg;
 use anyhow::{anyhow, Result};
 use clap::{builder::PossibleValue, ValueEnum};
 use convert_case::{Case, Casing};
-use process::Command;
 use serde::{Deserialize, Serialize};
-use std::{io, sync::Arc};
+use std::sync::Arc;
 #[cfg(feature = "tcp-client")]
 use time::client::tcp::TcpClient;
 #[cfg(feature = "tcp-binder")]
@@ -16,7 +15,7 @@ use time::{
     timer::TimerEvent,
 };
 
-use crate::preset::config::{PresetConfig, PresetKind, PresetKindOrCyclesConfig};
+use crate::preset::config::{PresetConfig, PresetKind};
 
 #[derive(Clone, Debug, Default, Eq, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
@@ -34,15 +33,15 @@ impl Protocol {
     ) -> Result<Server> {
         let mut server = ServerBuilder::new().with_cycles_count(config.cycles_count);
 
-        match &config.preset_or_cycles {
-            PresetKindOrCyclesConfig::Preset(PresetKind::PresetPomodoro) => {
+        match config.preset.as_ref() {
+            Some(PresetKind::PresetPomodoro) => {
                 server = server.with_pomodoro_config();
             }
-            PresetKindOrCyclesConfig::Preset(PresetKind::Preset52_17) => {
+            Some(PresetKind::Preset52_17) => {
                 server = server.with_52_17_config();
             }
-            PresetKindOrCyclesConfig::Cycles(cycles) => {
-                server = server.with_cycles(cycles.clone());
+            None => {
+                server = server.with_cycles(config.cycles.clone());
             }
         }
 
@@ -57,13 +56,8 @@ impl Protocol {
             let hook = config_clone.hooks.get(&hook_name).cloned();
 
             async move {
-                if let Some(cmd) = hook {
-                    Command::from(cmd.as_str()).run().await.map_err(|err| {
-                        io::Error::new(
-                            io::ErrorKind::NotFound,
-                            format!("cannot execute server hook {hook_name}: {err}"),
-                        )
-                    })?;
+                if let Some(hook) = hook {
+                    hook.exec(&hook_name).await;
                 }
 
                 Ok(())
@@ -94,13 +88,8 @@ impl Protocol {
             let hook = config_clone.hooks.get(&hook_name).cloned();
 
             async move {
-                if let Some(cmd) = hook {
-                    Command::from(cmd.as_str()).run().await.map_err(|err| {
-                        io::Error::new(
-                            io::ErrorKind::NotFound,
-                            format!("cannot execute server hook {hook_name}: {err}"),
-                        )
-                    })?;
+                if let Some(hook) = hook {
+                    hook.exec(&hook_name).await;
                 }
 
                 Ok(())
