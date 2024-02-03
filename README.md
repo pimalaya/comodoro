@@ -1,14 +1,14 @@
-# ⏳ Comodoro [![Crates.io](https://img.shields.io/crates/v/comodoro)](https://crates.io/crates/comodoro) [![Matrix](https://img.shields.io/matrix/pimalaya.comodoro:matrix.org?color=success&label=chat)](https://matrix.to/#/#pimalaya.comodoro:matrix.org)
+# ⏳ Comodoro [![GitHub release](https://img.shields.io/github/v/release/soywod/comodoro?color=success)](https://github.com/soywod/comodoro/releases/latest) [![Matrix](https://img.shields.io/matrix/pimalaya.comodoro:matrix.org?color=success&label=chat)](https://matrix.to/#/#pimalaya.comodoro:matrix.org)
 
 Welcome to [**Comodoro CLI**](https://pimalaya.org/comodoro/cli/latest/), the Command-Line Interface to manage your personal time based on [time-lib](https://crates.io/crates/time-lib).
 
 ## Features
 
 - Centralized server timer controllable by multiple clients at the same time
-- Multi protocols (only TCP for now, but you can build your own)
-- Cycles customizable via config file (Pomodoro style, 52/17 style, custom)
-- Server and timer hooks customizable via config file
-- …
+- Multi protocols (only [TCP](https://pimalaya.org/comodoro/cli/latest/configuration/protocols/tcp.html) for now, but you can build your own)
+- [Cycles](https://pimalaya.org/comodoro/cli/latest/configuration/cycles.html) customizable via config file (Pomodoro style, 52/17 style, custom)
+- Server and timer [hooks](https://pimalaya.org/comodoro/cli/latest/configuration/hooks.html) customizable via config file
+- …and more!
 
 ## Installation
 
@@ -29,7 +29,7 @@ $ cargo install comodoro
 $ nix-env -i comodoro
 ```
 
-*See the [documentation](https://pimalaya.org/comodoro/cli/installation/index.html) for other installation methods.*
+*See the [documentation](https://pimalaya.org/comodoro/cli/installation.html) for other installation methods.*
 
 </td>
 </tr>
@@ -37,21 +37,11 @@ $ nix-env -i comodoro
 
 ## Configuration
 
-Please read the [documentation](https://pimalaya.org/comodoro/cli/configuration/index.html).
-
-## Development
-
-The development environment is managed by [Nix](https://nixos.org/download.html). Running `nix-shell` will spawn a shell with everything you need to get started with the lib: `cargo`, `cargo-watch`, `rust-bin`, `rust-analyzer`…
-
-```sh
-# start a Nix shell
-$ nix-shell
-
-# then build the CLI
-$ cargo build -p comodoro
-```
+*Please read the [documentation](https://pimalaya.org/comodoro/cli/latest/configuration/).*
 
 ## Contributing
+
+*Please read the [contributing guide](https://github.com/soywod/comodoro/blob/master/CONTRIBUTING.md) for more detailed information.*
 
 A **bug tracker** is available on [SourceHut](https://todo.sr.ht/~soywod/pimalaya). <sup>[[send an email](mailto:~soywod/pimalaya@todo.sr.ht)]</sup>
 
@@ -61,7 +51,7 @@ If you want to **report a bug**, please send an email at [~soywod/pimalaya@todo.
 
 If you want to **propose a feature** or **fix a bug**, please send a patch at [~soywod/pimalaya@lists.sr.ht](mailto:~soywod/pimalaya@lists.sr.ht). The simplest way to send a patch is to use [git send-email](https://git-scm.com/docs/git-send-email), follow [this guide](https://git-send-email.io/) to configure git properly.
 
-If you just want to **discuss** about the project, feel free to join the [Matrix](https://matrix.org/) workspace [#pimalaya](https://matrix.to/#/#pimalaya:matrix.org) or contact me directly [@soywod](https://matrix.to/#/@soywod:matrix.org). You can also use the mailing list.
+If you just want to **discuss** about the project, feel free to join the [Matrix](https://matrix.org/) workspace [#pimalaya.comodoro](https://matrix.to/#/#pimalaya.comodor:matrix.org) or contact me directly [@soywod](https://matrix.to/#/@soywod:matrix.org). You can also use the mailing list.
 
 ## Sponsoring
 
