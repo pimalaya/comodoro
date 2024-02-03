@@ -1,7 +1,7 @@
 # A preset is a set of configuration identified by a name.
 [presets.example]
 
-# TCP config, used by server binders and by clients.
+# TCP configuration, used by server binders and by clients.
 # Requires the cargo feature "tcp".
 tcp.host = "localhost"
 tcp.port = 1234
