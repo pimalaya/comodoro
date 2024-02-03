@@ -42,6 +42,7 @@
 
               # Rust env
               rust-toolchain
+              cargo-watch
             ];
           };
         };
