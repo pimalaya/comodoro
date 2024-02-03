@@ -1534,9 +1534,9 @@ checksum = "ef927ca75afb808a4d64dd374f00a2adf8d0fcff8e7b184af886c3c87ec4a3f3"
 
 [[package]]
 name = "time-lib"
-version = "0.2.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c093ab4a9b030773cec0891873369ce7662c138853962fb3a58f54cc41c2592"
+checksum = "545cf1abbb689481722b7f7809cd25e07c8ce1f1a7e94760489428ed8ea9616f"
 dependencies = [
  "async-trait",
  "log",
