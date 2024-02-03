@@ -5,11 +5,11 @@ version = "0.1.0"
 authors = ["soywod <clement.douin@posteo.net>"]
 edition = "2021"
 license = "MIT"
-categories = ["command-line-utilities", "network-programming"]
-keywords = ["cli", "pomodoro", "pim", "client", "time"]
-homepage = "https://pimalaya.org/comodoro/"
-documentation = "https://pimalaya.org/comodoro/"
-repository = "https://github.com/soywod/comodoro"
+categories = ["command-line-interface", "command-line-utilities", "network-programming"]
+keywords = ["cli", "pomodoro", "timer", "client", "server"]
+homepage = "https://pimalaya.org/"
+documentation = "https://pimalaya.org/comodoro/cli/latest/"
+repository = "https://github.com/soywod/comodoro/"
 
 [package.metadata.docs.rs]
 all-features = true
