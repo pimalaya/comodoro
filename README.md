@@ -1,13 +1,13 @@
-# ⏳ Comodoro [![GitHub release](https://img.shields.io/github/v/release/soywod/comodoro?color=success)](https://github.com/soywod/comodoro/releases/latest) [![Matrix](https://img.shields.io/matrix/pimalaya.comodoro:matrix.org?color=success&label=chat)](https://matrix.to/#/#pimalaya.comodoro:matrix.org)
+# ⏳ Comodoro [![GitHub release](https://img.shields.io/github/v/release/soywod/comodoro?color=success)](https://github.com/soywod/comodoro/releases/latest) [![Matrix](https://img.shields.io/matrix/pimalaya:matrix.org?color=success&label=chat)](https://matrix.to/#/#pimalaya:matrix.org)
 
 Welcome to [**Comodoro CLI**](https://pimalaya.org/comodoro/cli/latest/), the Command-Line Interface to manage your personal time based on [time-lib](https://crates.io/crates/time-lib).
 
 ## Features
 
 - Centralized server timer controllable by multiple clients at the same time
-- Multi protocols (only [TCP](https://pimalaya.org/comodoro/cli/latest/configuration/protocols/tcp.html) for now, but you can build your own)
-- [Cycles](https://pimalaya.org/comodoro/cli/latest/configuration/cycles.html) customizable via config file (Pomodoro style, 52/17 style, custom)
-- Server and timer [hooks](https://pimalaya.org/comodoro/cli/latest/configuration/hooks.html) customizable via config file
+- Multi protocols (only TCP for now, but you can build your own)
+- Cycles customizable via config file (Pomodoro style, 52/17 style, custom)
+- Server and timer hooks customizable via config file
 - …and more!
 
 ## Installation
@@ -39,25 +39,11 @@ $ nix-env -i comodoro
 
 *Please read the [documentation](https://pimalaya.org/comodoro/cli/latest/configuration/).*
 
-## Contributing
-
-*Please read the [contributing guide](https://github.com/soywod/comodoro/blob/master/CONTRIBUTING.md) for more detailed information.*
-
-A **bug tracker** is available on [SourceHut](https://todo.sr.ht/~soywod/pimalaya). <sup>[[send an email](mailto:~soywod/pimalaya@todo.sr.ht)]</sup>
-
-A **mailing list** is available on [SourceHut](https://lists.sr.ht/~soywod/pimalaya). <sup>[[send an email](mailto:~soywod/pimalaya@lists.sr.ht)] [[subscribe](mailto:~soywod/pimalaya+subscribe@lists.sr.ht)] [[unsubscribe](mailto:~soywod/pimalaya+unsubscribe@lists.sr.ht)]</sup>
-
-If you want to **report a bug**, please send an email at [~soywod/pimalaya@todo.sr.ht](mailto:~soywod/pimalaya@todo.sr.ht).
-
-If you want to **propose a feature** or **fix a bug**, please send a patch at [~soywod/pimalaya@lists.sr.ht](mailto:~soywod/pimalaya@lists.sr.ht). The simplest way to send a patch is to use [git send-email](https://git-scm.com/docs/git-send-email), follow [this guide](https://git-send-email.io/) to configure git properly.
-
-If you just want to **discuss** about the project, feel free to join the [Matrix](https://matrix.org/) workspace [#pimalaya.comodoro](https://matrix.to/#/#pimalaya.comodor:matrix.org) or contact me directly [@soywod](https://matrix.to/#/@soywod:matrix.org). You can also use the mailing list.
-
 ## Sponsoring
 
-[![nlnet](https://nlnet.nl/logo/banner-160x60.png)](https://nlnet.nl/project/Himalaya/index.html)
+[![nlnet](https://nlnet.nl/logo/banner-160x60.png)](https://nlnet.nl/project/Pimalaya/index.html)
 
-Special thanks to the [NLnet foundation](https://nlnet.nl/project/Himalaya/index.html) and the [European Commission](https://www.ngi.eu/) that helped the project to receive financial support from:
+Special thanks to the [NLnet foundation](https://nlnet.nl/project/Pimalaya/index.html) and the [European Commission](https://www.ngi.eu/) that helped the project to receive financial support from:
 
 - [NGI Assure](https://nlnet.nl/assure/) in 2022
 - [NGI Zero Entrust](https://nlnet.nl/entrust/) in 2023
