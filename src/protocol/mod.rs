@@ -1,10 +1,11 @@
 pub mod arg;
 
-use anyhow::{anyhow, Result};
+use std::sync::Arc;
+
 use clap::{builder::PossibleValue, ValueEnum};
+use color_eyre::{eyre::bail, Result};
 use convert_case::{Case, Casing};
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
 #[cfg(feature = "tcp-client")]
 use time::client::tcp::TcpClient;
 #[cfg(feature = "tcp-binder")]
@@ -15,7 +16,7 @@ use time::{
     timer::TimerEvent,
 };
 
-use crate::preset::config::{PresetConfig, PresetKind};
+use crate::preset::config::{PresetKind, TomlPresetConfig};
 
 #[derive(Clone, Debug, Default, Eq, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
@@ -28,7 +29,7 @@ pub enum Protocol {
 
 impl Protocol {
     pub async fn into_server(
-        config: Arc<PresetConfig>,
+        config: Arc<TomlPresetConfig>,
         protocols: Vec<Protocol>,
     ) -> Result<Server> {
         let mut server = ServerBuilder::new().with_cycles_count(config.cycles_count);
@@ -121,17 +122,17 @@ impl Protocol {
         Ok(server.build()?)
     }
 
-    pub fn to_client(&self, config: &PresetConfig) -> Result<Box<dyn Client>> {
+    pub fn to_client(&self, config: &TomlPresetConfig) -> Result<Box<dyn Client>> {
         match self {
             #[cfg(feature = "tcp-client")]
             Self::Tcp => {
                 if let Some(ref config) = config.tcp {
-                    Ok(TcpClient::new(&config.host, config.port))
+                    Ok(TcpClient::new_boxed(&config.host, config.port))
                 } else {
-                    Err(anyhow!("cannot build tcp client: missing tcp config"))
+                    bail!("cannot build tcp client: missing tcp config")
                 }
             }
-            Self::None => Err(anyhow!("cannot build client: missing protocol")),
+            Self::None => bail!("cannot build client: missing protocol"),
         }
     }
 }
@@ -139,7 +140,7 @@ impl Protocol {
 impl ValueEnum for Protocol {
     fn from_str(input: &str, ignore_case: bool) -> Result<Self, String> {
         match input {
-            #[cfg(feature = "tcp-any")]
+            #[cfg(any(feature = "tcp-client", feature = "tcp-binder"))]
             p if "tcp" == p || ignore_case && p.eq_ignore_ascii_case("tcp") => Ok(Self::Tcp),
             p => Err(format!("invalid protocol {p}")),
         }
@@ -147,14 +148,14 @@ impl ValueEnum for Protocol {
 
     fn value_variants<'a>() -> &'a [Self] {
         &[
-            #[cfg(feature = "tcp-any")]
+            #[cfg(any(feature = "tcp-client", feature = "tcp-binder"))]
             Self::Tcp,
         ]
     }
 
     fn to_possible_value(&self) -> Option<PossibleValue> {
         match self {
-            #[cfg(feature = "tcp-any")]
+            #[cfg(any(feature = "tcp-client", feature = "tcp-binder"))]
             Self::Tcp => Some(PossibleValue::new("tcp")),
             Self::None => None,
         }
@@ -164,7 +165,7 @@ impl ValueEnum for Protocol {
 impl ToString for Protocol {
     fn to_string(&self) -> String {
         match self {
-            #[cfg(feature = "tcp-any")]
+            #[cfg(any(feature = "tcp-client", feature = "tcp-binder"))]
             Self::Tcp => "tcp".into(),
             Self::None => "none".into(),
         }

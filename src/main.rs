@@ -1,23 +1,21 @@
-use anyhow::Result;
 use clap::Parser;
+use color_eyre::eyre::Result;
 use comodoro::cli::Cli;
-use env_logger::{Builder as LoggerBuilder, Env, DEFAULT_FILTER_ENV};
-use log::{debug, warn};
+use pimalaya_tui::terminal::cli::{printer::StdoutPrinter, tracing};
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    #[cfg(not(target_os = "windows"))]
-    if let Err((_, err)) = coredump::register_panic_handler() {
-        warn!("cannot register coredump panic handler");
-        debug!("{err:?}");
-    }
+    let tracing = tracing::install()?;
 
-    LoggerBuilder::new()
-        .parse_env(Env::new().filter_or(DEFAULT_FILTER_ENV, "warn"))
-        .format_timestamp(None)
-        .init();
+    #[cfg(feature = "keyring")]
+    secret::keyring::set_global_service_name("neverest-cli");
 
     let cli = Cli::parse();
+    let mut printer = StdoutPrinter::new(cli.output);
+    let res = cli
+        .command
+        .execute(&mut printer, cli.config_paths.as_ref())
+        .await;
 
-    cli.command.execute(cli.config_path.as_ref()).await
+    tracing.with_debug_and_trace_notes(res)
 }

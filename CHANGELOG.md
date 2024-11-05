@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Bumped major dependencies.
+- Renamed cargo feature `hook-command` into `command`.
+- Renamed cargo feature `hook-notify` into `notify`.
+- Prefixed preset configs with `presets.`, see `./config.sample.toml`.
+
+### Removed
+
+- Removed `hooks` cargo features.
+
 ## [0.1.2] - 2024-02-03
 
 ### Fixed

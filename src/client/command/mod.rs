@@ -4,8 +4,9 @@ mod resume;
 mod start;
 mod stop;
 
-use anyhow::Result;
 use clap::Subcommand;
+use color_eyre::Result;
+use pimalaya_tui::terminal::cli::printer::Printer;
 
 use crate::config::TomlConfig;
 
@@ -37,10 +38,10 @@ pub enum TimerSubcommand {
 }
 
 impl TimerSubcommand {
-    pub async fn execute(self, config: &TomlConfig) -> Result<()> {
+    pub async fn execute(self, printer: &mut impl Printer, config: &TomlConfig) -> Result<()> {
         match self {
             Self::Start(cmd) => cmd.execute(config).await,
-            Self::Get(cmd) => cmd.execute(config).await,
+            Self::Get(cmd) => cmd.execute(printer, config).await,
             Self::Pause(cmd) => cmd.execute(config).await,
             Self::Resume(cmd) => cmd.execute(config).await,
             Self::Stop(cmd) => cmd.execute(config).await,

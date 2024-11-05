@@ -1,7 +1,7 @@
 mod start;
 
-use anyhow::Result;
 use clap::Subcommand;
+use color_eyre::Result;
 
 use crate::config::TomlConfig;
 

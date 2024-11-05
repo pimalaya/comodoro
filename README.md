@@ -1,52 +1,172 @@
-# ⏱️ Comodoro [![GitHub release](https://img.shields.io/github/v/release/soywod/comodoro?color=success)](https://github.com/soywod/comodoro/releases/latest) [![Matrix](https://img.shields.io/matrix/pimalaya:matrix.org?color=success&label=chat)](https://matrix.to/#/#pimalaya:matrix.org)
+# ⏱️ Comodoro [![GitHub release](https://img.shields.io/github/v/release/pimalaya/comodoro?color=success)](https://github.com/pimalaya/comodoro/releases/latest) [![Matrix](https://img.shields.io/matrix/pimalaya:matrix.org?color=success&label=chat)](https://matrix.to/#/#pimalaya:matrix.org)
 
 CLI to manage timers, based on [`time-lib`](https://crates.io/crates/time-lib)
 
 ## Features
 
 - Centralized server timer controllable by multiple clients at the same time
-- Multi protocols (only TCP for now, but you can build your own)
-- Cycles customizable via config file (Pomodoro style, 52/17 style, custom)
-- Server and timer hooks customizable via config file
-- …and more!
+- **Multi protocols** (only *TCP* for now, but you can build your own)
+- Cycles customizable via config file (**Pomodoro** style, **52/17** style, custom)
+- Server and timer hooks customizable via config file (send system notification or run shell command)
+
+*Comodoro CLI is written in [Rust](https://www.rust-lang.org/), and relies on [cargo features](https://doc.rust-lang.org/cargo/reference/features.html) to enable or disable functionalities. Default features can be found in the `features` section of the [`Cargo.toml`](https://github.com/pimalaya/comodoro/blob/master/Cargo.toml#L18).*
 
 ## Installation
 
-<table align="center">
-<tr>
-<td width="50%">
-<a href="https://repology.org/project/comodoro/versions">
-<img src="https://repology.org/badge/vertical-allrepos/comodoro.svg" alt="Packaging status" />
-</a>
-</td>
-<td width="50%">
+*The `v1.0.0` is currently being tested on the `master` branch, and is the prefered version to use. Previous versions (including GitHub beta releases and repositories published versions) are not recommended.*
+
+### Pre-built binary
+
+Comodoro CLI `v1.0.0` can be installed with a pre-built binary. Find the latest [`pre-release`](https://github.com/pimalaya/comodoro/actions/workflows/pre-release.yml) GitHub workflow and look for the *Artifacts* section. You should find a pre-built binary matching your OS.
+
+### Cargo (git)
+
+Comodoro CLI `v1.0.0` can also be installed with [cargo](https://doc.rust-lang.org/cargo/):
 
 ```bash
-# Cargo
-$ cargo install comodoro
-
-# Nix
-$ nix-env -i comodoro
+$ cargo install --git https://github.com/pimalaya/comodoro.git --force comodoro
 ```
 
-*See the [documentation](https://pimalaya.org/comodoro/cli/installation.html) for other installation methods.*
+### Other outdated methods
 
-</td>
-</tr>
-</table>
+These installation methods should not be used until the `v1.0.0` is finally released, as they are all (temporarily) outdated:
+
+<details>
+  <summary>Pre-built binary</summary>
+
+  Comodoro CLI can be installed with a prebuilt binary:
+
+  ```bash
+  # As root:
+  $ curl -sSL https://raw.githubusercontent.com/pimalaya/comodoro/master/install.sh | sudo sh
+
+  # As a regular user:
+  $ curl -sSL https://raw.githubusercontent.com/pimalaya/comodoro/master/install.sh | PREFIX=~/.local sh
+  ```
+
+  These commands install the latest binary from the GitHub [releases](https://github.com/pimalaya/comodoro/releases) section.
+
+  *Binaries are built with [default](https://github.com/pimalaya/comodoro/blob/master/Cargo.toml#L18) cargo features. If you want to enable or disable a feature, please use another installation method.*
+</details>
+
+<details>
+  <summary>Cargo</summary>
+
+  Comodoro CLI can be installed with [cargo](https://doc.rust-lang.org/cargo/):
+
+  ```bash
+  $ cargo install comodoro
+
+  # With only IMAP support:
+  $ cargo install comodoro --no-default-features --features imap
+  ```
+
+  You can also use the git repository for a more up-to-date (but less stable) version:
+
+  ```bash
+  $ cargo install --git https://github.com/pimalaya/comodoro.git comodoro
+  ```
+</details>
+
+<details>
+  <summary>Nix</summary>
+
+  Comodoro CLI can be installed with [Nix](https://serokell.io/blog/what-is-nix):
+
+  ```bash
+  $ nix-env -i comodoro
+  ```
+
+  You can also use the git repository for a more up-to-date (but less stable) version:
+
+  ```bash
+  $ nix-env -if https://github.com/pimalaya/comodoro/archive/master.tar.gz
+
+  # or, from within the source tree checkout
+  $ nix-env -if .
+  ```
+
+  If you have the [Flakes](https://nixos.wiki/wiki/Flakes) feature enabled:
+
+  ```bash
+  $ nix profile install comodoro
+
+  # or, from within the source tree checkout
+  $ nix profile install
+
+  # you can also run Comodoro directly without installing it:
+  $ nix run comodoro
+  ```
+</details>
+
+<details>
+  <summary>Sources</summary>
+
+  Comodoro CLI can be installed from sources.
+
+  First you need to install the Rust development environment (see the [rust installation documentation](https://doc.rust-lang.org/cargo/getting-started/installation.html)):
+
+  ```bash
+  $ curl https://sh.rustup.rs -sSf | sh
+  ```
+
+  Then, you need to clone the repository and install dependencies:
+
+  ```bash
+  $ git clone https://github.com/pimalaya/comodoro.git
+  $ cd comodoro
+  $ cargo check
+  ```
+
+  Now, you can build Comodoro:
+
+  ```bash
+  $ cargo build --release
+  ```
+
+  *Binaries are available under the `target/release` folder.*
+</details>
 
 ## Configuration
 
-*Please read the [documentation](https://pimalaya.org/comodoro/cli/latest/configuration/).*
+Just run `comodoro`, the wizard will help you to configure your default account.
+
+You can also manually edit your own configuration, from scratch:
+
+- Copy the content of the documented [`./config.sample.toml`](./config.sample.toml)
+- Paste it in a new file `~/.config/comodoro/config.toml`
+- Edit, then comment or uncomment the options you want
+
+## FAQ
+
+<details>
+  <summary>How to debug Comodoro CLI?</summary>
+
+  The simplest way is to use `--debug` and `--trace` arguments.
+
+  The advanced way is based on environment variables:
+
+  - `RUST_LOG=<level>`: determines the log level filter, can be one of `off`, `error`, `warn`, `info`, `debug` and `trace`.
+  - `RUST_SPANTRACE=1`: enables the spantrace (a span represent periods of time in which a program was executing in a particular context).
+  - `RUST_BACKTRACE=1`: enables the error backtrace.
+  - `RUST_BACKTRACE=full`: enables the full error backtrace, which include source lines where the error originated from.
+
+  Logs are written to the `stderr`, which means that you can redirect them easily to a file:
+
+  ```
+  RUST_LOG=debug comodoro 2>/tmp/comodoro.log
+  ```
+</details>
 
 ## Sponsoring
 
-[![nlnet](https://nlnet.nl/logo/banner-160x60.png)](https://nlnet.nl/project/Pimalaya/index.html)
+[![nlnet](https://nlnet.nl/logo/banner-160x60.png)](https://nlnet.nl/)
 
-Special thanks to the [NLnet foundation](https://nlnet.nl/project/Pimalaya/index.html) and the [European Commission](https://www.ngi.eu/) that helped the project to receive financial support from:
+Special thanks to the [NLnet foundation](https://nlnet.nl/) and the [European Commission](https://www.ngi.eu/) that helped the project to receive financial support from various programs:
 
-- [NGI Assure](https://nlnet.nl/assure/) in 2022
-- [NGI Zero Entrust](https://nlnet.nl/entrust/) in 2023
+- [NGI Assure](https://nlnet.nl/project/Himalaya/) in 2022
+- [NGI Zero Entrust](https://nlnet.nl/project/Pimalaya/) in 2023
+- [NGI Zero Core](https://nlnet.nl/project/Pimalaya-PIM/) in 2024 *(still ongoing)*
 
 If you appreciate the project, feel free to donate using one of the following providers:
 

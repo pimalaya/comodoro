@@ -1,11 +1,18 @@
-use anyhow::Result;
+use std::{fmt, sync::Arc};
+
 use clap::Parser;
-use log::info;
-use time::timer::TimerState;
+use color_eyre::Result;
+use pimalaya_tui::terminal::cli::printer::Printer;
+use serde::{Serialize, Serializer};
+use time::timer::{Timer, TimerState};
+use tracing::info;
 
 use crate::{
     config::TomlConfig,
-    preset::{arg::PresetNameArg, config::TimerPrecision},
+    preset::{
+        arg::PresetNameArg,
+        config::{TimerPrecision, TomlPresetConfig},
+    },
     protocol::arg::ProtocolArg,
 };
 
@@ -23,47 +30,71 @@ pub struct GetTimerCommand {
 }
 
 impl GetTimerCommand {
-    pub async fn execute(self, config: &TomlConfig) -> Result<()> {
+    pub async fn execute(self, printer: &mut impl Printer, config: &TomlConfig) -> Result<()> {
         info!("executing get timer command");
 
         let preset = config.get_preset(&self.preset.name)?;
         let client = self.protocol.to_client(&preset)?;
 
-        let timer = client.get().await?;
+        let timer = DisplayTimer {
+            preset,
+            timer: client.get().await?,
+        };
+
+        printer.out(timer)
+    }
+}
+
+struct DisplayTimer {
+    preset: Arc<TomlPresetConfig>,
+    timer: Timer,
+}
+
+impl fmt::Display for DisplayTimer {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let timer = &self.timer;
         let cycle = &timer.cycle.name;
 
         match timer.state {
-            TimerState::Stopped => println!("OFF"),
-            TimerState::Paused => println!("[{cycle}] paused"),
+            TimerState::Stopped => write!(f, "OFF"),
+            TimerState::Paused => write!(f, "[{cycle}] paused"),
             TimerState::Running if timer.cycle.duration < 60 => {
-                println!("[{cycle}] {}s", timer.cycle.duration)
+                write!(f, "[{cycle}] {}s", timer.cycle.duration)
             }
-            TimerState::Running if timer.cycle.duration < 3600 => match preset.timer_precision {
-                TimerPrecision::Second => println!(
+            TimerState::Running if timer.cycle.duration < 3600 => match self.preset.timer_precision
+            {
+                TimerPrecision::Second => write!(
+                    f,
                     "[{cycle}] {}min {}s",
                     timer.cycle.duration / 60,
                     timer.cycle.duration % 60
                 ),
                 TimerPrecision::Minute | TimerPrecision::Hour => {
-                    println!("[{cycle}] {}min", timer.cycle.duration / 60,)
+                    write!(f, "[{cycle}] {}min", timer.cycle.duration / 60,)
                 }
             },
-            TimerState::Running => match preset.timer_precision {
-                TimerPrecision::Second => println!(
+            TimerState::Running => match self.preset.timer_precision {
+                TimerPrecision::Second => write!(
+                    f,
                     "[{cycle}] {}h {}min {}s",
                     timer.cycle.duration / 3600,
                     (timer.cycle.duration % 3600) / 60,
                     (timer.cycle.duration % 3600) % 60,
                 ),
-                TimerPrecision::Minute => println!(
+                TimerPrecision::Minute => write!(
+                    f,
                     "[{cycle}] {}h {}min",
                     timer.cycle.duration / 3600,
                     (timer.cycle.duration % 3600) / 60,
                 ),
-                TimerPrecision::Hour => println!("[{cycle}] {}h", timer.cycle.duration / 3600),
+                TimerPrecision::Hour => write!(f, "[{cycle}] {}h", timer.cycle.duration / 3600),
             },
-        };
+        }
+    }
+}
 
-        Ok(())
+impl Serialize for DisplayTimer {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        self.timer.serialize(serializer)
     }
 }

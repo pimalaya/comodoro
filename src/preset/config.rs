@@ -1,27 +1,28 @@
-use log::debug;
-#[cfg(feature = "hook-notify")]
+use std::collections::HashMap;
+
+#[cfg(feature = "notify")]
 use notify_rust::Notification;
-#[cfg(feature = "hook-command")]
+#[cfg(feature = "command")]
 use process::Command;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-#[cfg(feature = "tcp-any")]
+#[cfg(any(feature = "tcp-client", feature = "tcp-binder"))]
 use time::tcp::TcpConfig;
 use time::timer::TimerCycle;
+use tracing::debug;
 
 /// Represents the user config file.
 #[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
-#[serde(rename_all = "kebab-case")]
-pub struct PresetConfig {
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+pub struct TomlPresetConfig {
     pub preset: Option<PresetKind>,
 
     #[serde(default)]
     pub cycles: Vec<TimerCycle>,
 
-    #[cfg(feature = "tcp-any")]
+    #[cfg(any(feature = "tcp-client", feature = "tcp-binder"))]
     pub tcp: Option<TcpConfig>,
 
-    #[cfg(feature = "hook-any")]
+    #[serde(default)]
     pub hooks: HashMap<String, HookConfig>,
 
     #[serde(default)]
@@ -31,20 +32,18 @@ pub struct PresetConfig {
     pub timer_precision: TimerPrecision,
 }
 
-#[cfg(feature = "hook-any")]
 #[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct HookConfig {
     /// The hook based on shell commands.
-    #[cfg(feature = "hook-command")]
+    #[cfg(feature = "command")]
     pub cmd: Option<Command>,
 
     /// The hook based on system notifications.
-    #[cfg(feature = "hook-notify")]
+    #[cfg(feature = "notify")]
     pub notify: Option<NotifyConfig>,
 }
 
-#[cfg(feature = "hook-any")]
 impl HookConfig {
     pub async fn exec(&self, name: &str) {
         if let Some(cmd) = self.cmd.as_ref() {
@@ -99,7 +98,7 @@ impl HookConfig {
 ///
 /// The structure tries to match the [`notify_rust::Notification`] API
 /// and may evolve in the future.
-#[cfg(feature = "hook-notify")]
+#[cfg(feature = "notify")]
 #[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct NotifyConfig {
