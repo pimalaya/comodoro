@@ -24,7 +24,7 @@ Comodoro CLI `v1.0.0` can be installed with a pre-built binary. Find the latest 
 Comodoro CLI `v1.0.0` can also be installed with [cargo](https://doc.rust-lang.org/cargo/):
 
 ```bash
-$ cargo install --git https://github.com/pimalaya/comodoro.git --force comodoro
+$ cargo install --frozen --force --git https://github.com/pimalaya/comodoro.git
 ```
 
 ### Other outdated methods
@@ -129,13 +129,7 @@ These installation methods should not be used until the `v1.0.0` is finally rele
 
 ## Configuration
 
-Just run `comodoro`, the wizard will help you to configure your default account.
-
-You can also manually edit your own configuration, from scratch:
-
-- Copy the content of the documented [`./config.sample.toml`](./config.sample.toml)
-- Paste it in a new file `~/.config/comodoro/config.toml`
-- Edit, then comment or uncomment the options you want
+The wizard is not yet available (it should come soon), so the only way to configure Comodoro CLI is to copy the [sample config file](./config.sample.toml) then edit it by commenting or uncommenting the options you want.
 
 ## FAQ
 
