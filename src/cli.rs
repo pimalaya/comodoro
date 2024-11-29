@@ -1,13 +1,14 @@
+use std::path::PathBuf;
+
 use clap::{Parser, Subcommand};
 use color_eyre::Result;
-use pimalaya_tui::terminal::{
+use pimalaya_tui::{long_version, terminal::{
     cli::{
         arg::path_parser,
         printer::{OutputFmt, Printer},
     },
     config::TomlConfig as _,
-};
-use std::path::PathBuf;
+}};
 
 #[cfg(feature = "client")]
 use crate::client::command::TimerSubcommand;
@@ -21,7 +22,9 @@ use crate::{
 };
 
 #[derive(Parser, Debug)]
-#[command(name = "comodoro", author, version, about)]
+#[command(name = env!("CARGO_PKG_NAME"))]
+#[command(author, version, about)]
+#[command(long_version = long_version!())]
 #[command(propagate_version = true, infer_subcommands = true)]
 pub struct Cli {
     #[command(subcommand)]

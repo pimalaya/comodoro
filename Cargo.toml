@@ -16,23 +16,21 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
-default = [
-  "client",
-  "server",
-  "tcp",
-  "command",
-  "notify",
-]
-
+default = ["client", "server", "tcp", "command", "notify"]
 client = ["time-lib/client"]
 server = ["time-lib/server"]
-
 tcp = ["tcp-client", "tcp-binder"]
 tcp-client = ["client", "time-lib/tcp-client"]
 tcp-binder = ["server", "time-lib/tcp-binder"]
 
 command = ["dep:process-lib"]
 notify = ["dep:notify-rust"]
+
+[build-dependencies]
+pimalaya-tui = { version = "=0.1", default-features = false, features = ["build-envs"] }
+
+[dev-dependencies]
+comodoro = { path = "." }
 
 [dependencies]
 async-trait = "0.1"
