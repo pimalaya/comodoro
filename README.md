@@ -17,7 +17,7 @@ CLI to manage timers, based on [`time-lib`](https://crates.io/crates/time-lib)
 
 ### Pre-built binary
 
-Comodoro CLI `v1.0.0` can be installed with a pre-built binary. Find the latest [`pre-release`](https://github.com/pimalaya/comodoro/actions/workflows/pre-release.yml) GitHub workflow and look for the *Artifacts* section. You should find a pre-built binary matching your OS.
+Comodoro CLI `v1.0.0` can be installed with a pre-built binary. Find the latest [`pre-releases`](https://github.com/pimalaya/comodoro/actions/workflows/pre-releases.yml) GitHub workflow and look for the *Artifacts* section. You should find a pre-built binary matching your OS.
 
 ### Cargo (git)
 
