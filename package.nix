@@ -56,10 +56,6 @@ rustPlatform.buildRustPackage rec {
   ] ++ lib.optional (installManPages || installShellCompletions) installShellFiles;
 
   buildInputs = lib.optional stdenv.hostPlatform.isDarwin apple-sdk;
-  buildPhase = ''
-    # https://github.com/nixos/nix/issues/670#issuecomment-1211700127
-    export HOME=$(pwd)
-  '';
 
   doCheck = false;
 
