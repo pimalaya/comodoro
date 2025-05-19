@@ -6,20 +6,20 @@ use crate::protocol::Protocol;
 /// The protocols name argument parser.
 #[derive(Debug, Parser)]
 pub struct ProtocolsArg {
-    /// Protocols use to accept requests.
-    #[arg(name = "protocols", value_name = "PROTOCOL")]
-    pub value: Vec<Protocol>,
+    /// Protocols used to accept requests from clients.
+    #[arg(name = "protocols", value_name = "PROTOCOLS")]
+    pub value: Option<Vec<Protocol>>,
 }
 
 impl Deref for ProtocolsArg {
-    type Target = Vec<Protocol>;
+    type Target = Option<Vec<Protocol>>;
 
     fn deref(&self) -> &Self::Target {
         &self.value
     }
 }
 
-impl From<ProtocolsArg> for Vec<Protocol> {
+impl From<ProtocolsArg> for Option<Vec<Protocol>> {
     fn from(arg: ProtocolsArg) -> Self {
         arg.value
     }

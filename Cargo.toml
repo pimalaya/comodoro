@@ -7,48 +7,41 @@ edition = "2021"
 license = "MIT"
 categories = ["command-line-utilities", "network-programming"]
 keywords = ["cli", "pomodoro", "timer", "client", "server"]
-homepage = "https://pimalaya.org/"
-documentation = "https://pimalaya.org/comodoro/cli/latest/"
-repository = "https://github.com/soywod/comodoro/"
+homepage = "https://pimalaya.org"
+documentation = "https://github.com/pimalaya/comodoro"
+repository = "https://github.com/pimalaya/comodoro"
 
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
-default = ["client", "server", "tcp", "command", "notify"]
-client = ["time-lib/client"]
-server = ["time-lib/server"]
-tcp = ["tcp-client", "tcp-binder"]
-tcp-client = ["client", "time-lib/tcp-client"]
-tcp-binder = ["server", "time-lib/tcp-binder"]
-
-command = ["dep:process-lib"]
+default = ["client", "server", "command", "notify"]
+client = ["io-timer/client"]
+server = ["io-timer/server"]
+command = ["dep:io-process"]
 notify = ["dep:notify-rust"]
 
 [build-dependencies]
-pimalaya-tui = { version = "=0.1", default-features = false, features = ["build-envs"] }
-
-[dev-dependencies]
-comodoro = { path = "." }
+pimalaya-tui = { version = "0.2", default-features = false, features = ["build-envs"] }
 
 [dependencies]
-async-trait = "0.1"
+anyhow = "1"
 clap = { version = "4.4", features = ["derive"] }
 clap_complete = "4.4"
 clap_mangen = "0.2"
-color-eyre = "0.6"
 convert_case = "0.6"
+env_logger = "0.11"
+io-process = { version = "1", default-features = false, features = ["std", "serde"], optional = true }
+io-stream = { version = "1", default-features = false, features = ["std"] }
+io-timer = { version = "1", default-features = false }
+log = "0.4"
 notify-rust = { version = "4", optional = true }
-pimalaya-tui = { version = "=0.1", default-features = false, features = ["path", "cli", "config", "tracing"] }
-process-lib = { version = "1", default-features = false, features = ["tokio", "derive"], optional = true }
+pimalaya-tui = { version = "0.2", default-features = false, features = ["path", "cli", "config"] }
 serde = "1"
-shellexpand-utils = "=0.2.1"
-time-lib = { version = "1", default-features = false, features = ["tokio", "derive"] }
-tokio = { version = "1.33", default-features = false, features = ["macros", "rt-multi-thread"] }
-tracing = "0.1"
 
 [patch.crates-io]
-process-lib = { git = "https://github.com/pimalaya/core" }
-time-lib = { git = "https://github.com/pimalaya/core" }
-pimalaya-tui = { git = "https://github.com/pimalaya/tui" }
+io-process.git = "https://github.com/pimalaya/io-process"
+io-stream.git = "https://github.com/pimalaya/io-stream"
+io-timer.git = "https://github.com/pimalaya/io-timer"
+pimalaya-tui.git = "https://github.com/pimalaya/tui"

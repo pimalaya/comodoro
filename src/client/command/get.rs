@@ -1,18 +1,22 @@
-use std::{fmt, sync::Arc};
+use std::fmt;
 
+use anyhow::{bail, Result};
 use clap::Parser;
-use color_eyre::Result;
-use pimalaya_tui::terminal::cli::printer::Printer;
+use io_stream::runtimes::std::handle;
+use io_timer::{
+    client::coroutines::GetTimer,
+    timer::{Timer, TimerState},
+    Response,
+};
+use pimalaya_tui::terminal::{cli::printer::Printer, config::TomlConfig as _};
 use serde::{Serialize, Serializer};
-use time::timer::{Timer, TimerState};
-use tracing::info;
 
 use crate::{
-    config::TomlConfig,
-    preset::{
-        arg::PresetNameArg,
-        config::{TimerPrecision, TomlPresetConfig},
+    account::{
+        arg::AccountNameArg,
+        config::{TimerPrecision, TomlAccountConfig},
     },
+    config::TomlConfig,
     protocol::arg::ProtocolArg,
 };
 
@@ -23,22 +27,32 @@ use crate::{
 #[derive(Debug, Parser)]
 pub struct GetTimerCommand {
     #[command(flatten)]
-    pub preset: PresetNameArg,
+    pub account: AccountNameArg,
 
     #[command(flatten)]
     pub protocol: ProtocolArg,
 }
 
 impl GetTimerCommand {
-    pub async fn execute(self, printer: &mut impl Printer, config: &TomlConfig) -> Result<()> {
-        info!("executing get timer command");
+    pub fn execute(self, printer: &mut impl Printer, config: &TomlConfig) -> Result<()> {
+        let (_, account) = config.to_toml_account_config(self.account.name.as_deref())?;
 
-        let preset = config.get_preset(&self.preset.name)?;
-        let client = self.protocol.to_client(&preset)?;
+        let protocol = match &*self.protocol {
+            Some(protocol) => protocol.clone(),
+            None => account.get_default_protocol()?,
+        };
 
-        let timer = DisplayTimer {
-            preset,
-            timer: client.get().await?,
+        let mut stream = protocol.connect(&account)?;
+
+        let mut arg = None;
+        let mut get = GetTimer::new();
+
+        let timer = loop {
+            match get.resume(arg.take()) {
+                Ok(Response::Timer(timer)) => break DisplayTimer { account, timer },
+                Ok(Response::Ok) => bail!("invalid response Ok, expected Timer"),
+                Err(io) => arg = Some(handle(&mut stream, io)?),
+            }
         };
 
         printer.out(timer)
@@ -46,7 +60,7 @@ impl GetTimerCommand {
 }
 
 struct DisplayTimer {
-    preset: Arc<TomlPresetConfig>,
+    account: TomlAccountConfig,
     timer: Timer,
 }
 
@@ -61,8 +75,7 @@ impl fmt::Display for DisplayTimer {
             TimerState::Running if timer.cycle.duration < 60 => {
                 write!(f, "[{cycle}] {}s", timer.cycle.duration)
             }
-            TimerState::Running if timer.cycle.duration < 3600 => match self.preset.timer_precision
-            {
+            TimerState::Running if timer.cycle.duration < 3600 => match self.account.precision {
                 TimerPrecision::Second => write!(
                     f,
                     "[{cycle}] {}min {}s",
@@ -73,7 +86,7 @@ impl fmt::Display for DisplayTimer {
                     write!(f, "[{cycle}] {}min", timer.cycle.duration / 60,)
                 }
             },
-            TimerState::Running => match self.preset.timer_precision {
+            TimerState::Running => match self.account.precision {
                 TimerPrecision::Second => write!(
                     f,
                     "[{cycle}] {}h {}min {}s",

@@ -1,6 +1,7 @@
-{ pimalaya ? import (fetchTarball "https://github.com/pimalaya/nix/archive/master.tar.gz")
-, ...
-} @args:
+{
+  pimalaya ? import (fetchTarball "https://github.com/pimalaya/nix/archive/master.tar.gz"),
+}:
 
-pimalaya.mkShell ({ rustToolchainFile = ./rust-toolchain.toml; }
-  // removeAttrs args [ "pimalaya" ])
+pimalaya.mkShell {
+  extraBuildInputs = "nixd,nixfmt-rfc-style,git-cliff";
+}

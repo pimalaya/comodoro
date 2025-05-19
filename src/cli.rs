@@ -1,23 +1,24 @@
 use std::path::PathBuf;
 
+use anyhow::Result;
 use clap::{Parser, Subcommand};
-use color_eyre::Result;
-use pimalaya_tui::{long_version, terminal::{
-    cli::{
-        arg::path_parser,
-        printer::{OutputFmt, Printer},
+use pimalaya_tui::{
+    long_version,
+    terminal::{
+        cli::{arg::path_parser, printer::Printer},
+        config::TomlConfig as _,
     },
-    config::TomlConfig as _,
-}};
+};
 
 #[cfg(feature = "client")]
-use crate::client::command::TimerSubcommand;
+use crate::client::command::{
+    get::GetTimerCommand, pause::PauseTimerCommand, resume::ResumeTimerCommand,
+    start::StartTimerCommand, stop::StopTimerCommand,
+};
 #[cfg(feature = "server")]
 use crate::server::command::ServerSubcommand;
-#[allow(unused)]
 use crate::{
-    completion::command::CompletionGenerateCommand,
-    config::{self, TomlConfig},
+    completion::command::CompletionGenerateCommand, config::TomlConfig,
     manual::command::ManualGenerateCommand,
 };
 
@@ -42,32 +43,24 @@ pub struct Cli {
     #[arg(value_name = "PATH", value_parser = path_parser)]
     pub config_paths: Vec<PathBuf>,
 
-    /// Customize the output format.
+    /// Enable JSON output.
     ///
-    /// The output format determine how to display commands output to
-    /// the terminal.
-    ///
-    /// The possible values are:
-    ///
-    ///  - json: output will be in a form of a JSON-compatible object
-    ///
-    ///  - plain: output will be in a form of either a plain text or
-    ///    table, depending on the command
-    #[arg(long, short, global = true)]
-    #[arg(value_name = "FORMAT", value_enum, default_value_t = Default::default())]
-    pub output: OutputFmt,
+    /// When set, command output (data and errors) is displayed as
+    /// JSON string.
+    #[arg(long, global = true)]
+    pub json: bool,
 
-    /// Enable logs with spantrace.
+    /// Enable debug logs.
     ///
-    /// This is the same as running the command with `RUST_LOG=debug`
-    /// environment variable.
+    /// Same as running command with `RUST_LOG=debug` environment
+    /// variable.
     #[arg(long, global = true, conflicts_with = "trace")]
     pub debug: bool,
 
-    /// Enable verbose logs with backtrace.
+    /// Enable verbose trace logs with backtrace.
     ///
-    /// This is the same as running the command with `RUST_LOG=trace`
-    /// and `RUST_BACKTRACE=1` environment variables.
+    /// Same as running command with `RUST_LOG=trace` and
+    /// `RUST_BACKTRACE=1` environment variables.
     #[arg(long, global = true, conflicts_with = "debug")]
     pub trace: bool,
 }
@@ -75,10 +68,15 @@ pub struct Cli {
 #[derive(Subcommand, Debug)]
 pub enum ComodoroCommand {
     #[cfg(feature = "client")]
-    #[command(arg_required_else_help = true)]
-    #[command(subcommand)]
-    #[command(alias = "client")]
-    Timer(TimerSubcommand),
+    Start(StartTimerCommand),
+    #[cfg(feature = "client")]
+    Get(GetTimerCommand),
+    #[cfg(feature = "client")]
+    Pause(PauseTimerCommand),
+    #[cfg(feature = "client")]
+    Resume(ResumeTimerCommand),
+    #[cfg(feature = "client")]
+    Stop(StopTimerCommand),
 
     #[cfg(feature = "server")]
     #[command(arg_required_else_help = true)]
@@ -96,20 +94,40 @@ pub enum ComodoroCommand {
 }
 
 impl ComodoroCommand {
-    pub async fn execute(self, printer: &mut impl Printer, config_paths: &[PathBuf]) -> Result<()> {
+    pub fn execute(self, printer: &mut impl Printer, config_paths: &[PathBuf]) -> Result<()> {
         match self {
             #[cfg(feature = "client")]
-            Self::Timer(cmd) => {
-                let config = TomlConfig::from_paths_or_default(config_paths).await?;
-                cmd.execute(printer, &config).await
+            Self::Start(cmd) => {
+                let config = TomlConfig::from_paths_or_default(config_paths)?;
+                cmd.execute(printer, &config)
+            }
+            #[cfg(feature = "client")]
+            Self::Get(cmd) => {
+                let config = TomlConfig::from_paths_or_default(config_paths)?;
+                cmd.execute(printer, &config)
+            }
+            #[cfg(feature = "client")]
+            Self::Pause(cmd) => {
+                let config = TomlConfig::from_paths_or_default(config_paths)?;
+                cmd.execute(printer, &config)
+            }
+            #[cfg(feature = "client")]
+            Self::Resume(cmd) => {
+                let config = TomlConfig::from_paths_or_default(config_paths)?;
+                cmd.execute(printer, &config)
+            }
+            #[cfg(feature = "client")]
+            Self::Stop(cmd) => {
+                let config = TomlConfig::from_paths_or_default(config_paths)?;
+                cmd.execute(printer, &config)
             }
             #[cfg(feature = "server")]
             Self::Server(cmd) => {
-                let config = TomlConfig::from_paths_or_default(config_paths).await?;
-                cmd.execute(&config).await
+                let config = TomlConfig::from_paths_or_default(config_paths)?;
+                cmd.execute(&config)
             }
-            Self::Manual(cmd) => cmd.execute().await,
-            Self::Completion(cmd) => cmd.execute().await,
+            Self::Manual(cmd) => cmd.execute(printer),
+            Self::Completion(cmd) => cmd.execute(printer),
         }
     }
 }
