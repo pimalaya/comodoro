@@ -6,6 +6,7 @@
 pimalaya.mkDefault (
   {
     src = ./.;
+    version = "1.0.0";
     mkPackage = (
       {
         lib,
@@ -19,6 +20,7 @@ pimalaya.mkDefault (
         inherit lib rustPlatform;
         fetchFromGitHub = pkgs.fetchFromGitHub;
         stdenv = pkgs.stdenv;
+        buildPackages = pkgs.buildPackages;
         apple-sdk = if pkgs.hostPlatform.isx86_64 then pkgs.apple-sdk_13 else pkgs.apple-sdk_14;
         installShellFiles = pkgs.installShellFiles;
         installShellCompletions = false;
