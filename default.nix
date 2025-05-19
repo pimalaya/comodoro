@@ -16,16 +16,10 @@ pimalaya.mkDefault (
         features,
       }:
 
-      import ./package.nix {
+      pkgs.callPackage ./package.nix {
         inherit lib rustPlatform;
-        fetchFromGitHub = pkgs.fetchFromGitHub;
-        stdenv = pkgs.stdenv;
-        buildPackages = pkgs.buildPackages;
-        apple-sdk = if pkgs.hostPlatform.isx86_64 then pkgs.apple-sdk_13 else pkgs.apple-sdk_14;
-        installShellFiles = pkgs.installShellFiles;
         installShellCompletions = false;
         installManPages = false;
-        pkg-config = pkgs.pkg-config;
         buildNoDefaultFeatures = !defaultFeatures;
         buildFeatures = lib.splitString "," features;
       }
