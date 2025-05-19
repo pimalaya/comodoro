@@ -1,15 +1,15 @@
-# ⏱️ Comodoro [![GitHub release](https://img.shields.io/github/v/release/pimalaya/comodoro?color=success)](https://github.com/pimalaya/comodoro/releases/latest) [![Matrix](https://img.shields.io/matrix/pimalaya:matrix.org?color=success&label=chat)](https://matrix.to/#/#pimalaya:matrix.org)
+# ⏱ Comodoro [![Releases](https://img.shields.io/github/v/release/pimalaya/comodoro?color=success)](https://github.com/pimalaya/comodoro/releases/latest) [![Repology](https://img.shields.io/repology/repositories/comodoro?color=success)]("https://repology.org/project/comodoro/versions) [![Matrix](https://img.shields.io/matrix/pimalaya:matrix.org?color=success&label=chat)](https://matrix.to/#/#pimalaya:matrix.org)
 
-CLI to manage timers, based on [`time-lib`](https://crates.io/crates/time-lib)
+CLI to manage timers.
 
 ## Features
 
 - Centralized server timer controllable by multiple clients at the same time
-- **Multi protocols** (only *TCP* for now, but you can build your own)
+- **Multi protocols** (*Unix sockets* and *TCP* only supported for now)
 - Cycles customizable via config file (**Pomodoro** style, **52/17** style, custom)
 - Server and timer hooks customizable via config file (send system notification or run shell command)
 
-*Comodoro CLI is written in [Rust](https://www.rust-lang.org/), and relies on [cargo features](https://doc.rust-lang.org/cargo/reference/features.html) to enable or disable functionalities. Default features can be found in the `features` section of the [`Cargo.toml`](https://github.com/pimalaya/comodoro/blob/master/Cargo.toml#L18).*
+*Comodoro CLI is written in [Rust](https://www.rust-lang.org/), and relies on [cargo features](https://doc.rust-lang.org/cargo/reference/features.html) to enable or disable functionalities. Default features can be found in the `features` section of the [`Cargo.toml`](./Cargo.toml#L18), or on [docs.rs](https://docs.rs/crate/comodoro/latest/features).*
 
 ## Installation
 
@@ -17,14 +17,14 @@ CLI to manage timers, based on [`time-lib`](https://crates.io/crates/time-lib)
 
 ### Pre-built binary
 
-Comodoro CLI `v1.0.0` can be installed with a pre-built binary. Find the latest [`pre-releases`](https://github.com/pimalaya/comodoro/actions/workflows/pre-releases.yml) GitHub workflow and look for the *Artifacts* section. You should find a pre-built binary matching your OS.
+Comodoro CLI `v1.0.0` can be installed with a pre-built binary. Find the latest [`releases`](https://github.com/pimalaya/comodoro/actions/workflows/releases.yml) GitHub workflow and look for the *Artifacts* section. You should find a pre-built binary matching your OS.
 
 ### Cargo (git)
 
 Comodoro CLI `v1.0.0` can also be installed with [cargo](https://doc.rust-lang.org/cargo/):
 
 ```bash
-$ cargo install --frozen --force --git https://github.com/pimalaya/comodoro.git
+$ cargo install --locked --git https://github.com/pimalaya/comodoro.git
 ```
 
 ### Other outdated methods
@@ -141,14 +141,12 @@ The wizard is not yet available (it should come soon), so the only way to config
   The advanced way is based on environment variables:
 
   - `RUST_LOG=<level>`: determines the log level filter, can be one of `off`, `error`, `warn`, `info`, `debug` and `trace`.
-  - `RUST_SPANTRACE=1`: enables the spantrace (a span represent periods of time in which a program was executing in a particular context).
-  - `RUST_BACKTRACE=1`: enables the error backtrace.
-  - `RUST_BACKTRACE=full`: enables the full error backtrace, which include source lines where the error originated from.
+  - `RUST_BACKTRACE=1`: enables the full error backtrace, which include source lines where the error originated from.
 
   Logs are written to the `stderr`, which means that you can redirect them easily to a file:
 
   ```
-  RUST_LOG=debug comodoro 2>/tmp/comodoro.log
+  comodoro server start --debug 2>/tmp/comodoro.log
   ```
 </details>
 
