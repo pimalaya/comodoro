@@ -4,19 +4,18 @@ use anyhow::{bail, Result};
 use clap::Parser;
 use io_stream::runtimes::std::handle;
 use io_timer::{
-    client::coroutines::GetTimer,
+    client::coroutines::{get::GetTimer, send::SendRequestResult},
     timer::{Timer, TimerState},
     Response,
 };
-use pimalaya_tui::terminal::{cli::printer::Printer, config::TomlConfig as _};
+use pimalaya_toolbox::terminal::printer::Printer;
 use serde::{Serialize, Serializer};
 
 use crate::{
     account::{
         arg::AccountNameArg,
-        config::{TimerPrecision, TomlAccountConfig},
+        config::{AccountConfig, TimerPrecision},
     },
-    config::TomlConfig,
     protocol::arg::ProtocolArg,
 };
 
@@ -34,9 +33,7 @@ pub struct GetTimerCommand {
 }
 
 impl GetTimerCommand {
-    pub fn execute(self, printer: &mut impl Printer, config: &TomlConfig) -> Result<()> {
-        let (_, account) = config.to_toml_account_config(self.account.name.as_deref())?;
-
+    pub fn execute(self, printer: &mut impl Printer, account: &AccountConfig) -> Result<()> {
         let protocol = match &*self.protocol {
             Some(protocol) => protocol.clone(),
             None => account.get_default_protocol()?,
@@ -49,9 +46,12 @@ impl GetTimerCommand {
 
         let timer = loop {
             match get.resume(arg.take()) {
-                Ok(Response::Timer(timer)) => break DisplayTimer { account, timer },
-                Ok(Response::Ok) => bail!("invalid response Ok, expected Timer"),
-                Err(io) => arg = Some(handle(&mut stream, io)?),
+                SendRequestResult::Ok(Response::Timer(timer)) => {
+                    break DisplayTimer { account, timer }
+                }
+                SendRequestResult::Ok(Response::Ok) => bail!("Invalid response Ok, expected Timer"),
+                SendRequestResult::Err(err) => bail!(err),
+                SendRequestResult::Io(io) => arg = Some(handle(&mut stream, io)?),
             }
         };
 
@@ -59,12 +59,12 @@ impl GetTimerCommand {
     }
 }
 
-struct DisplayTimer {
-    account: TomlAccountConfig,
+struct DisplayTimer<'a> {
+    account: &'a AccountConfig,
     timer: Timer,
 }
 
-impl fmt::Display for DisplayTimer {
+impl fmt::Display for DisplayTimer<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let timer = &self.timer;
         let cycle = &timer.cycle.name;
@@ -106,7 +106,7 @@ impl fmt::Display for DisplayTimer {
     }
 }
 
-impl Serialize for DisplayTimer {
+impl Serialize for DisplayTimer<'_> {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         self.timer.serialize(serializer)
     }

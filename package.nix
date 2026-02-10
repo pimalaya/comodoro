@@ -14,28 +14,21 @@
   installManPages ? stdenv.buildPlatform.canExecute stdenv.hostPlatform,
   buildNoDefaultFeatures ? false,
   buildFeatures ? [ ],
-  withNoDefaultFeatures ? buildNoDefaultFeatures,
-  withFeatures ? buildFeatures,
-}@args:
+}:
 
 let
   version = "1.0.0";
   hash = "";
   cargoHash = "";
 
-  noDefaultFeatures =
-    lib.warnIf (args ? buildNoDefaultFeatures)
-      "buildNoDefaultFeatures is deprecated in favour of withNoDefaultFeatures and will be removed in the next release"
-      withNoDefaultFeatures;
-
-  features =
-    lib.warnIf (args ? buildFeatures)
-      "buildFeatures is deprecated in favour of withFeatures and will be removed in the next release"
-      withFeatures;
 in
-
 rustPlatform.buildRustPackage rec {
-  inherit cargoHash version;
+  inherit
+    cargoHash
+    version
+    buildNoDefaultFeatures
+    buildFeatures
+    ;
 
   pname = "comodoro";
 
@@ -48,12 +41,10 @@ rustPlatform.buildRustPackage rec {
 
   useFetchCargoVendor = true;
 
-  buildNoDefaultFeatures = noDefaultFeatures;
-  buildFeatures = features;
-
   nativeBuildInputs = [
     pkg-config
-  ] ++ lib.optional (installManPages || installShellCompletions) installShellFiles;
+  ]
+  ++ lib.optional (installManPages || installShellCompletions) installShellFiles;
 
   buildInputs = lib.optional stdenv.hostPlatform.isDarwin apple-sdk;
 

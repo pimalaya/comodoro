@@ -23,25 +23,25 @@ command = ["dep:io-process"]
 notify = ["dep:notify-rust"]
 
 [build-dependencies]
-pimalaya-tui = { version = "0.2", default-features = false, features = ["build-envs"] }
+pimalaya-toolbox = { version = "0.0.2", default-features = false, features = ["build"] }
 
 [dependencies]
 anyhow = "1"
 clap = { version = "4.4", features = ["derive"] }
 clap_complete = "4.4"
 clap_mangen = "0.2"
-convert_case = "0.6"
+convert_case = "0.11"
 env_logger = "0.11"
-io-process = { version = "1", default-features = false, features = ["std", "serde"], optional = true }
-io-stream = { version = "1", default-features = false, features = ["std"] }
-io-timer = { version = "1", default-features = false }
+io-process = { version = "0.0.2", default-features = false, features = ["std", "serde"], optional = true }
+io-stream = { version = "0.0.2", default-features = false, features = ["std"] }
+io-timer = "0.0.1"
 log = "0.4"
 notify-rust = { version = "4", optional = true }
-pimalaya-tui = { version = "0.2", default-features = false, features = ["path", "cli", "config"] }
+pimalaya-toolbox = { version = "0.0.2", default-features = false, features = ["config", "prompt", "secret", "stream", "terminal"] }
 serde = "1"
 
 [patch.crates-io]
 io-process.git = "https://github.com/pimalaya/io-process"
 io-stream.git = "https://github.com/pimalaya/io-stream"
 io-timer.git = "https://github.com/pimalaya/io-timer"
-pimalaya-tui.git = "https://github.com/pimalaya/tui"
+pimalaya-toolbox.git = "https://github.com/pimalaya/toolbox"

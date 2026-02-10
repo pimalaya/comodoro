@@ -11,7 +11,7 @@ use anyhow::{bail, Result};
 use clap::{builder::PossibleValue, ValueEnum};
 use serde::{Deserialize, Serialize};
 
-use crate::account::config::TomlAccountConfig;
+use crate::account::config::AccountConfig;
 
 pub trait StreamExt: Read + Write {}
 impl<T: Read + Write> StreamExt for T {}
@@ -31,7 +31,7 @@ impl Protocol {
         Protocol::Tcp,
     ];
 
-    pub fn connect(&self, account: &TomlAccountConfig) -> Result<Box<dyn StreamExt>> {
+    pub fn connect(&self, account: &AccountConfig) -> Result<Box<dyn StreamExt>> {
         let stream: Box<dyn StreamExt> = match self {
             #[cfg(unix)]
             Protocol::UnixSocket => {

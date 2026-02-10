@@ -2,8 +2,13 @@ use std::collections::HashMap;
 
 use anyhow::{bail, Result};
 #[cfg(feature = "command")]
-use io_process::Command;
-use io_process::{coroutines::SpawnThenWaitWithOutput, runtimes::std::handle};
+use io_process::command::Command;
+use io_process::{
+    coroutines::spawn_then_wait_with_output::{
+        SpawnThenWaitWithOutput, SpawnThenWaitWithOutputResult,
+    },
+    runtimes::std::handle,
+};
 use io_timer::timer::TimerCycle;
 use log::{debug, trace};
 #[cfg(feature = "notify")]
@@ -17,7 +22,7 @@ use crate::{protocol::Protocol, tcp::TcpConfig};
 /// Represents the user config file.
 #[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
-pub struct TomlAccountConfig {
+pub struct AccountConfig {
     #[serde(default)]
     pub default: bool,
 
@@ -35,7 +40,7 @@ pub struct TomlAccountConfig {
     pub hooks: HashMap<String, HookConfig>,
 }
 
-impl TomlAccountConfig {
+impl AccountConfig {
     pub fn get_default_protocol(&self) -> Result<Protocol> {
         let mut protocol = None;
 
@@ -74,7 +79,7 @@ pub struct HookConfig {
 }
 
 impl HookConfig {
-    pub fn exec(&self) {
+    pub fn exec(&self) -> Result<()> {
         if let Some(cmd) = self.command.as_ref() {
             debug!("execute shell command hook: {cmd:?}");
 
@@ -83,8 +88,9 @@ impl HookConfig {
 
             loop {
                 match spawn.resume(arg.take()) {
-                    Ok(_) => break,
-                    Err(io) => arg = Some(handle(io).unwrap()),
+                    SpawnThenWaitWithOutputResult::Ok(_) => break,
+                    SpawnThenWaitWithOutputResult::Io(io) => arg = Some(handle(io).unwrap()),
+                    SpawnThenWaitWithOutputResult::Err(err) => bail!(err),
                 }
             }
         }
@@ -102,6 +108,8 @@ impl HookConfig {
                 trace!("{err:?}");
             }
         }
+
+        Ok(())
     }
 }
 

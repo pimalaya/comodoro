@@ -3,7 +3,7 @@ mod start;
 use anyhow::Result;
 use clap::Subcommand;
 
-use crate::config::TomlConfig;
+use crate::account::config::AccountConfig;
 
 use self::start::StartServerCommand;
 
@@ -17,9 +17,9 @@ pub enum ServerSubcommand {
 }
 
 impl ServerSubcommand {
-    pub fn execute(self, config: &TomlConfig) -> Result<()> {
+    pub fn execute(self, account: &AccountConfig) -> Result<()> {
         match self {
-            Self::Start(cmd) => cmd.execute(config),
+            Self::Start(cmd) => cmd.execute(account),
         }
     }
 }

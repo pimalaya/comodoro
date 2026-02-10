@@ -14,6 +14,7 @@ pimalaya.mkDefault (
         rustPlatform,
         defaultFeatures,
         features,
+        ...
       }:
 
       pkgs.callPackage ./package.nix {

@@ -17,16 +17,15 @@ use clap::Parser;
 use convert_case::{Case, Casing};
 use io_stream::runtimes::std::handle;
 use io_timer::{
-    server::coroutines::HandleRequest,
+    server::coroutines::handle::{HandleRequest, HandleRequestResult},
     timer::{TimerConfig, TimerEvent, TimerLoop},
     Timer,
 };
-use log::{debug, error};
-use pimalaya_tui::terminal::config::TomlConfig as _;
+use log::{debug, error, warn};
 
 use crate::{
-    account::arg::AccountNameArg, config::TomlConfig, protocol::arg::ProtocolsArg,
-    protocol::Protocol,
+    account::{arg::AccountNameArg, config::AccountConfig},
+    protocol::{arg::ProtocolsArg, Protocol},
 };
 
 /// Start the server.
@@ -43,9 +42,7 @@ pub struct StartServerCommand {
 }
 
 impl StartServerCommand {
-    pub fn execute(self, config: &TomlConfig) -> Result<()> {
-        let (_, account) = config.to_toml_account_config(self.account.name.as_deref())?;
-
+    pub fn execute(self, account: &AccountConfig) -> Result<()> {
         let timer = Arc::new(Mutex::new(Timer::new(TimerConfig {
             cycles: account.cycles.clone().into(),
             cycles_count: match account.cycles_count {
@@ -207,7 +204,9 @@ impl StartServerCommand {
             };
 
             if let Some(hook) = account.hooks.get(&hook_name) {
-                hook.exec();
+                if let Err(err) = hook.exec() {
+                    warn!("Error while executing hook: {err}")
+                }
             }
         }
 
@@ -233,14 +232,17 @@ fn handle_request(
         };
 
         match res {
-            Ok(events) => {
+            HandleRequestResult::Ok(events) => {
                 break for event in events {
                     if let Err(err) = tx.send(event.clone()) {
                         error!("cannot send timer event {event:?}: {err}");
                     }
                 }
             }
-            Err(io) => {
+            HandleRequestResult::Err(err) => {
+                bail!(err);
+            }
+            HandleRequestResult::Io(io) => {
                 arg = Some(handle(&mut stream, io)?);
             }
         }
