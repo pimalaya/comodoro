@@ -14,11 +14,11 @@ pimalaya.mkDefault (
         rustPlatform,
         defaultFeatures,
         features,
-        ...
+        buildPackages,
       }:
 
       pkgs.callPackage ./package.nix {
-        inherit lib rustPlatform;
+        inherit lib rustPlatform buildPackages;
         apple-sdk = pkgs.apple-sdk;
         installShellCompletions = false;
         installManPages = false;

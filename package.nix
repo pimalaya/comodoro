@@ -53,11 +53,15 @@ rustPlatform.buildRustPackage rec {
   postInstall =
     let
       emulator = stdenv.hostPlatform.emulator buildPackages;
+      exe = stdenv.hostPlatform.extensions.executable;
     in
+    lib.optionalString (lib.hasInfix "wine" emulator) ''
+      export WINEPREFIX="''${XDG_DATA_HOME:-"''${HOME}/.local/share"}/comodoro/wine"
     ''
+    + ''
       mkdir -p $out/share/{completions,man}
-      ${emulator} "$out"/bin/comodoro manuals "$out"/share/man
-      ${emulator} "$out"/bin/comodoro completions -d "$out"/share/completions bash elvish fish powershell zsh
+      ${emulator} "$out"/bin/comodoro${exe} manuals "$out"/share/man
+      ${emulator} "$out"/bin/comodoro${exe} completions -d "$out"/share/completions bash elvish fish powershell zsh
     ''
     + lib.optionalString installManPages ''
       installManPage "$out"/share/man/*
