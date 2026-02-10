@@ -1,7 +1,6 @@
 [accounts.example]
 
-# Defaultness of the account. The current account will be used by
-# default in all commands.
+# Makes this account the default one when `--account` is omitted.
 #
 default = true
 
@@ -10,7 +9,8 @@ default = true
 #
 unix-socket.path = "/tmp/comodoro.sock"
 
-# Makes Unix socket the default client choice.
+# Makes Unix socket the default client choice when `--protocol` is
+# omitted.
 #
 unix-socket.default = true
 
@@ -18,14 +18,14 @@ unix-socket.default = true
 # Requires the cargo feature "tcp".
 #
 #tcp.host = "127.0.0.1"
-tcp.port = 1234
+tcp.port = 9999
 
-# Makes TCP the default client choice.
+# Makes TCP the default client choice when `--protocol` is omitted.
 #
 #tcp.default = true
 
 # A cycle is a step in the timer lifetime, represented by a name and a
-# duration.
+# duration (in seconds).
 #
 cycles = [
   { name = "Work", duration = 5 },
@@ -41,10 +41,11 @@ cycles = [
 #
 precision = "minute"
 
-# A hook can be either a shell command or a system notification. Hook
-# names follow the format "on-{name}-{event}", where "name" is the
-# kebab-case version of the cycle name, and "event" the type of event:
-# begin, running, set, pause, resume, end.
+# A hook can be either a shell command and/or a system notification.
+#
+# Hook names follow the format "on-{name}-{event}", where "name" is
+# the kebab-case version of the cycle name, and "event" the type of
+# event: begin, running, set, pause, resume, end.
 #
 #hooks.on-work-begin.command = "echo 'Work started!' >> /tmp/comodoro.log"
 hooks.on-work-begin.notify.summary = "Comodoro"

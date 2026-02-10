@@ -4,10 +4,7 @@ use io_stream::runtimes::std::handle;
 use io_timer::client::coroutines::{pause::PauseTimer, send::SendRequestResult};
 use pimalaya_toolbox::terminal::printer::{Message, Printer};
 
-use crate::{
-    account::{arg::AccountNameArg, config::AccountConfig},
-    protocol::arg::ProtocolArg,
-};
+use crate::{account::config::AccountConfig, protocol::arg::ProtocolArg};
 
 /// Pause the timer.
 ///
@@ -15,9 +12,6 @@ use crate::{
 /// to pause the timer.
 #[derive(Debug, Parser)]
 pub struct PauseTimerCommand {
-    #[command(flatten)]
-    pub account: AccountNameArg,
-
     #[command(flatten)]
     pub protocol: ProtocolArg,
 }

@@ -24,7 +24,7 @@ use io_timer::{
 use log::{debug, error, warn};
 
 use crate::{
-    account::{arg::AccountNameArg, config::AccountConfig},
+    account::config::AccountConfig,
     protocol::{arg::ProtocolsArg, Protocol},
 };
 
@@ -34,9 +34,6 @@ use crate::{
 /// configuration preset and protocols.
 #[derive(Debug, Parser)]
 pub struct StartServerCommand {
-    #[command(flatten)]
-    pub account: AccountNameArg,
-
     #[command(flatten)]
     pub protocols: ProtocolsArg,
 }
@@ -80,12 +77,15 @@ impl StartServerCommand {
                     };
 
                     debug!("enable Unix socket listener");
-                    let listener = UnixListener::bind(&sock.path)?;
+                    let sock_path = sock.path.clone();
+                    let listener = UnixListener::bind(&sock_path)?;
                     let timer = timer.clone();
                     let tx = tx.clone();
 
                     thread::spawn(move || loop {
-                        debug!("wait for new Unix socket connection");
+                        let path = sock_path.display();
+                        debug!("wait for new Unix socket connection at {path}");
+
                         let stream = match listener.accept() {
                             Ok((stream, _)) => {
                                 debug!("received new Unix socket connection");
@@ -129,11 +129,13 @@ impl StartServerCommand {
 
                     debug!("enable TCP listener");
                     let listener = TcpListener::bind((tcp.host.as_str(), tcp.port))?;
+                    let addr = listener.local_addr()?;
                     let timer = timer.clone();
                     let tx = tx.clone();
 
                     thread::spawn(move || loop {
-                        debug!("wait for new TCP connection");
+                        debug!("wait for new TCP connection at {addr:?}");
+
                         let stream = match listener.accept() {
                             Ok((stream, _)) => {
                                 debug!("received new TCP connection");

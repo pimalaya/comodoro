@@ -4,10 +4,7 @@ use io_stream::runtimes::std::handle;
 use io_timer::client::coroutines::{send::SendRequestResult, start::StartTimer};
 use pimalaya_toolbox::terminal::printer::{Message, Printer};
 
-use crate::{
-    account::{arg::AccountNameArg, config::AccountConfig},
-    protocol::arg::ProtocolArg,
-};
+use crate::{account::config::AccountConfig, protocol::arg::ProtocolArg};
 
 /// Start the timer.
 ///
@@ -15,8 +12,6 @@ use crate::{
 /// to start the timer.
 #[derive(Debug, Parser)]
 pub struct StartTimerCommand {
-    #[command(flatten)]
-    pub account: AccountNameArg,
     #[command(flatten)]
     pub protocol: ProtocolArg,
 }

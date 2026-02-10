@@ -12,10 +12,7 @@ use pimalaya_toolbox::terminal::printer::Printer;
 use serde::{Serialize, Serializer};
 
 use crate::{
-    account::{
-        arg::AccountNameArg,
-        config::{AccountConfig, TimerPrecision},
-    },
+    account::config::{AccountConfig, TimerPrecision},
     protocol::arg::ProtocolArg,
 };
 
@@ -25,9 +22,6 @@ use crate::{
 /// to get the actual timer and display its value.
 #[derive(Debug, Parser)]
 pub struct GetTimerCommand {
-    #[command(flatten)]
-    pub account: AccountNameArg,
-
     #[command(flatten)]
     pub protocol: ProtocolArg,
 }
