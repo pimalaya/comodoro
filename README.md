@@ -1,6 +1,18 @@
-# ⏱ Comodoro [![Releases](https://img.shields.io/github/v/release/pimalaya/comodoro?color=success)](https://github.com/pimalaya/comodoro/releases/latest) [![Repology](https://img.shields.io/repology/repositories/comodoro?color=success)]("https://repology.org/project/comodoro/versions) [![Matrix](https://img.shields.io/matrix/pimalaya:matrix.org?color=success&label=chat)](https://matrix.to/#/#pimalaya:matrix.org)
+# ⏱ Comodoro [![Releases](https://img.shields.io/github/v/release/pimalaya/comodoro?color=success)](https://github.com/pimalaya/comodoro/releases/latest) [![Repology](https://img.shields.io/repology/repositories/comodoro?color=success)]("https://repology.org/project/comodoro/versions) [![Matrix](https://img.shields.io/badge/chat-%23pimalaya-blue?style=flat&logo=matrix&logoColor=white)](https://matrix.to/#/#pimalaya:matrix.org) [![Mastodon](https://img.shields.io/badge/news-%40pimalaya-blue?style=flat&logo=mastodon&logoColor=white)](https://fosstodon.org/@pimalaya)
 
-CLI to manage timers.
+CLI to manage timers
+
+## Table of contents
+
+- [Features](#features)
+- [Installation](#installation)
+  - [Pre-built binary](#pre-built-binary)
+  - [Cargo](#cargo)
+  - [Nix](#nix)
+  - [Sources](#sources)
+- [Configuration](#configuration)
+- [FAQ](#faq)
+- [Sponsoring](#sponsoring)
 
 ## Features
 
@@ -13,130 +25,126 @@ CLI to manage timers.
 
 ## Installation
 
-*The `v1.0.0` is currently being tested on the `master` branch, and is the prefered version to use. Previous versions (including GitHub beta releases and repositories published versions) are not recommended.*
-
 ### Pre-built binary
 
-Comodoro CLI `v1.0.0` can be installed with a pre-built binary. Find the latest [`releases`](https://github.com/pimalaya/comodoro/actions/workflows/releases.yml) GitHub workflow and look for the *Artifacts* section. You should find a pre-built binary matching your OS.
+Comodoro CLI can be installed with the `install.sh` installer:
 
-### Cargo (git)
+*As root:*
 
-Comodoro CLI `v1.0.0` can also be installed with [cargo](https://doc.rust-lang.org/cargo/):
-
-```bash
-$ cargo install --locked --git https://github.com/pimalaya/comodoro.git
+```
+curl -sSL https://raw.githubusercontent.com/pimalaya/comodoro/master/install.sh | sudo sh
 ```
 
-### Other outdated methods
+*As a regular user:*
 
-These installation methods should not be used until the `v1.0.0` is finally released, as they are all (temporarily) outdated:
+```
+curl -sSL https://raw.githubusercontent.com/pimalaya/comodoro/master/install.sh | PREFIX=~/.local sh
+```
 
-<details>
-  <summary>Pre-built binary</summary>
+These commands install the latest binary from the GitHub [releases](https://github.com/pimalaya/comodoro/releases) section.
 
-  Comodoro CLI can be installed with a prebuilt binary:
+If you want a more up-to-date version than the latest release, check out the [releases](https://github.com/pimalaya/comodoro/actions/workflows/releases.yml) GitHub workflow and look for the *Artifacts* section. You will find a pre-built binary matching your OS. These pre-built binaries are built from the `master` branch.
 
-  ```bash
-  # As root:
-  $ curl -sSL https://raw.githubusercontent.com/pimalaya/comodoro/master/install.sh | sudo sh
+*Such binaries are built with the default cargo features. If you need more features, please use another installation method.*
 
-  # As a regular user:
-  $ curl -sSL https://raw.githubusercontent.com/pimalaya/comodoro/master/install.sh | PREFIX=~/.local sh
-  ```
+### Cargo
 
-  These commands install the latest binary from the GitHub [releases](https://github.com/pimalaya/comodoro/releases) section.
+Comodoro CLI can be installed with [cargo](https://doc.rust-lang.org/cargo/):
 
-  *Binaries are built with [default](https://github.com/pimalaya/comodoro/blob/master/Cargo.toml#L18) cargo features. If you want to enable or disable a feature, please use another installation method.*
-</details>
+```
+cargo install comodoro --locked
+```
 
-<details>
-  <summary>Cargo</summary>
+With only IMAP support:
 
-  Comodoro CLI can be installed with [cargo](https://doc.rust-lang.org/cargo/):
+```
+cargo install comodoro --locked --no-default-features --features imap
+```
 
-  ```bash
-  $ cargo install comodoro
+You can also use the git repository for a more up-to-date (but less stable) version:
 
-  # With only IMAP support:
-  $ cargo install comodoro --no-default-features --features imap
-  ```
+```
+cargo install --locked --git https://github.com/pimalaya/comodoro.git
+```
 
-  You can also use the git repository for a more up-to-date (but less stable) version:
+### Nix
 
-  ```bash
-  $ cargo install --git https://github.com/pimalaya/comodoro.git comodoro
-  ```
-</details>
+Comodoro CLI can be installed with [Nix](https://serokell.io/blog/what-is-nix):
 
-<details>
-  <summary>Nix</summary>
+```
+nix-env -i comodoro
+```
 
-  Comodoro CLI can be installed with [Nix](https://serokell.io/blog/what-is-nix):
+You can also use the git repository for a more up-to-date (but less stable) version:
 
-  ```bash
-  $ nix-env -i comodoro
-  ```
+```
+nix-env -if https://github.com/pimalaya/comodoro/archive/master.tar.gz
+```
 
-  You can also use the git repository for a more up-to-date (but less stable) version:
+*Or, from within the source tree checkout:*
 
-  ```bash
-  $ nix-env -if https://github.com/pimalaya/comodoro/archive/master.tar.gz
+```
+nix-env -if .
+```
 
-  # or, from within the source tree checkout
-  $ nix-env -if .
-  ```
+If you have the [Flakes](https://nixos.wiki/wiki/Flakes) feature enabled:
 
-  If you have the [Flakes](https://nixos.wiki/wiki/Flakes) feature enabled:
+```
+nix profile install comodoro
+```
 
-  ```bash
-  $ nix profile install comodoro
+*Or, from within the source tree checkout:*
 
-  # or, from within the source tree checkout
-  $ nix profile install
+```
+nix profile install
+```
 
-  # you can also run Comodoro directly without installing it:
-  $ nix run comodoro
-  ```
-</details>
+*You can also run Comodoro directly without installing it:*
 
-<details>
-  <summary>Sources</summary>
+```
+nix run comodoro
+```
 
-  Comodoro CLI can be installed from sources.
+### Sources
 
-  First you need to install the Rust development environment (see the [rust installation documentation](https://doc.rust-lang.org/cargo/getting-started/installation.html)):
+Comodoro CLI can be installed from sources.
 
-  ```bash
-  $ curl https://sh.rustup.rs -sSf | sh
-  ```
+First you need to install the Rust development environment (see the [rust installation documentation](https://doc.rust-lang.org/cargo/getting-started/installation.html)):
 
-  Then, you need to clone the repository and install dependencies:
+```
+curl https://sh.rustup.rs -sSf | sh
+```
 
-  ```bash
-  $ git clone https://github.com/pimalaya/comodoro.git
-  $ cd comodoro
-  $ cargo check
-  ```
+Then, you need to clone the repository and install dependencies:
 
-  Now, you can build Comodoro:
+```
+git clone https://github.com/pimalaya/comodoro.git
+cd comodoro
+cargo check
+```
 
-  ```bash
-  $ cargo build --release
-  ```
+Now, you can build Comodoro:
 
-  *Binaries are available under the `target/release` folder.*
-</details>
+```
+cargo build --release
+```
+
+*Binaries are available under the `target/release` folder.*
 
 ## Configuration
 
-The wizard is not yet available (it should come soon), so the only way to configure Comodoro CLI is to copy the [sample config file](./config.sample.toml) then edit it by commenting or uncommenting the options you want.
+The wizard is not yet available (it should come soon), meanwhile you can manually edit your own configuration from scratch:
+
+- Copy the content of the documented [`./config.sample.toml`](./config.sample.toml)
+- Paste it in a new file `~/.config/comodoro/config.toml`
+- Edit, then comment or uncomment the options you want
 
 ## FAQ
 
 <details>
   <summary>How to debug Comodoro CLI?</summary>
 
-  The simplest way is to use `--debug` and `--trace` arguments.
+  The simplest way is to use `--debug` and/or `--trace` arguments.
 
   The advanced way is based on environment variables:
 
@@ -154,11 +162,11 @@ The wizard is not yet available (it should come soon), so the only way to config
 
 [![nlnet](https://nlnet.nl/logo/banner-160x60.png)](https://nlnet.nl/)
 
-Special thanks to the [NLnet foundation](https://nlnet.nl/) and the [European Commission](https://www.ngi.eu/) that helped the project to receive financial support from various programs:
+Special thanks to the [NLnet foundation](https://nlnet.nl/) and the [European Commission](https://www.ngi.eu/) that have been financially supporting the project for years:
 
-- [NGI Assure](https://nlnet.nl/project/Himalaya/) in 2022
-- [NGI Zero Entrust](https://nlnet.nl/project/Pimalaya/) in 2023
-- [NGI Zero Core](https://nlnet.nl/project/Pimalaya-PIM/) in 2024 *(still ongoing)*
+- 2022: [NGI Assure](https://nlnet.nl/project/Himalaya/)
+- 2023: [NGI Zero Entrust](https://nlnet.nl/project/Pimalaya/)
+- 2024: [NGI Zero Core](https://nlnet.nl/project/Pimalaya-PIM/) *(still ongoing in 2026)*
 
 If you appreciate the project, feel free to donate using one of the following providers:
 
