@@ -57,6 +57,7 @@ rustPlatform.buildRustPackage rec {
     in
     lib.optionalString (lib.hasInfix "wine" emulator) ''
       export WINEPREFIX="''${XDG_DATA_HOME:-"''${HOME}/.local/share"}/comodoro/wine"
+      mkdir -p $WINEPREFIX
     ''
     + ''
       mkdir -p $out/share/{completions,man}
