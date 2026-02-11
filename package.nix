@@ -32,14 +32,14 @@ let
   # notify feature is part of default cargo features
   hasNotifyFeature = !buildNoDefaultFeatures || builtins.elem "notify" buildFeatures;
 
-  # needed to build dbus on aarch64-linux
-  dbus' = dbus.overrideAttrs (old: {
-    env = (old.env or { }) // {
-      NIX_CFLAGS_COMPILE =
-        (old.env.NIX_CFLAGS_COMPILE or "")
-        + lib.optionalString (isLinux && isAarch64) " -mno-outline-atomics";
-    };
-  });
+  # # needed to build dbus on aarch64-linux
+  # dbus' = dbus.overrideAttrs (old: {
+  #   env = (old.env or { }) // {
+  #     NIX_CFLAGS_COMPILE =
+  #       (old.env.NIX_CFLAGS_COMPILE or "")
+  #       + lib.optionalString (isLinux && isAarch64) " -mno-outline-atomics";
+  #   };
+  # });
 
 in
 rustPlatform.buildRustPackage {
@@ -64,10 +64,11 @@ rustPlatform.buildRustPackage {
   buildInputs =
     [ ]
     ++ lib.optional stdenv.hostPlatform.isDarwin apple-sdk
-    ++ lib.optional (hasNotifyFeature && !isWindows && !isx86_64) dbus';
+    ++ lib.optional (hasNotifyFeature && !(isWindows && isx86_64) && !(isLinux && isAarch64)) dbus;
 
   buildFeatures =
-    buildFeatures ++ lib.optional (hasNotifyFeature && isWindows && isx86_64) "vendored";
+    buildFeatures
+    ++ lib.optional (hasNotifyFeature && (isWindows && isx86_64 || isLinux && isAarch64)) "vendored";
 
   doCheck = false;
 
