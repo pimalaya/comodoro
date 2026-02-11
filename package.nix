@@ -24,7 +24,16 @@ let
 
   hasNotifyFeature = !buildNoDefaultFeatures || builtins.elem "notify" buildFeatures;
   isWindowsx86_64 = stdenv.hostPlatform.isWindows && stdenv.hostPlatform.isx86_64;
-  needAtomicLib = hasNotifyFeature && stdenv.hostPlatform.isLinux && stdenv.hostPlatform.isAarch64;
+  isLinuxAarch64 = stdenv.hostPlatform.isWindows && stdenv.hostPlatform.isx86_64;
+
+  # needed to build dbus on aarch64-linux
+  dbus' = dbus.overrideAttrs (old: {
+    env =
+      (old.env or { })
+      // lib.optionalAttrs isLinuxAarch64 {
+        NIX_CFLAGS_COMPILE = (old.env.NIX_CFLAGS_COMPILE or "") + " -mno-outline-atomics";
+      };
+  });
 
 in
 rustPlatform.buildRustPackage {
@@ -41,11 +50,6 @@ rustPlatform.buildRustPackage {
 
   useFetchCargoVendor = true;
 
-  # needed to build dbus on aarch64-linux
-  env = lib.optionalAttrs needAtomicLib {
-    NIX_CFLAGS_COMPILE = "-mno-outline-atomics";
-  };
-
   nativeBuildInputs =
     [ ]
     ++ lib.optional hasNotifyFeature pkg-config
@@ -54,7 +58,7 @@ rustPlatform.buildRustPackage {
   buildInputs =
     [ ]
     ++ lib.optional stdenv.hostPlatform.isDarwin apple-sdk
-    ++ lib.optional (hasNotifyFeature && !isWindowsx86_64) dbus;
+    ++ lib.optional (hasNotifyFeature && !isWindowsx86_64) dbus';
 
   buildFeatures = buildFeatures ++ lib.optional (hasNotifyFeature && isWindowsx86_64) "vendored";
 
