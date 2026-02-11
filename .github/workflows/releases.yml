@@ -13,3 +13,4 @@ jobs:
     secrets: inherit
     with:
       project: comodoro
+      nixpkgs: staging-next
