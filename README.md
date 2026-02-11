@@ -55,10 +55,10 @@ Comodoro CLI can be installed with [cargo](https://doc.rust-lang.org/cargo/):
 cargo install comodoro --locked
 ```
 
-With only IMAP support:
+With only server support:
 
 ```
-cargo install comodoro --locked --no-default-features --features imap
+cargo install comodoro --locked --no-default-features --features server
 ```
 
 You can also use the git repository for a more up-to-date (but less stable) version:
@@ -136,7 +136,7 @@ cargo build --release
 The wizard is not yet available (it should come soon), meanwhile you can manually edit your own configuration from scratch:
 
 - Copy the content of the documented [`./config.sample.toml`](./config.sample.toml)
-- Paste it in a new file `~/.config/comodoro/config.toml`
+- Paste it into a new file `~/.config/comodoro/config.toml`
 - Edit, then comment or uncomment the options you want
 
 ## FAQ

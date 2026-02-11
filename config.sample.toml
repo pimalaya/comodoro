@@ -15,7 +15,6 @@ unix-socket.path = "/tmp/comodoro.sock"
 unix-socket.default = true
 
 # Enables TCP client and server.
-# Requires the cargo feature "tcp".
 #
 #tcp.host = "127.0.0.1"
 tcp.port = 9999
