@@ -22,11 +22,9 @@ let
   hash = "";
   cargoHash = "";
 
-  isLinuxAarch64 = stdenv.hostPlatform.isLinux && stdenv.hostPlatform.isAarch64;
-  isWindowsx86_64 = stdenv.hostPlatform.isWindows && stdenv.hostPlatform.isx86_64;
   hasNotifyFeature = !buildNoDefaultFeatures || builtins.elem "notify" buildFeatures;
-  dbusFromNix = hasNotifyFeature && !isLinuxAarch64 && !isWindowsx86_64;
-  dbusFromCargo = hasNotifyFeature && (isLinuxAarch64 || isWindowsx86_64);
+  isWindowsx86_64 = stdenv.hostPlatform.isWindows && stdenv.hostPlatform.isx86_64;
+  needAtomicLib = hasNotifyFeature && stdenv.hostPlatform.isLinux && stdenv.hostPlatform.isAarch64;
 
 in
 rustPlatform.buildRustPackage {
@@ -43,15 +41,22 @@ rustPlatform.buildRustPackage {
 
   useFetchCargoVendor = true;
 
-  nativeBuildInputs = [
-    pkg-config
-  ]
-  ++ lib.optional (installManPages || installShellCompletions) installShellFiles;
+  # needed to build dbus on aarch64-linux
+  env = lib.optionalAttrs needAtomicLib {
+    NIX_LDFLAGS = "-latomic";
+  };
+
+  nativeBuildInputs =
+    [ ]
+    ++ lib.optional hasNotifyFeature pkg-config
+    ++ lib.optional (installManPages || installShellCompletions) installShellFiles;
 
   buildInputs =
-    [ ] ++ lib.optional stdenv.hostPlatform.isDarwin apple-sdk ++ lib.optional dbusFromNix dbus;
+    [ ]
+    ++ lib.optional stdenv.hostPlatform.isDarwin apple-sdk
+    ++ lib.optional (hasNotifyFeature && !isWindowsx86_64) dbus;
 
-  buildFeatures = buildFeatures ++ lib.optional dbusFromCargo "vendored";
+  buildFeatures = buildFeatures ++ lib.optional (hasNotifyFeature && isWindowsx86_64) "vendored";
 
   doCheck = false;
 
