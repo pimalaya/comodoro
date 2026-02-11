@@ -20,8 +20,10 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use clap::{CommandFactory, Parser, Subcommand};
+use log::trace;
+#[cfg(any(feature = "client", feature = "server"))]
+use pimalaya_toolbox::config::TomlConfig;
 use pimalaya_toolbox::{
-    config::TomlConfig,
     long_version,
     terminal::{
         clap::{
@@ -37,6 +39,7 @@ use crate::client::{
     get::GetTimerCommand, pause::PauseTimerCommand, resume::ResumeTimerCommand,
     start::StartTimerCommand, stop::StopTimerCommand,
 };
+#[cfg(any(feature = "client", feature = "server"))]
 use crate::config::Config;
 #[cfg(feature = "server")]
 use crate::server::ServerSubcommand;
@@ -91,6 +94,9 @@ impl ComodoroCommand {
         config_paths: &[PathBuf],
         account_name: Option<&str>,
     ) -> Result<()> {
+        trace!("config paths: {config_paths:?}");
+        trace!("account name: {account_name:?}");
+
         match self {
             #[cfg(feature = "client")]
             Self::Start(cmd) => {

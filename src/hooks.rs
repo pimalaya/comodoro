@@ -27,9 +27,8 @@ use io_process::{
     },
     runtimes::std::handle,
 };
-use log::debug;
-#[cfg(feature = "notify")]
-use log::trace;
+#[cfg(any(feature = "command", feature = "notify"))]
+use log::{debug, trace};
 #[cfg(feature = "notify")]
 use notify_rust::Notification;
 use serde::{Deserialize, Serialize};
