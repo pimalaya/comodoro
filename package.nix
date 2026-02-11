@@ -18,6 +18,12 @@
 }:
 
 let
+  version = "1.0.0";
+  hash = "";
+  cargoHash = "";
+
+  hasNotifyFeature = !buildNoDefaultFeatures || builtins.elem "notify" buildFeatures;
+
   inherit (stdenv.hostPlatform)
     isLinux
     isWindows
@@ -25,21 +31,19 @@ let
     isAarch64
     ;
 
-  version = "1.0.0";
-  hash = "";
-  cargoHash = "";
+  # statically link dbus via cargo (vendored)
+  dbusFromCargo = hasNotifyFeature && isWindows && isx86_64;
+  # statically link dbus via nixpkgs
+  dbusFromNix = hasNotifyFeature && !(isWindows && isx86_64);
 
-  # notify feature is part of default cargo features
-  hasNotifyFeature = !buildNoDefaultFeatures || builtins.elem "notify" buildFeatures;
-
-  # # needed to build dbus on aarch64-linux
-  # dbus' = dbus.overrideAttrs (old: {
-  #   env = (old.env or { }) // {
-  #     NIX_CFLAGS_COMPILE =
-  #       (old.env.NIX_CFLAGS_COMPILE or "")
-  #       + lib.optionalString (isLinux && isAarch64) " -mno-outline-atomics";
-  #   };
-  # });
+  # needed to build dbus on aarch64-linux
+  dbus' = dbus.overrideAttrs (old: {
+    env = (old.env or { }) // {
+      NIX_CFLAGS_COMPILE =
+        (old.env.NIX_CFLAGS_COMPILE or "")
+        + lib.optionalString (isLinux && isAarch64) " -mno-outline-atomics";
+    };
+  });
 
 in
 rustPlatform.buildRustPackage {
@@ -54,8 +58,6 @@ rustPlatform.buildRustPackage {
     rev = "v${version}";
   };
 
-  useFetchCargoVendor = true;
-
   env = lib.optionalAttrs (isLinux && isAarch64) {
     NIX_CFLAGS_COMPILE = "-mno-outline-atomics";
   };
@@ -66,14 +68,11 @@ rustPlatform.buildRustPackage {
     ++ lib.optional (installManPages || installShellCompletions) installShellFiles;
 
   buildInputs =
-    [ ]
-    ++ lib.optional stdenv.hostPlatform.isDarwin apple-sdk
-    ++ lib.optional (hasNotifyFeature && !(isWindows && isx86_64) && !(isLinux && isAarch64)) dbus;
+    [ ] ++ lib.optional stdenv.hostPlatform.isDarwin apple-sdk ++ lib.optional dbusFromNix dbus';
 
-  buildFeatures =
-    buildFeatures
-    ++ lib.optional (hasNotifyFeature && (isWindows && isx86_64 || isLinux && isAarch64)) "vendored";
+  buildFeatures = buildFeatures ++ lib.optional dbusFromCargo "vendored";
 
+  useFetchCargoVendor = true;
   doCheck = false;
 
   postInstall =
