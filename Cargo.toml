@@ -24,7 +24,7 @@ notify = ["dep:notify-rust"]
 vendored = ["notify-rust?/d_vendored"]
 
 [build-dependencies]
-pimalaya-toolbox = { version = "0.0.2", default-features = false, features = ["build"] }
+pimalaya-toolbox = { version = "0.0.3", default-features = false, features = ["build"] }
 
 [dependencies]
 anyhow = "1"
@@ -38,11 +38,5 @@ io-stream = { version = "0.0.2", default-features = false, features = ["std"] }
 io-timer = "0.0.1"
 log = "0.4"
 notify-rust = { version = "4", default-features = false, features = ["d"], optional = true }
-pimalaya-toolbox = { version = "0.0.2", default-features = false, features = ["config", "prompt", "secret", "stream", "terminal"] }
+pimalaya-toolbox = { version = "0.0.3", default-features = false, features = ["config", "prompt", "secret", "stream", "terminal"] }
 serde = "1"
-
-[patch.crates-io]
-io-process.git = "https://github.com/pimalaya/io-process"
-io-stream.git = "https://github.com/pimalaya/io-stream"
-io-timer.git = "https://github.com/pimalaya/io-timer"
-pimalaya-toolbox.git = "https://github.com/pimalaya/toolbox"

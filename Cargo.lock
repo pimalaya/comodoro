@@ -597,7 +597,8 @@ dependencies = [
 [[package]]
 name = "io-process"
 version = "0.0.2"
-source = "git+https://github.com/pimalaya/io-process#763ebff10a7178d3fe0598b41a60bb847e828877"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "54362e497536be1b10ad35a790838e89ce30d5095a66f12f5315154cf5041d03"
 dependencies = [
  "log",
  "serde",
@@ -607,7 +608,8 @@ dependencies = [
 [[package]]
 name = "io-stream"
 version = "0.0.2"
-source = "git+https://github.com/pimalaya/io-stream#4b3c614814d1b5943dec1239cee918a59e351dd7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "28001902240f3f1c95cd165933ec130068e82c1b0118157bbf20f8be0054041f"
 dependencies = [
  "log",
  "thiserror",
@@ -616,7 +618,8 @@ dependencies = [
 [[package]]
 name = "io-timer"
 version = "0.0.1"
-source = "git+https://github.com/pimalaya/io-timer#e254a3a7cadd5fa29a4c38e389eebda938392d63"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4ae8c0d10d8cc73b11fb5aba57c53dd290c7090974dc355c1bd6ec3d05d55cb0"
 dependencies = [
  "io-stream",
  "log",
@@ -895,8 +898,9 @@ checksum = "9b4f627cb1b25917193a259e49bdad08f671f8d9708acfd5fe0a8c1455d87220"
 
 [[package]]
 name = "pimalaya-toolbox"
-version = "0.0.2"
-source = "git+https://github.com/pimalaya/toolbox#53826c5d7943434a381ab8875e340b8527b66c53"
+version = "0.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1b6df1a971eaaba127f29a6eae748deec886328f88a660b8a1e95effb6ecfc5b"
 dependencies = [
  "anyhow",
  "clap",
