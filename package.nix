@@ -43,7 +43,7 @@ rustPlatform.buildRustPackage {
 
   # needed to build dbus on aarch64-linux
   env = lib.optionalAttrs needAtomicLib {
-    NIX_LDFLAGS = "-latomic";
+    NIX_CFLAGS_COMPILE = "-mno-outline-atomics";
   };
 
   nativeBuildInputs =
