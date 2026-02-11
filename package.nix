@@ -22,14 +22,15 @@ let
   hash = "";
   cargoHash = "";
 
+  isLinuxAarch64 = stdenv.hostPlatform.isLinux && stdenv.hostPlatform.isAarch64;
+  isWindowsx86_64 = stdenv.hostPlatform.isWindows && stdenv.hostPlatform.isx86_64;
+  hasNotifyFeature = !buildNoDefaultFeatures || builtins.elem "notify" buildFeatures;
+  dbusFromNix = hasNotifyFeature && !isLinuxAarch64 && !isWindowsx86_64;
+  dbusFromCargo = hasNotifyFeature && (isLinuxAarch64 || isWindowsx86_64);
+
 in
-rustPlatform.buildRustPackage rec {
-  inherit
-    cargoHash
-    version
-    buildNoDefaultFeatures
-    buildFeatures
-    ;
+rustPlatform.buildRustPackage {
+  inherit cargoHash version buildNoDefaultFeatures;
 
   pname = "comodoro";
 
@@ -48,9 +49,9 @@ rustPlatform.buildRustPackage rec {
   ++ lib.optional (installManPages || installShellCompletions) installShellFiles;
 
   buildInputs =
-    [ ]
-    ++ lib.optional stdenv.hostPlatform.isDarwin apple-sdk
-    ++ lib.optional (!buildNoDefaultFeatures || builtins.elem "notify" buildFeatures) dbus;
+    [ ] ++ lib.optional stdenv.hostPlatform.isDarwin apple-sdk ++ lib.optional dbusFromNix dbus;
+
+  buildFeatures = buildFeatures ++ lib.optional dbusFromCargo "vendored";
 
   doCheck = false;
 
