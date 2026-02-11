@@ -15,6 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Renamed cargo feature `hook-command` into `command`.
 - Renamed cargo feature `hook-notify` into `notify`.
 - Prefixed preset configs with `presets.`, see `./config.sample.toml`.
+- Used `dbus` instead of `zbus` for `notify-rust`.
+
+### Fixed
+
+- Fixed Windows build with `dbus`.
 
 ### Removed
 
@@ -139,7 +144,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed OS specific `tmp` and `xdg` dirs [#3].
 - Fixed missing CI artifacts from releases [#6].
 
-[Unreleased]: https://github.com/pimalaya/comodoro/compare/v0.1.2...master
+[Unreleased]: https://github.com/pimalaya/comodoro/compare/v1.0.0...master
+[1.0.0]: https://github.com/pimalaya/comodoro/compare/v0.1.2...v1.0.0
 [0.1.2]: https://github.com/pimalaya/comodoro/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/pimalaya/comodoro/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/pimalaya/comodoro/compare/v0.0.10...v0.1.0
