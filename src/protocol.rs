@@ -16,21 +16,11 @@
 // License along with this program. If not, see
 // <https://www.gnu.org/licenses/>.
 
-#[cfg(unix)]
-use std::os::unix::net::UnixStream;
-use std::{
-    io::{Read, Write},
-    net::TcpStream,
-};
+use std::ops::Deref;
 
-use anyhow::{bail, Result};
-use clap::{builder::PossibleValue, ValueEnum};
+use anyhow::Result;
+use clap::{builder::PossibleValue, Parser, ValueEnum};
 use serde::{Deserialize, Serialize};
-
-use crate::account::Account;
-
-pub trait StreamExt: Read + Write {}
-impl<T: Read + Write> StreamExt for T {}
 
 #[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
@@ -46,30 +36,6 @@ impl Protocol {
         Protocol::UnixSocket,
         Protocol::Tcp,
     ];
-
-    pub fn connect(&self, account: &Account) -> Result<Box<dyn StreamExt>> {
-        let stream: Box<dyn StreamExt> = match self {
-            #[cfg(unix)]
-            Protocol::UnixSocket => {
-                let Some(sock) = &account.unix_socket else {
-                    bail!("Missing unix socket configuration");
-                };
-
-                let stream = UnixStream::connect(&sock.path)?;
-                Box::new(stream)
-            }
-            Protocol::Tcp => {
-                let Some(tcp) = &account.tcp else {
-                    bail!("Missing TCP configuration");
-                };
-
-                let stream = TcpStream::connect((tcp.host.as_str(), tcp.port))?;
-                Box::new(stream)
-            }
-        };
-
-        Ok(stream)
-    }
 }
 
 impl ValueEnum for Protocol {
@@ -108,5 +74,43 @@ impl ToString for Protocol {
             Self::UnixSocket => "unix-socket".into(),
             Self::Tcp => "tcp".into(),
         }
+    }
+}
+
+/// The protocol name argument parser.
+#[derive(Debug, Parser)]
+pub struct ProtocolArg {
+    /// Protocol used to send requests.
+    #[arg(name = "protocol", value_name = "PROTOCOL")]
+    pub value: Option<Protocol>,
+}
+
+impl Deref for ProtocolArg {
+    type Target = Option<Protocol>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
+
+/// The protocols name argument parser.
+#[derive(Debug, Parser)]
+pub struct ProtocolsArg {
+    /// Protocols used to accept requests from clients.
+    #[arg(name = "protocols", value_name = "PROTOCOLS")]
+    pub value: Option<Vec<Protocol>>,
+}
+
+impl Deref for ProtocolsArg {
+    type Target = Option<Vec<Protocol>>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
+
+impl From<ProtocolsArg> for Option<Vec<Protocol>> {
+    fn from(arg: ProtocolsArg) -> Self {
+        arg.value
     }
 }

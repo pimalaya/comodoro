@@ -26,10 +26,30 @@ tcp.port = 9999
 # A cycle is a step in the timer lifetime, represented by a name and a
 # duration (in seconds).
 #
+# Example of a Pomodoro cycles:
+#
 cycles = [
-  { name = "Work", duration = 5 },
-  { name = "Rest", duration = 3 },
+  { name = "Work", duration = 1500 },      # 25 min
+  { name = "Rest", duration = 300 },       #  5 min
+  { name = "Work", duration = 1500 },      # 25 min
+  { name = "Rest", duration = 300 },       #  5 min
+  { name = "Work", duration = 1500 },      # 25 min
+  { name = "Long rest", duration = 1800 }, # 30 min
 ]
+
+# Example of a 52/17 cycles:
+#
+#cycles = [
+#  { name = "Work", duration = 3120 }, # 52 min
+#  { name = "Rest", duration = 1020 }, # 17 min
+#]
+
+# Example of a 112/26 cycles:
+#
+#cycles = [
+#  { name = "Work", duration = 6720 }, # 112 min
+#  { name = "Rest", duration = 1560 }, #  26 min
+#]
 
 # Forces the timer to stop after the given amount of loops.
 #

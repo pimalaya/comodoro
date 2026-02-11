@@ -16,4 +16,28 @@
 // License along with this program. If not, see
 // <https://www.gnu.org/licenses/>.
 
-pub mod command;
+mod start;
+
+use anyhow::Result;
+use clap::Subcommand;
+
+use crate::account::Account;
+
+use self::start::StartServerCommand;
+
+/// Manage servers.
+///
+/// A server controls a timer, and receive requests from clients to
+/// manipulate the timer.
+#[derive(Debug, Subcommand)]
+pub enum ServerSubcommand {
+    Start(StartServerCommand),
+}
+
+impl ServerSubcommand {
+    pub fn execute(self, account: &Account) -> Result<()> {
+        match self {
+            Self::Start(cmd) => cmd.execute(account),
+        }
+    }
+}

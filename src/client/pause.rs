@@ -19,41 +19,41 @@
 use anyhow::{bail, Result};
 use clap::Parser;
 use io_stream::runtimes::std::handle;
-use io_timer::client::coroutines::{send::SendRequestResult, stop::StopTimer};
+use io_timer::client::coroutines::{pause::PauseTimer, send::SendRequestResult};
 use pimalaya_toolbox::terminal::printer::{Message, Printer};
 
-use crate::{account::Account, protocol::arg::one::ProtocolArg};
+use crate::{account::Account, protocol::ProtocolArg, stream};
 
-/// Stop the timer.
+/// Pause the timer.
 ///
 /// This command allows you to send a request to the server in order
-/// to stop the timer.
+/// to pause the timer.
 #[derive(Debug, Parser)]
-pub struct StopTimerCommand {
+pub struct PauseTimerCommand {
     #[command(flatten)]
     pub protocol: ProtocolArg,
 }
 
-impl StopTimerCommand {
+impl PauseTimerCommand {
     pub fn execute(self, printer: &mut impl Printer, account: &Account) -> Result<()> {
         let protocol = match &*self.protocol {
             Some(protocol) => protocol.clone(),
             None => account.get_default_protocol()?,
         };
 
-        let mut stream = protocol.connect(&account)?;
+        let mut stream = stream::connect(&account, &protocol)?;
 
         let mut arg = None;
-        let mut stop = StopTimer::new();
+        let mut pause = PauseTimer::new();
 
         loop {
-            match stop.resume(arg.take()) {
+            match pause.resume(arg.take()) {
                 SendRequestResult::Ok(_) => break,
                 SendRequestResult::Io(io) => arg = Some(handle(&mut stream, io)?),
                 SendRequestResult::Err(err) => bail!(err),
             }
         }
 
-        printer.out(Message::new("Timer successfully stopped"))
+        printer.out(Message::new("Timer successfully paused"))
     }
 }

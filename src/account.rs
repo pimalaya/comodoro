@@ -17,6 +17,7 @@
 // <https://www.gnu.org/licenses/>.
 
 use anyhow::{bail, Result};
+use clap::Parser;
 use io_timer::timer::TimerCycle;
 use log::debug;
 use serde::{Deserialize, Serialize};
@@ -83,4 +84,16 @@ impl Account {
 
         bail!("Cannot find default protocol, please configure at least one");
     }
+}
+
+/// The account name argument parser.
+#[derive(Debug, Parser)]
+pub struct AccountNameArg {
+    /// Name of the account configuration.
+    ///
+    /// Uses configuration matching the given account name from the
+    /// configuration file.
+    #[arg(long = "account", short = 'a')]
+    #[arg(name = "account-name", value_name = "NAME")]
+    pub name: Option<String>,
 }

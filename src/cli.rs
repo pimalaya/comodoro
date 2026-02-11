@@ -33,13 +33,13 @@ use pimalaya_toolbox::{
 };
 
 #[cfg(feature = "client")]
-use crate::client::command::{
+use crate::client::{
     get::GetTimerCommand, pause::PauseTimerCommand, resume::ResumeTimerCommand,
     start::StartTimerCommand, stop::StopTimerCommand,
 };
 use crate::config::Config;
 #[cfg(feature = "server")]
-use crate::server::command::ServerSubcommand;
+use crate::server::ServerSubcommand;
 
 #[derive(Parser, Debug)]
 #[command(name = env!("CARGO_PKG_NAME"))]

@@ -22,7 +22,7 @@ use io_stream::runtimes::std::handle;
 use io_timer::client::coroutines::{resume::ResumeTimer, send::SendRequestResult};
 use pimalaya_toolbox::terminal::printer::{Message, Printer};
 
-use crate::{account::Account, protocol::arg::one::ProtocolArg};
+use crate::{account::Account, protocol::ProtocolArg, stream};
 
 /// Resume the timer.
 ///
@@ -41,7 +41,7 @@ impl ResumeTimerCommand {
             None => account.get_default_protocol()?,
         };
 
-        let mut stream = protocol.connect(&account)?;
+        let mut stream = stream::connect(&account, &protocol)?;
 
         let mut arg = None;
         let mut resume = ResumeTimer::new();

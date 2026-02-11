@@ -23,6 +23,7 @@ pub mod config;
 pub mod hooks;
 pub mod protocol;
 pub mod server;
+pub mod stream;
 pub mod tcp;
 pub mod timer;
 #[cfg(unix)]

@@ -29,7 +29,7 @@ use io_timer::{
 use pimalaya_toolbox::terminal::printer::Printer;
 use serde::{Serialize, Serializer};
 
-use crate::{account::Account, protocol::arg::one::ProtocolArg, timer::TimerPrecision};
+use crate::{account::Account, protocol::ProtocolArg, stream, timer::TimerPrecision};
 
 /// Get the timer.
 ///
@@ -48,7 +48,7 @@ impl GetTimerCommand {
             None => account.get_default_protocol()?,
         };
 
-        let mut stream = protocol.connect(&account)?;
+        let mut stream = stream::connect(&account, &protocol)?;
 
         let mut arg = None;
         let mut get = GetTimer::new();

@@ -12,6 +12,7 @@ CLI to manage timers
   - [Sources](#sources)
 - [Configuration](#configuration)
 - [FAQ](#faq)
+- [Social](#social)
 - [Sponsoring](#sponsoring)
 
 ## Features
@@ -141,22 +142,26 @@ The wizard is not yet available (it should come soon), meanwhile you can manuall
 
 ## FAQ
 
-<details>
-  <summary>How to debug Comodoro CLI?</summary>
+### How to debug Comodoro CLI?
 
-  The simplest way is to use `--debug` and/or `--trace` arguments.
+The simplest way is to use `--debug` and/or `--trace` arguments.
 
-  The advanced way is based on environment variables:
+The advanced way is based on environment variables:
 
-  - `RUST_LOG=<level>`: determines the log level filter, can be one of `off`, `error`, `warn`, `info`, `debug` and `trace`.
-  - `RUST_BACKTRACE=1`: enables the full error backtrace, which include source lines where the error originated from.
+- `RUST_LOG=<level>`: determines the log level filter, can be one of `off`, `error`, `warn`, `info`, `debug` and `trace`.
+- `RUST_BACKTRACE=1`: enables the full error backtrace, which include source lines where the error originated from.
 
-  Logs are written to the `stderr`, which means that you can redirect them easily to a file:
+Logs are written to the `stderr`, which means that you can redirect them easily to a file:
 
-  ```
-  comodoro server start --debug 2>/tmp/comodoro.log
-  ```
-</details>
+```
+comodoro server start --debug 2>/tmp/comodoro.log
+```
+
+## Social
+
+- Chat on [Matrix](https://matrix.to/#/#pimalaya:matrix.org)
+- News on [Mastodon](https://fosstodon.org/@pimalaya) or [RSS](https://fosstodon.org/@pimalaya.rss)
+- Mail at [pimalaya.org@posteo.net](mailto:pimalaya.org@posteo.net)
 
 ## Sponsoring
 

@@ -29,7 +29,7 @@ use log::{debug, error, warn};
 
 use crate::{
     account::Account,
-    protocol::{arg::many::ProtocolsArg, Protocol},
+    protocol::{Protocol, ProtocolsArg},
 };
 
 /// Start the server.
