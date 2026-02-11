@@ -66,7 +66,7 @@ impl StartServerCommand {
                             }
 
                             let Some(sock) = &account.unix_socket else {
-                                bail!("missing Unix socket configuration");
+                                bail!("Missing Unix socket configuration");
                             };
 
                             sock
@@ -127,7 +127,7 @@ impl StartServerCommand {
                             }
 
                             let Some(tcp) = &account.tcp else {
-                                bail!("missing TCP configuration");
+                                bail!("Missing TCP configuration");
                             };
 
                             tcp
