@@ -15,6 +15,9 @@ repository = "https://github.com/pimalaya/comodoro"
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
+[target.aarch64-unknown-linux-musl]
+rustflags = ["-C", "link-arg=-latomic"]
+
 [features]
 default = ["client", "server", "command", "notify"]
 client = ["io-timer/client"]
