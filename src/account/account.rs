@@ -18,6 +18,7 @@
 
 use anyhow::{bail, Result};
 use io_timer::timer::TimerCycle;
+use log::debug;
 use serde::{Deserialize, Serialize};
 
 #[cfg(unix)]
@@ -47,25 +48,39 @@ pub struct Account {
 
 impl Account {
     pub fn get_default_protocol(&self) -> Result<Protocol> {
-        let mut protocol = None;
+        let mut first_available_protocol = None;
+        let mut default_protocol = None;
 
         #[cfg(unix)]
         if let Some(sock) = &self.unix_socket {
+            if first_available_protocol.is_none() {
+                first_available_protocol = Some(Protocol::UnixSocket);
+            }
+
             if sock.default {
-                protocol.replace(Protocol::UnixSocket);
+                default_protocol.replace(Protocol::UnixSocket);
             }
         }
 
         if let Some(tcp) = &self.tcp {
+            if first_available_protocol.is_none() {
+                first_available_protocol = Some(Protocol::Tcp);
+            }
+
             if tcp.default {
-                protocol.replace(Protocol::Tcp);
+                default_protocol.replace(Protocol::Tcp);
             }
         }
 
-        let Some(protocol) = protocol else {
-            bail!("Cannot find default protocol");
+        if let Some(protocol) = default_protocol {
+            return Ok(protocol);
         };
 
-        Ok(protocol)
+        if let Some(protocol) = first_available_protocol {
+            debug!("cannot find default protocol, taking the first available one: {protocol:?}");
+            return Ok(protocol);
+        };
+
+        bail!("Cannot find default protocol, please configure at least one");
     }
 }
