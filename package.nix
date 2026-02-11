@@ -3,6 +3,7 @@
 
 {
   lib,
+  dbus,
   rustPlatform,
   fetchFromGitHub,
   stdenv,
@@ -46,7 +47,10 @@ rustPlatform.buildRustPackage rec {
   ]
   ++ lib.optional (installManPages || installShellCompletions) installShellFiles;
 
-  buildInputs = lib.optional stdenv.hostPlatform.isDarwin apple-sdk;
+  buildInputs =
+    [ ]
+    ++ lib.optional stdenv.hostPlatform.isDarwin apple-sdk
+    ++ lib.optional (!buildNoDefaultFeatures || builtins.elem "notify" buildFeatures) dbus;
 
   doCheck = false;
 

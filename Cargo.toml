@@ -21,6 +21,7 @@ client = ["io-timer/client"]
 server = ["io-timer/server"]
 command = ["dep:io-process"]
 notify = ["dep:notify-rust"]
+vendored = ["notify-rust?/d_vendored"]
 
 [build-dependencies]
 pimalaya-toolbox = { version = "0.0.2", default-features = false, features = ["build"] }
@@ -36,7 +37,7 @@ io-process = { version = "0.0.2", default-features = false, features = ["std", "
 io-stream = { version = "0.0.2", default-features = false, features = ["std"] }
 io-timer = "0.0.1"
 log = "0.4"
-notify-rust = { version = "4", optional = true }
+notify-rust = { version = "4", default-features = false, features = ["d"], optional = true }
 pimalaya-toolbox = { version = "0.0.2", default-features = false, features = ["config", "prompt", "secret", "stream", "terminal"] }
 serde = "1"
 
