@@ -16,8 +16,16 @@
 // License along with this program. If not, see
 // <https://www.gnu.org/licenses/>.
 
-mod account;
-pub mod arg;
+use serde::{Deserialize, Serialize};
 
-#[doc(inline)]
-pub use self::account::*;
+#[derive(Clone, Debug, Default, Eq, PartialEq, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+pub enum TimerPrecision {
+    #[serde(alias = "seconds", alias = "secs", alias = "sec", alias = "s")]
+    Second,
+    #[default]
+    #[serde(alias = "minutes", alias = "mins", alias = "min", alias = "m")]
+    Minute,
+    #[serde(alias = "hours", alias = "h")]
+    Hour,
+}

@@ -16,8 +16,8 @@
 // License along with this program. If not, see
 // <https://www.gnu.org/licenses/>.
 
-mod account;
 pub mod arg;
+mod protocol;
 
 #[doc(inline)]
-pub use self::account::*;
+pub use self::protocol::*;

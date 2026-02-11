@@ -78,7 +78,7 @@ rustPlatform.buildRustPackage rec {
     mainProgram = "comodoro";
     homepage = "https://github.com/pimalaya/comodoro";
     changelog = "${homepage}/blob/v${version}/CHANGELOG.md";
-    license = lib.licenses.mit;
+    license = lib.licenses.agpl3Plus;
     maintainers = with lib.maintainers; [ soywod ];
   };
 }

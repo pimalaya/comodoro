@@ -1,5 +1,9 @@
 #[cfg(unix)]
-use std::os::unix::net::UnixListener;
+use std::{
+    fs,
+    io::{Error, ErrorKind},
+    os::unix::net::{UnixListener, UnixStream},
+};
 use std::{
     io::{Read, Write},
     net::TcpListener,
@@ -24,8 +28,8 @@ use io_timer::{
 use log::{debug, error, warn};
 
 use crate::{
-    account::config::AccountConfig,
-    protocol::{arg::ProtocolsArg, Protocol},
+    account::Account,
+    protocol::{arg::many::ProtocolsArg, Protocol},
 };
 
 /// Start the server.
@@ -39,7 +43,7 @@ pub struct StartServerCommand {
 }
 
 impl StartServerCommand {
-    pub fn execute(self, account: &AccountConfig) -> Result<()> {
+    pub fn execute(self, account: &Account) -> Result<()> {
         let timer = Arc::new(Mutex::new(Timer::new(TimerConfig {
             cycles: account.cycles.clone().into(),
             cycles_count: match account.cycles_count {
@@ -78,6 +82,16 @@ impl StartServerCommand {
 
                     debug!("enable Unix socket listener");
                     let sock_path = sock.path.clone();
+
+                    // check if socket is in use, otherwise remove file
+                    if sock_path.exists() {
+                        if UnixStream::connect(&sock_path).is_ok() {
+                            bail!(Error::new(ErrorKind::AddrInUse, "Socket already in use"))
+                        }
+
+                        fs::remove_file(&sock_path)?
+                    }
+
                     let listener = UnixListener::bind(&sock_path)?;
                     let timer = timer.clone();
                     let tx = tx.clone();

@@ -861,10 +861,8 @@ name = "io-process"
 version = "0.0.2"
 source = "git+https://github.com/pimalaya/io-process#763ebff10a7178d3fe0598b41a60bb847e828877"
 dependencies = [
- "dirs",
  "log",
  "serde",
- "shellexpand",
  "thiserror",
 ]
 

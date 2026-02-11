@@ -16,8 +16,18 @@
 // License along with this program. If not, see
 // <https://www.gnu.org/licenses/>.
 
-mod account;
-pub mod arg;
+use serde::{Deserialize, Serialize};
 
-#[doc(inline)]
-pub use self::account::*;
+#[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+pub struct Tcp {
+    #[serde(default)]
+    pub default: bool,
+    #[serde(default = "localhost")]
+    pub host: String,
+    pub port: u16,
+}
+
+fn localhost() -> String {
+    String::from("127.0.0.1")
+}

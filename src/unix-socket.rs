@@ -16,8 +16,14 @@
 // License along with this program. If not, see
 // <https://www.gnu.org/licenses/>.
 
-mod account;
-pub mod arg;
+use std::path::PathBuf;
 
-#[doc(inline)]
-pub use self::account::*;
+use serde::{Deserialize, Serialize};
+
+#[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+pub struct UnixSocket {
+    #[serde(default)]
+    pub default: bool,
+    pub path: PathBuf,
+}
