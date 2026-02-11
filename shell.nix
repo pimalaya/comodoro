@@ -1,8 +1,11 @@
 {
   pimalaya ? import (fetchTarball "https://github.com/pimalaya/nix/archive/master.tar.gz"),
   ...
-}:
+}@args:
 
-pimalaya.mkShell {
-  extraBuildInputs = "nixd,nixfmt-rfc-style,dbus";
-}
+pimalaya.mkShell (
+  builtins.removeAttrs args [ "pimalaya" ]
+  // {
+    extraBuildInputs = "nixd,nixfmt-rfc-style,dbus";
+  }
+)
