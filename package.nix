@@ -24,7 +24,7 @@ let
 
   hasNotifyFeature = !buildNoDefaultFeatures || builtins.elem "notify" buildFeatures;
   isWindowsx86_64 = stdenv.hostPlatform.isWindows && stdenv.hostPlatform.isx86_64;
-  isLinuxAarch64 = stdenv.hostPlatform.isWindows && stdenv.hostPlatform.isx86_64;
+  isLinuxAarch64 = stdenv.hostPlatform.isLinux && stdenv.hostPlatform.isx86_64;
 
   # needed to build dbus on aarch64-linux
   dbus' = dbus.overrideAttrs (old: {
