@@ -16,22 +16,24 @@
 // License along with this program. If not, see
 // <https://www.gnu.org/licenses/>.
 
-use std::collections::HashMap;
+use std::{collections::HashMap, path::PathBuf};
 
+use io_hook::hook::Hook;
+use io_time::timer::TimerCycle;
 use pimalaya_toolbox::config::TomlConfig;
 use serde::{Deserialize, Serialize};
 
-use crate::account::Account;
+use crate::timer::TimerPrecision;
 
 /// Represents the user config file.
-#[derive(Clone, Debug, Default, Eq, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct Config {
-    pub accounts: HashMap<String, Account>,
+    pub accounts: HashMap<String, AccountConfig>,
 }
 
 impl TomlConfig for Config {
-    type Account = Account;
+    type Account = AccountConfig;
 
     fn project_name() -> &'static str {
         env!("CARGO_PKG_NAME")
@@ -49,4 +51,46 @@ impl TomlConfig for Config {
             .get(name)
             .map(|account| (name.to_owned(), account.clone()))
     }
+}
+
+/// Represents the user config file.
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+pub struct AccountConfig {
+    #[serde(default)]
+    pub default: bool,
+
+    pub unix_socket: Option<UnixSocketConfig>,
+    pub tcp: Option<TcpConfig>,
+
+    pub cycles: Vec<TimerCycle>,
+    pub cycles_count: Option<usize>,
+
+    #[serde(default)]
+    pub precision: TimerPrecision,
+
+    #[serde(default)]
+    pub hooks: HashMap<String, Hook>,
+}
+
+#[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+pub struct UnixSocketConfig {
+    #[serde(default)]
+    pub default: bool,
+    pub path: PathBuf,
+}
+
+#[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+pub struct TcpConfig {
+    #[serde(default)]
+    pub default: bool,
+    #[serde(default = "localhost")]
+    pub host: String,
+    pub port: u16,
+}
+
+fn localhost() -> String {
+    String::from("127.0.0.1")
 }

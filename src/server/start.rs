@@ -7,29 +7,37 @@ use std::{
 use std::{
     io::{Read, Write},
     net::TcpListener,
-    process,
+    process::exit,
     sync::{
         mpsc::{self, Sender},
         Arc, Mutex,
     },
     thread,
-    time::Duration,
 };
 
 use anyhow::{bail, Result};
 use clap::Parser;
 use convert_case::{Case, Casing};
-use io_stream::runtimes::std::handle;
-use io_timer::{
-    server::coroutines::handle::{HandleRequest, HandleRequestResult},
-    timer::{TimerConfig, TimerEvent, TimerLoop},
-    Timer,
+use io_hook::exec::*;
+#[cfg(feature = "notify")]
+use io_notify::runtimes::std as notify;
+#[cfg(feature = "command")]
+use io_process::runtimes::std as process;
+use io_socket::runtimes::std_stream as socket;
+use io_time::{
+    coroutines::{
+        now::*,
+        server::{TimerRequestHandle, TimerRequestHandleArg, TimerRequestHandleResult},
+        sleep_until::*,
+    },
+    runtimes::std as time,
+    timer::{Timer, TimerConfig, TimerEvent, TimerLoop},
 };
-use log::{debug, error, warn};
+use log::{debug, error};
 
 use crate::{
-    account::Account,
-    protocol::{Protocol, ProtocolsArg},
+    config::AccountConfig,
+    protocol::{Protocol, ProtocolsArg, ALL_PROTOCOLS},
 };
 
 /// Start the server.
@@ -43,7 +51,7 @@ pub struct StartServerCommand {
 }
 
 impl StartServerCommand {
-    pub fn execute(self, account: &Account) -> Result<()> {
+    pub fn execute(self, account: &AccountConfig) -> Result<()> {
         let timer = Arc::new(Mutex::new(Timer::new(TimerConfig {
             cycles: account.cycles.clone().into(),
             cycles_count: match account.cycles_count {
@@ -54,8 +62,7 @@ impl StartServerCommand {
 
         let (tx, rx) = mpsc::channel();
 
-        // protocol listeners
-        for protocol in Protocol::ALL {
+        for protocol in ALL_PROTOCOLS {
             match protocol {
                 #[cfg(unix)]
                 Protocol::UnixSocket => {
@@ -114,7 +121,7 @@ impl StartServerCommand {
                         let timer = timer.clone();
                         let tx = tx.clone();
 
-                        if let Err(err) = handle_request(stream, timer, tx) {
+                        if let Err(err) = handle_connection(stream, timer, tx) {
                             error!("cannot handle Unix socket request: {err}");
                         }
                     });
@@ -164,7 +171,7 @@ impl StartServerCommand {
                         let timer = timer.clone();
                         let tx = tx.clone();
 
-                        if let Err(err) = handle_request(stream, timer, tx) {
+                        if let Err(err) = handle_connection(stream, timer, tx) {
                             error!("cannot handle TCP request: {err}");
                         }
                     });
@@ -178,11 +185,37 @@ impl StartServerCommand {
             let tx = tx.clone();
 
             move || loop {
-                let events = match timer.lock() {
-                    Ok(ref mut timer) => timer.update(),
+                let mut arg = None;
+                let mut coroutine = TimeNow::new();
+
+                let now = loop {
+                    match coroutine.resume(arg) {
+                        TimeNowResult::Ok { secs, .. } => break secs,
+                        TimeNowResult::Io { input } => {
+                            arg = Some(time::handle(input).expect("now"))
+                        }
+                        TimeNowResult::Err { err } => panic!("{err}"),
+                    }
+                };
+
+                let mut arg = None;
+                let mut coroutine = TimeSleepUntil::new(now + 1);
+
+                loop {
+                    match coroutine.resume(arg) {
+                        TimeSleepUntilResult::Ok => break,
+                        TimeSleepUntilResult::Io { input } => {
+                            arg = Some(time::handle(input).expect("sleep"))
+                        }
+                        TimeSleepUntilResult::Err { err } => panic!("{err}"),
+                    }
+                }
+
+                let events: Vec<TimerEvent> = match timer.lock() {
+                    Ok(ref mut timer) => timer.update(now + 1).into_iter().collect(),
                     Err(err) => {
                         error!("cannot lock timer: {err}");
-                        process::exit(1)
+                        exit(1)
                     }
                 };
 
@@ -191,8 +224,6 @@ impl StartServerCommand {
                         error!("cannot send timer event {event:?}: {err}");
                     }
                 }
-
-                thread::sleep(Duration::from_secs(1));
             }
         });
 
@@ -219,9 +250,27 @@ impl StartServerCommand {
                 TimerEvent::Stopped => String::from("on-timer-stop"),
             };
 
-            if let Some(hook) = account.hooks.get(&hook_name) {
-                if let Err(err) = hook.exec() {
-                    warn!("Error while executing hook: {err}")
+            if let Some(hook) = account.hooks.get(&hook_name).cloned() {
+                let mut arg = None;
+                let mut coroutine = HookExec::new(hook);
+
+                loop {
+                    match coroutine.resume(arg.take()) {
+                        HookExecResult::Ok => {
+                            break;
+                        }
+                        HookExecResult::NotifyIo { input } => match notify::handle(input) {
+                            Ok(output) => arg = Some(output.into()),
+                            Err(err) => break error!("notify hook exec failure: {err}"),
+                        },
+                        HookExecResult::ProcessIo { input } => match process::handle(input) {
+                            Ok(output) => arg = Some(output.into()),
+                            Err(err) => break error!("process hook exec failure: {err}"),
+                        },
+                        HookExecResult::Err { err } => {
+                            break error!("hook exec failure: {err}");
+                        }
+                    }
                 }
             }
         }
@@ -230,37 +279,40 @@ impl StartServerCommand {
     }
 }
 
-fn handle_request(
+fn handle_connection(
     mut stream: impl Read + Write,
     timer: Arc<Mutex<Timer>>,
     tx: Sender<TimerEvent>,
 ) -> Result<()> {
-    let mut arg = None;
-    let mut handler = HandleRequest::new();
+    let mut server = TimerRequestHandle::new();
+    let mut arg: Option<TimerRequestHandleArg> = None;
 
     loop {
-        let res = match timer.lock() {
-            Ok(ref mut timer) => handler.resume(timer, arg.take()),
+        let result = match timer.lock() {
+            Ok(ref mut timer) => server.resume(timer, arg.take()),
             Err(err) => {
                 error!("cannot lock timer: {err}");
-                process::exit(1);
+                exit(1);
             }
         };
 
-        match res {
-            HandleRequestResult::Ok(events) => {
-                break for event in events {
+        match result {
+            TimerRequestHandleResult::Ok { events } => {
+                for event in events {
                     if let Err(err) = tx.send(event.clone()) {
                         error!("cannot send timer event {event:?}: {err}");
                     }
                 }
+                break;
             }
-            HandleRequestResult::Err(err) => {
-                bail!(err);
+            TimerRequestHandleResult::TimeIo { input } => {
+                arg = Some(TimerRequestHandleArg::Time(time::handle(input)?));
             }
-            HandleRequestResult::Io(io) => {
-                arg = Some(handle(&mut stream, io)?);
+            TimerRequestHandleResult::Io { input } => {
+                let handle = socket::handle(&mut stream, input);
+                arg = Some(TimerRequestHandleArg::Socket(handle?));
             }
+            TimerRequestHandleResult::Err { err } => bail!("{err}"),
         }
     }
 

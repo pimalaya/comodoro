@@ -21,28 +21,26 @@ use std::path::PathBuf;
 use anyhow::Result;
 use clap::{CommandFactory, Parser, Subcommand};
 use log::trace;
-#[cfg(any(feature = "client", feature = "server"))]
-use pimalaya_toolbox::config::TomlConfig;
 use pimalaya_toolbox::{
+    config::TomlConfig,
     long_version,
     terminal::{
         clap::{
-            args::{AccountArg, ConfigPathsArg, JsonFlag, LogFlags},
+            args::{AccountFlag, ConfigPathsArg, JsonFlag, LogFlags},
             commands::{CompletionCommand, ManualCommand},
         },
         printer::Printer,
     },
 };
 
-#[cfg(feature = "client")]
-use crate::client::{
-    get::GetTimerCommand, pause::PauseTimerCommand, resume::ResumeTimerCommand,
-    start::StartTimerCommand, stop::StopTimerCommand,
+use crate::{
+    client::{
+        get::TimerGetCommand, pause::TimerPauseCommand, resume::TimerResumeCommand,
+        start::TimerStartCommand, stop::TimerStopCommand,
+    },
+    config::Config,
+    server::ServerSubcommand,
 };
-#[cfg(any(feature = "client", feature = "server"))]
-use crate::config::Config;
-#[cfg(feature = "server")]
-use crate::server::ServerSubcommand;
 
 #[derive(Parser, Debug)]
 #[command(name = env!("CARGO_PKG_NAME"))]
@@ -55,7 +53,7 @@ pub struct Cli {
     #[command(flatten)]
     pub config: ConfigPathsArg,
     #[command(flatten)]
-    pub account: AccountArg,
+    pub account: AccountFlag,
     #[command(flatten)]
     pub json: JsonFlag,
     #[command(flatten)]
@@ -64,27 +62,21 @@ pub struct Cli {
 
 #[derive(Subcommand, Debug)]
 pub enum ComodoroCommand {
-    #[cfg(feature = "server")]
-    #[command(arg_required_else_help = true)]
-    #[command(subcommand)]
-    #[command(alias = "servers", alias = "srvs", alias = "srv")]
-    Server(ServerSubcommand),
-
-    #[cfg(feature = "client")]
-    Start(StartTimerCommand),
-    #[cfg(feature = "client")]
-    Get(GetTimerCommand),
-    #[cfg(feature = "client")]
-    Pause(PauseTimerCommand),
-    #[cfg(feature = "client")]
-    Resume(ResumeTimerCommand),
-    #[cfg(feature = "client")]
-    Stop(StopTimerCommand),
-
     #[command(arg_required_else_help = true, alias = "mans")]
     Manuals(ManualCommand),
-    #[command(arg_required_else_help = true)]
+    #[command(arg_required_else_help = true, alias = "cpl")]
     Completions(CompletionCommand),
+
+    #[command(arg_required_else_help = true)]
+    #[command(subcommand)]
+    #[command(alias = "srvs", visible_alias = "srv")]
+    Servers(ServerSubcommand),
+
+    Start(TimerStartCommand),
+    Get(TimerGetCommand),
+    Pause(TimerPauseCommand),
+    Resume(TimerResumeCommand),
+    Stop(TimerStopCommand),
 }
 
 impl ComodoroCommand {
@@ -98,44 +90,40 @@ impl ComodoroCommand {
         trace!("account name: {account_name:?}");
 
         match self {
-            #[cfg(feature = "client")]
+            Self::Manuals(cmd) => cmd.execute(printer, Cli::command()),
+            Self::Completions(cmd) => cmd.execute(printer, Cli::command()),
+
+            Self::Servers(cmd) => {
+                let config = Config::from_paths_or_default(config_paths)?;
+                let (_, account) = config.get_account(account_name)?;
+                cmd.execute(&account)
+            }
+
             Self::Start(cmd) => {
                 let config = Config::from_paths_or_default(config_paths)?;
                 let (_, account) = config.get_account(account_name)?;
                 cmd.execute(printer, &account)
             }
-            #[cfg(feature = "client")]
             Self::Get(cmd) => {
                 let config = Config::from_paths_or_default(config_paths)?;
                 let (_, account) = config.get_account(account_name)?;
                 cmd.execute(printer, &account)
             }
-            #[cfg(feature = "client")]
             Self::Pause(cmd) => {
                 let config = Config::from_paths_or_default(config_paths)?;
                 let (_, account) = config.get_account(account_name)?;
                 cmd.execute(printer, &account)
             }
-            #[cfg(feature = "client")]
             Self::Resume(cmd) => {
                 let config = Config::from_paths_or_default(config_paths)?;
                 let (_, account) = config.get_account(account_name)?;
                 cmd.execute(printer, &account)
             }
-            #[cfg(feature = "client")]
             Self::Stop(cmd) => {
                 let config = Config::from_paths_or_default(config_paths)?;
                 let (_, account) = config.get_account(account_name)?;
                 cmd.execute(printer, &account)
             }
-            #[cfg(feature = "server")]
-            Self::Server(cmd) => {
-                let config = Config::from_paths_or_default(config_paths)?;
-                let (_, account) = config.get_account(account_name)?;
-                cmd.execute(&account)
-            }
-            Self::Manuals(cmd) => cmd.execute(printer, Cli::command()),
-            Self::Completions(cmd) => cmd.execute(printer, Cli::command()),
         }
     }
 }

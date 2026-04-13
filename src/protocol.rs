@@ -18,9 +18,18 @@
 
 use std::ops::Deref;
 
-use anyhow::Result;
+use anyhow::{bail, Error, Result};
 use clap::{builder::PossibleValue, Parser, ValueEnum};
+use log::debug;
 use serde::{Deserialize, Serialize};
+
+use crate::config::AccountConfig;
+
+pub const ALL_PROTOCOLS: &[Protocol] = &[
+    #[cfg(unix)]
+    Protocol::UnixSocket,
+    Protocol::Tcp,
+];
 
 #[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
@@ -30,12 +39,45 @@ pub enum Protocol {
     Tcp,
 }
 
-impl Protocol {
-    pub const ALL: &[Protocol] = &[
+impl TryFrom<&AccountConfig> for Protocol {
+    type Error = Error;
+
+    fn try_from(config: &AccountConfig) -> Result<Protocol> {
+        let mut first_available_protocol = None;
+        let mut default_protocol = None;
+
         #[cfg(unix)]
-        Protocol::UnixSocket,
-        Protocol::Tcp,
-    ];
+        if let Some(sock) = &config.unix_socket {
+            if first_available_protocol.is_none() {
+                first_available_protocol = Some(Protocol::UnixSocket);
+            }
+
+            if sock.default {
+                default_protocol.replace(Protocol::UnixSocket);
+            }
+        }
+
+        if let Some(tcp) = &config.tcp {
+            if first_available_protocol.is_none() {
+                first_available_protocol = Some(Protocol::Tcp);
+            }
+
+            if tcp.default {
+                default_protocol.replace(Protocol::Tcp);
+            }
+        }
+
+        if let Some(protocol) = default_protocol {
+            return Ok(protocol);
+        };
+
+        if let Some(protocol) = first_available_protocol {
+            debug!("cannot find default protocol, taking the first available one: {protocol:?}");
+            return Ok(protocol);
+        };
+
+        bail!("Cannot find default protocol, please configure at least one");
+    }
 }
 
 impl ValueEnum for Protocol {

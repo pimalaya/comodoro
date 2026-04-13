@@ -16,27 +16,34 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
-default = ["client", "server", "command", "notify"]
-client = ["io-timer/client"]
-server = ["io-timer/server"]
-command = ["dep:io-process"]
-notify = ["dep:notify-rust"]
-vendored = ["notify-rust?/d_vendored"]
+default = ["command", "notify"]
+command = ["dep:io-process", "io-hook/command"]
+notify = ["dep:io-notify", "io-hook/notify"]
+vendored = ["io-hook/vendored"]
 
 [build-dependencies]
-pimalaya-toolbox = { version = "0.0.3", default-features = false, features = ["build"] }
+pimalaya-toolbox = { version = "0.0.4", default-features = false, features = ["build"] }
 
 [dependencies]
 anyhow = "1"
 clap = { version = "4.4", features = ["derive"] }
 clap_complete = "4.4"
-clap_mangen = "0.2"
+clap_mangen = "0.3"
 convert_case = "0.11"
 env_logger = "0.11"
-io-process = { version = "0.0.2", default-features = false, features = ["std", "serde"], optional = true }
-io-stream = { version = "0.0.2", default-features = false, features = ["std"] }
-io-timer = "0.0.1"
+io-hook = { version = "0.0.1", default-features = false, features = ["serde"], optional = true }
+io-notify = { version = "0.0.1", default-features = false, features = ["std"], optional = true }
+io-process = { version = "0.0.2", default-features = false, features = ["std"], optional = true }
+io-socket = { version = "0.0.1", default-features = false, features = ["std-stream"] }
+io-time = { version = "0.0.2", default-features = false, features = ["std", "timer"] }
 log = "0.4"
-notify-rust = { version = "4", default-features = false, features = ["d"], optional = true }
-pimalaya-toolbox = { version = "0.0.3", default-features = false, features = ["config", "prompt", "secret", "stream", "terminal"] }
+pimalaya-toolbox = { version = "0.0.4", default-features = false, features = ["config", "terminal"] }
 serde = "1"
+
+[patch.crates-io]
+io-hook.git = "https://github.com/pimalaya/io-hook"
+io-notify.git = "https://github.com/pimalaya/io-notify"
+io-process.git = "https://github.com/pimalaya/io-process"
+io-socket.git = "https://github.com/pimalaya/io-socket"
+io-time.git = "https://github.com/pimalaya/io-time"
+pimalaya-toolbox.git = "https://github.com/pimalaya/toolbox"

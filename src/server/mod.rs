@@ -21,9 +21,7 @@ mod start;
 use anyhow::Result;
 use clap::Subcommand;
 
-use crate::account::Account;
-
-use self::start::StartServerCommand;
+use crate::{config::AccountConfig, server::start::StartServerCommand};
 
 /// Manage servers.
 ///
@@ -35,7 +33,7 @@ pub enum ServerSubcommand {
 }
 
 impl ServerSubcommand {
-    pub fn execute(self, account: &Account) -> Result<()> {
+    pub fn execute(self, account: &AccountConfig) -> Result<()> {
         match self {
             Self::Start(cmd) => cmd.execute(account),
         }

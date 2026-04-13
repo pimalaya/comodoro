@@ -20,47 +20,50 @@ use std::fmt;
 
 use anyhow::{bail, Result};
 use clap::Parser;
-use io_stream::runtimes::std::handle;
-use io_timer::{
-    client::coroutines::{get::GetTimer, send::SendRequestResult},
-    timer::{Timer, TimerState},
-    Response,
+use io_socket::runtimes::std_stream::handle;
+use io_time::{
+    coroutines::client::{TimerRequestSend, TimerRequestSendResult},
+    timer::{Timer, TimerResponse, TimerState},
 };
 use pimalaya_toolbox::terminal::printer::Printer;
 use serde::{Serialize, Serializer};
 
-use crate::{account::Account, protocol::ProtocolArg, stream, timer::TimerPrecision};
+use crate::{config::AccountConfig, protocol::ProtocolArg, stream, timer::TimerPrecision};
 
 /// Get the timer.
 ///
 /// This command allows you to send a request to the server in order
 /// to get the actual timer and display its value.
 #[derive(Debug, Parser)]
-pub struct GetTimerCommand {
+pub struct TimerGetCommand {
     #[command(flatten)]
     pub protocol: ProtocolArg,
 }
 
-impl GetTimerCommand {
-    pub fn execute(self, printer: &mut impl Printer, account: &Account) -> Result<()> {
+impl TimerGetCommand {
+    pub fn execute(self, printer: &mut impl Printer, account: &AccountConfig) -> Result<()> {
         let protocol = match &*self.protocol {
             Some(protocol) => protocol.clone(),
-            None => account.get_default_protocol()?,
+            None => account.try_into()?,
         };
 
         let mut stream = stream::connect(&account, &protocol)?;
 
         let mut arg = None;
-        let mut get = GetTimer::new();
+        let mut client = TimerRequestSend::get();
 
         let timer = loop {
-            match get.resume(arg.take()) {
-                SendRequestResult::Ok(Response::Timer(timer)) => {
-                    break DisplayTimer { account, timer }
+            match client.resume(arg.take()) {
+                TimerRequestSendResult::Ok {
+                    response: TimerResponse::Timer(timer),
+                } => break DisplayTimer { account, timer },
+                TimerRequestSendResult::Ok {
+                    response: TimerResponse::Events(_),
+                } => {
+                    bail!("invalid response Events, expected Timer")
                 }
-                SendRequestResult::Ok(Response::Ok) => bail!("Invalid response Ok, expected Timer"),
-                SendRequestResult::Err(err) => bail!(err),
-                SendRequestResult::Io(io) => arg = Some(handle(&mut stream, io)?),
+                TimerRequestSendResult::Io { input } => arg = Some(handle(&mut stream, input)?),
+                TimerRequestSendResult::Err { err } => bail!("{err}"),
             }
         };
 
@@ -69,7 +72,7 @@ impl GetTimerCommand {
 }
 
 struct DisplayTimer<'a> {
-    account: &'a Account,
+    account: &'a AccountConfig,
     timer: Timer,
 }
 

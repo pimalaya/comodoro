@@ -1,9 +1,9 @@
 {
-  description = "CLI to manage timers";
+  description = "I/O-free time client library written in Rust";
 
   inputs = {
     nixpkgs = {
-      url = "github:nixos/nixpkgs/staging-next";
+      url = "github:nixos/nixpkgs/nixos-25.11";
     };
     fenix = {
       url = "github:nix-community/fenix/monthly";
@@ -19,6 +19,5 @@
     inputs:
     (import inputs.pimalaya).mkFlakeOutputs inputs {
       shell = ./shell.nix;
-      default = ./default.nix;
     };
 }

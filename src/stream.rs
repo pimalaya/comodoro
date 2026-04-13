@@ -25,13 +25,13 @@ use std::{
 
 use anyhow::{bail, Result};
 
-use crate::{account::Account, protocol::Protocol};
+use crate::{config::AccountConfig, protocol::Protocol};
 
 pub trait Stream: Read + Write {}
 
 impl<T: Read + Write> Stream for T {}
 
-pub fn connect(account: &Account, protocol: &Protocol) -> Result<Box<dyn Stream>> {
+pub fn connect(account: &AccountConfig, protocol: &Protocol) -> Result<Box<dyn Stream>> {
     let stream: Box<dyn Stream> = match protocol {
         #[cfg(unix)]
         Protocol::UnixSocket => {

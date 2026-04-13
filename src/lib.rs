@@ -16,16 +16,13 @@
 // License along with this program. If not, see
 // <https://www.gnu.org/licenses/>.
 
-pub mod account;
+#![cfg_attr(docsrs, feature(doc_cfg, doc_auto_cfg))]
+#![doc = include_str!("../README.md")]
+
 pub mod cli;
 pub mod client;
 pub mod config;
-pub mod hooks;
 pub mod protocol;
 pub mod server;
 pub mod stream;
-pub mod tcp;
 pub mod timer;
-#[cfg(unix)]
-#[path = "./unix-socket.rs"]
-pub mod unix_socket;
