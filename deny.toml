@@ -1,0 +1,17 @@
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-git = [
+  "https://github.com/pimalaya/io-hook",
+  "https://github.com/pimalaya/io-notify",
+  "https://github.com/pimalaya/io-process",
+  "https://github.com/pimalaya/io-socket",
+  "https://github.com/pimalaya/io-time",
+  "https://github.com/pimalaya/toolbox"
+]
+
+[licenses]
+allow = ["AGPL-3.0-or-later", "Apache-2.0", "MIT", "MPL-2.0", "Unicode-3.0"]
+
+[licenses.private]
+ignore = true

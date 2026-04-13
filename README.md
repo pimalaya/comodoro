@@ -32,13 +32,13 @@ Comodoro CLI can be installed with the `install.sh` installer:
 
 *As root:*
 
-```
+```ignore
 curl -sSL https://raw.githubusercontent.com/pimalaya/comodoro/master/install.sh | sudo sh
 ```
 
 *As a regular user:*
 
-```
+```ignore
 curl -sSL https://raw.githubusercontent.com/pimalaya/comodoro/master/install.sh | PREFIX=~/.local sh
 ```
 
@@ -52,19 +52,19 @@ If you want a more up-to-date version than the latest release, check out the [re
 
 Comodoro CLI can be installed with [cargo](https://doc.rust-lang.org/cargo/):
 
-```
+```ignore
 cargo install comodoro --locked
 ```
 
 With only server support:
 
-```
+```ignore
 cargo install comodoro --locked --no-default-features --features server
 ```
 
 You can also use the git repository for a more up-to-date (but less stable) version:
 
-```
+```ignore
 cargo install --locked --git https://github.com/pimalaya/comodoro.git
 ```
 
@@ -72,37 +72,37 @@ cargo install --locked --git https://github.com/pimalaya/comodoro.git
 
 Comodoro CLI can be installed with [Nix](https://serokell.io/blog/what-is-nix):
 
-```
+```ignore
 nix-env -i comodoro
 ```
 
 You can also use the git repository for a more up-to-date (but less stable) version:
 
-```
+```ignore
 nix-env -if https://github.com/pimalaya/comodoro/archive/master.tar.gz
 ```
 
 *Or, from within the source tree checkout:*
 
-```
+```ignore
 nix-env -if .
 ```
 
 If you have the [Flakes](https://nixos.wiki/wiki/Flakes) feature enabled:
 
-```
+```ignore
 nix profile install comodoro
 ```
 
 *Or, from within the source tree checkout:*
 
-```
+```ignore
 nix profile install
 ```
 
 *You can also run Comodoro directly without installing it:*
 
-```
+```ignore
 nix run comodoro
 ```
 
@@ -112,13 +112,13 @@ Comodoro CLI can be installed from sources.
 
 First you need to install the Rust development environment (see the [rust installation documentation](https://doc.rust-lang.org/cargo/getting-started/installation.html)):
 
-```
+```ignore
 curl https://sh.rustup.rs -sSf | sh
 ```
 
 Then, you need to clone the repository and install dependencies:
 
-```
+```ignore
 git clone https://github.com/pimalaya/comodoro.git
 cd comodoro
 cargo check
@@ -126,7 +126,7 @@ cargo check
 
 Now, you can build Comodoro:
 
-```
+```ignore
 cargo build --release
 ```
 
@@ -153,7 +153,7 @@ The advanced way is based on environment variables:
 
 Logs are written to the `stderr`, which means that you can redirect them easily to a file:
 
-```
+```ignore
 comodoro server start --debug 2>/tmp/comodoro.log
 ```
 
