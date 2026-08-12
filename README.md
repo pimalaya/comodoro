@@ -53,79 +53,52 @@ curl -sSL https://raw.githubusercontent.com/pimalaya/comodoro/master/install.sh 
 
 These commands install the latest binary from the GitHub [releases](https://github.com/pimalaya/comodoro/releases) section.
 
-If you want a more up-to-date version than the latest release, check out the [releases](https://github.com/pimalaya/comodoro/actions/workflows/releases.yml) GitHub workflow and look for the *Artifacts* section. You will find a pre-built binary matching your OS. These pre-built binaries are built from the master branch.
+For a more up-to-date version than the latest release, check out the [releases](https://github.com/pimalaya/comodoro/actions/workflows/releases.yml) GitHub workflow and look for the *Artifacts* section. These pre-built binaries are built from the `master` branch.
 
-*Such binaries are built with the default cargo features. If you need more features, please use another installation method.*
+> [!NOTE]
+> Such binaries are built with the default cargo features. If you need specific features, please use another installation method.
 
 ### Cargo
-
-Comodoro can be installed with [cargo](https://doc.rust-lang.org/cargo/):
 
 ```sh
 cargo install comodoro --locked
 ```
 
-You can also use the git repository for a more up-to-date (but less stable) version:
+For a more up-to-date version than the latest release:
 
 ```sh
 cargo install --locked --git https://github.com/pimalaya/comodoro.git
 ```
 
+Without desktop notifications, which drops the D-Bus system dependency:
+
+```sh
+cargo install comodoro --locked \
+  --no-default-features \
+  --features cli
+```
+
 ### Nix
-
-Comodoro can be installed with [Nix](https://serokell.io/blog/what-is-nix):
-
-```sh
-nix-env -i comodoro
-```
-
-You can also use the git repository for a more up-to-date (but less stable) version:
-
-```sh
-nix-env -if https://github.com/pimalaya/comodoro/archive/master.tar.gz
-```
-
-*Or, from within the source tree checkout:*
-
-```sh
-nix-env -if .
-```
 
 If you have the [Flakes](https://nixos.wiki/wiki/Flakes) feature enabled:
 
 ```sh
-nix profile install comodoro
+nix profile install github:pimalaya/comodoro
 ```
 
-*Or, from within the source tree checkout:*
+Or run without installing:
 
 ```sh
-nix profile install
-```
-
-*You can also run Comodoro directly without installing it:*
-
-```sh
-nix run comodoro
+nix run github:pimalaya/comodoro
 ```
 
 ### Sources
 
-Comodoro can be installed from sources. First you need to install the Rust development environment (see the [rust installation documentation](https://doc.rust-lang.org/cargo/getting-started/installation.html)):
-
 ```sh
-curl https://sh.rustup.rs -sSf | sh
-```
-
-Then, clone the repository and build:
-
-```sh
-git clone https://github.com/pimalaya/comodoro.git
+git clone https://github.com/pimalaya/comodoro
 cd comodoro
-cargo build --release
+nix run
 ```
-
-*Binaries are available under the target/release folder.*
 
 ## Configuration
 

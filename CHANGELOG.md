@@ -5,21 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.0.0] - 2026-08-12
 
 ### Added
 
-- Turned Comodoro into a library as well as a binary, by merging the io-time crate into this repository. The crate now ships three layers: the timer state machine and the protocol types (always compiled, the only no_std layer), a blocking client and server (`client` and `server` features), and the CLI (`cli` feature, default).
+- Turned Comodoro into a library as well as a binary, by merging the io-time crate into this repository.
 
-- Adopted [JSON-RPC 2.0](https://www.jsonrpc.org/specification) as the wire protocol, framed as NDJSON over a Unix domain socket.
+  The crate now ships three layers: the timer state machine and the protocol types (always compiled, the only no_std layer), a blocking client and server (`client` and `server` features), and the CLI (`cli` feature, default).
+
+- Adopted [JSON-RPC 2.0](https://www.jsonrpc.org/specification) as the wire protocol, framed as NDJSON over a local socket or over TCP.
 
   The specification defines the payload and leaves the transport alone, so the protocol is now implementable in any language without reading a line of Rust. The method surface lives in the `protocol` module and the envelope in `jsonrpc20`, both no_std. Failures come back as the standard error codes rather than as opaque strings.
 
-- Added timer notifications, the capability the protocol change was for. A connection calling `timer.subscribe` receives `timer.started`, `timer.began`, `timer.running`, `timer.durationSet`, `timer.paused`, `timer.resumed`, `timer.ended` and `timer.stopped` as they happen, from any client's actions and from the tick loop.
+- Added timer notifications, the capability the protocol change was for.
+
+  A connection calling `timer.subscribe` receives `timer.started`, `timer.began`, `timer.running`, `timer.durationSet`, `timer.paused`, `timer.resumed`, `timer.ended` and `timer.stopped` as they happen, from any client's actions and from the tick loop.
+
+- Added `TimerClient`, a blocking client over one connection, and `TimerServer`, which owns the timer, answers requests and fans notifications out to subscribers.
+
+  Both live in a module named after the runtime they are written against, `client::std` and `server::std`, so an asynchronous port lands beside them rather than replacing them. A server holds a list of `TimerAddress`, so it serves the same timer over its socket and over TCP at once, and a client connected to either sees what the other does.
 
 - Added the `watch` command, which subscribes and prints the timer on every change until interrupted, so a status bar no longer has to poll.
 - Added the `set` command, exposing the `timer.set` method that was previously reachable on the wire but not from the CLI.
-- Added `TimerClient`, a blocking client over one connection, and `TimerServer`, which owns the timer, answers requests and fans notifications out to subscribers. Both live in a module named after the runtime they are written against, `client::std` and `server::std`, so an asynchronous port lands beside them rather than replacing them. A server holds a list of `TimerAddress`, so it can serve the same timer over its socket and over TCP at once, and a client connected to either sees what the other does.
 - Added the `transport` module, holding `TimerAddress`, the `TimerStream` connection and the `TimerListener` accepting them, so both transports carry the protocol behind one type.
 - Added the repository skeleton the Pimalaya guidelines require: a cairn/ folder with its AGENTS.md activation stanza, SECURITY.md, and the tests and audit CI workflows.
 
@@ -37,9 +44,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
   The coroutines modelled the socket and the clock as resumable state machines, which is worth doing when several runtimes share the logic. Comodoro has exactly one runtime and will only ever have one, since the server is a blocking daemon and the client a short-lived process. The `coroutines`, `runtimes` and `io` modules are gone, along with `TimeInput`, `TimeOutput`, `TimeNow`, `TimeSleep`, `TimeSleepUntil`, `TimerStreamRead`, `TimerStreamWrite`, `TimerRequestSend` and `TimerRequestHandle`. What was worth keeping I/O-free is untouched: `Timer` still takes `now: u64` and reads no clock.
 
-- **BREAKING** Reshaped `TimerRequest` and `TimerResponse` into the protocol method surface, and moved them from `timer` to `protocol`. `TimerRequest::Update` is gone, since the tick belongs to the server rather than to the wire, and `Subscribe` and `Unsubscribe` joined. `TimerEvent` now serializes adjacently, as `{"event": "began", "cycle": {…}}`.
+- **BREAKING** Reshaped `TimerRequest` and `TimerResponse` into the protocol method surface, and moved them from `timer` to `protocol`.
 
-- **BREAKING** Prefixed every public item with its domain, per the Pimalaya naming guidelines. `Cli`, `Command`, `Config`, `AccountConfig` and `ConfigPathsArg` gained the `Comodoro` prefix, `ServerSubcommand` became `TimerServerCommand`, and `StartServerCommand` became `TimerServerStartCommand`.
+  `TimerRequest::Update` is gone, since the tick belongs to the server rather than to the wire, and `Subscribe` and `Unsubscribe` joined. `TimerEvent` now serializes adjacently, as `{"event": "began", "cycle": {…}}`.
+
+- **BREAKING** Prefixed every public item with its domain, per the Pimalaya naming guidelines.
+
+  `Cli`, `Command`, `Config`, `AccountConfig` and `ConfigPathsArg` gained the `Comodoro` prefix, `ServerSubcommand` became `TimerServerCommand`, and `StartServerCommand` became `TimerServerStartCommand`.
 
 - **BREAKING** Moved everything the CLI needs under the `cli` module, so its cargo feature gates one subtree rather than a scattering of items.
 
@@ -49,35 +60,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
   A hook is now a `TimerHook`, running either a `std::process::Command` deserialized through `pimalaya_config::command`, or a `TimerHookNotification` sent through notify-rust. The TOML shape is unchanged. Comodoro was the only consumer of those three crates, and the rest of the Pimalaya stack had already moved to calling notify-rust and the process API directly.
 
-- **BREAKING** Reworked the cargo features. `std` is gone, since it pulled no crate of its own, and `timer` is gone, since every layer above it required it. `command` is gone too: shell hooks no longer pull an extra crate, so they ship unconditionally. `vendored` now forwards to notify-rust rather than to io-hook and io-notify.
+- **BREAKING** Reworked the cargo features, dropping `std`, `timer` and `command`.
+
+  `std` pulled no crate of its own, and every layer above `timer` required it. Shell hooks no longer pull an extra crate either, so they ship unconditionally. `vendored` now forwards to notify-rust rather than to io-hook and io-notify.
 
 - **BREAKING** Dropped `Clone` from the configuration types, since `std::process::Command` is not clonable.
 
-- **BREAKING** Replaced the `--debug` and `--trace` flags with `--log-level <LEVEL>` and `--log-file <PATH>`, which the pimalaya-cli toolkit now provides. `--log-level` accepts `off`, `error`, `warn`, `info`, `debug` and `trace`, and overrides `RUST_LOG` when given.
+- **BREAKING** Replaced the `--debug` and `--trace` flags with `--log-level <LEVEL>` and `--log-file <PATH>`, which the pimalaya-cli toolkit now provides.
+
+  `--log-level` accepts `off`, `error`, `warn`, `info`, `debug` and `trace`, and overrides `RUST_LOG` when given.
 
 - Re-licensed the project from AGPL-3.0-or-later to dual MIT OR Apache-2.0.
-- Migrated from pimalaya-toolbox to the split pimalaya-cli and pimalaya-config stack, both consumed from crates.io. The `[patch.crates-io]` table is now empty and the build carries no git dependency.
-- Moved to edition 2024 with a 1.88 minimum supported Rust version.
+- Migrated from pimalaya-toolbox to the split pimalaya-cli and pimalaya-config stack, both consumed from crates.io, leaving the `[patch.crates-io]` table empty and the build free of any git dependency.
+- Moved to edition 2024 with a 1.89 minimum supported Rust version.
 - Made `#![no_std]` unconditional, and replaced the README rustdoc include with a proper architecture header in src/lib.rs.
 - Rewrote the README, CONTRIBUTING.md and config.sample.toml against the Pimalaya documentation guidelines.
 
 ### Fixed
 
-- Fixed a client connection blocking every other one. The accept loop served each connection to completion before accepting the next, so a long-lived client held the server to itself. Each connection now gets its own thread, which is also what makes subscriptions possible.
+- Fixed a client connection blocking every other one.
 
-- Fixed a poisoned lock killing the daemon. A panic while holding the timer mutex made every later request call `process::exit(1)`; the guard is now recovered, since the timer is a plain struct that a panic can leave stale but never torn.
+  The accept loop served each connection to completion before accepting the next, so a long-lived client held the server to itself. Each connection now gets its own thread, which is also what makes subscriptions possible.
 
-- Fixed shell hooks not going through a shell. A command given as a string was split on whitespace and executed directly, so the documented `hooks.on-work-begin.command = "echo 'Work started!' >> /tmp/comodoro.log"` appended nothing and passed `>>` to echo as an argument. String commands now run through `/bin/sh -c` (`cmd /C` on Windows), and a command given as an array still executes directly with no shell.
+- Fixed a poisoned lock killing the daemon.
 
-- Fixed a set duration lasting less than a second. `timer.set` wrote the remaining duration onto the current cycle, but the tick recomputes that cycle from the elapsed time, so the write was discarded within a second while the call still reported success.
+  A panic while holding the timer mutex made every later request call `process::exit(1)`. The guard is now recovered, since the timer is a plain struct that a panic can leave stale but never torn.
+
+- Fixed shell hooks not going through a shell.
+
+  A command given as a string was split on whitespace and executed directly, so the documented `hooks.on-work-begin.command = "echo 'Work started!' >> /tmp/comodoro.log"` appended nothing and passed `>>` to echo as an argument. String commands now run through `/bin/sh -c` (`cmd /C` on Windows), and a command given as an array still executes directly with no shell.
+
+- Fixed a set duration lasting less than a second.
+
+  `timer.set` wrote the remaining duration onto the current cycle, but the tick recomputes that cycle from the elapsed time, so the write was discarded within a second while the call still reported success.
 
   **BREAKING** `Timer::set` now takes `now: u64` and moves the elapsed time to the point that leaves the requested duration remaining, so every later tick recomputes the value it was given. A duration longer than the cycle's configured length is clamped to it, since a longer one would place the timeline inside the previous cycle, and the returned `set` event carries the effective value. On a stopped timer `set` became a no-op returning no events, as `start` resets the elapsed time anyway. The wire contract is unchanged.
 
-- Fixed a paused timer being impossible to stop. `Timer::stop` acted only on a running timer, so `timer.stop` reported success on a paused one and left it paused.
+- Fixed a paused timer being impossible to stop.
 
-- Fixed a configuration of zero-length cycles panicking the tick thread, by way of a modulo by zero. Such a timer now ticks and sets without effect, since no elapsed time can name a cycle in it.
+  `Timer::stop` acted only on a running timer, so `timer.stop` reported success on a paused one and left it paused.
 
-- Fixed the per-second tick reporting the previous second. `Timer::update` pushed the cycle it was about to replace, so every `timer.running` notification lagged one tick, and a duration written by `timer.set` was announced again by the next tick, twice when that tick landed in the same wall-clock second.
+- Fixed a configuration of zero-length cycles panicking the tick thread, by way of a modulo by zero.
+
+  Such a timer now ticks and sets without effect, since no elapsed time can name a cycle in it.
+
+- Fixed the per-second tick reporting the previous second.
+
+  `Timer::update` pushed the cycle it was about to replace, so every `timer.running` notification lagged one tick, and a duration written by `timer.set` was announced again by the next tick, twice when that tick landed in the same wall-clock second.
 
   A tick now reports what it just computed. Staying inside a cycle emits `timer.running` with the current remaining duration, crossing into another emits `timer.ended` then `timer.began` and no `timer.running`, and changing nothing emits nothing. Two consecutive `timer.running` notifications therefore never carry the same duration, and `on-{cycle}-running` hooks no longer fire on the second a cycle ends.
 
@@ -218,7 +247,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed OS specific `tmp` and `xdg` dirs [#3].
 - Fixed missing CI artifacts from releases [#6].
 
-[Unreleased]: https://github.com/pimalaya/comodoro/compare/v1.0.0...master
+[2.0.0]: https://github.com/pimalaya/comodoro/compare/v1.0.0...v2.0.0
 [1.0.0]: https://github.com/pimalaya/comodoro/compare/v0.1.2...v1.0.0
 [0.1.2]: https://github.com/pimalaya/comodoro/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/pimalaya/comodoro/compare/v0.1.0...v0.1.1
