@@ -6,11 +6,12 @@
 //! from. This is the whole of Comodoro's logic, and it knows nothing
 //! about sockets, JSON-RPC or configuration.
 
+use core::ops::{Deref, DerefMut};
+
 use alloc::{
     string::{String, ToString},
     vec::Vec,
 };
-use core::ops::{Deref, DerefMut};
 
 use serde::{Deserialize, Serialize};
 
@@ -401,11 +402,14 @@ impl PartialEq for Timer {
 #[derive(Clone, Debug, Default, Eq, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub enum TimerPrecision {
+    /// The remaining duration goes down to the second.
     #[serde(alias = "seconds", alias = "secs", alias = "sec", alias = "s")]
     Second,
+    /// The remaining duration stops at the minute.
     #[default]
     #[serde(alias = "minutes", alias = "mins", alias = "min", alias = "m")]
     Minute,
+    /// The remaining duration stops at the hour.
     #[serde(alias = "hours", alias = "h")]
     Hour,
 }

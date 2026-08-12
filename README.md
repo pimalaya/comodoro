@@ -11,7 +11,7 @@ One server owns a timer, any number of clients drive it and watch it. This proje
 ## Table of contents
 
 - [Features](#features)
-- [Protocol](#protocol)
+- [Specification coverage](#specification-coverage)
 - [Installation](#installation)
 - [Configuration](#configuration)
 - [Usage](#usage)
@@ -30,11 +30,18 @@ One server owns a timer, any number of clients drive it and watch it. This proje
 - **Per-event hooks**: run a shell command or send a desktop notification when a cycle begins, ticks, is set, pauses, resumes or ends.
 - **Status-bar friendly output**: the remaining duration renders at second, minute or hour precision, and `--json` emits the raw timer for scripts.
 
-*Comodoro relies on [cargo features](https://doc.rust-lang.org/cargo/reference/features.html) to enable or disable functionalities. Default features can be found in the `features` section of the [Cargo.toml](https://github.com/pimalaya/comodoro/blob/master/Cargo.toml), or on [docs.rs](https://docs.rs/crate/comodoro/latest/features).*
+> [!TIP]
+> Comodoro is written in [Rust](https://www.rust-lang.org/) and uses [cargo features](https://doc.rust-lang.org/cargo/reference/features.html) to gate its layers. The default feature set is declared in [Cargo.toml](./Cargo.toml).
 
-## Protocol
+## Specification coverage
 
-Clients and servers exchange [JSON-RPC 2.0](https://www.jsonrpc.org/specification) messages over a Unix domain socket or over TCP, one compact JSON value per line. The specification defines the payload and leaves the transport alone, which is the whole point: anything that can open a connection and write a line can drive the timer, in any language.
+| Specification | What is covered |
+|---------------|-----------------|
+| [JSON-RPC 2.0] | The whole envelope: requests, notifications, batches, and the standard error codes |
+
+[JSON-RPC 2.0]: https://www.jsonrpc.org/specification
+
+Clients and servers exchange those messages over a Unix domain socket or over TCP, one compact JSON value per line. The specification defines the payload and leaves the transport alone, which is the whole point: anything that can open a connection and write a line can drive the timer, in any language.
 
 The server answers these methods:
 

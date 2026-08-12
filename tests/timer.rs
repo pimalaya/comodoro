@@ -11,7 +11,7 @@ use std::{
 };
 
 use comodoro::{
-    client::TimerClient,
+    client::std::TimerClient,
     server::std::TimerServer,
     timer::{TimerConfig, TimerCycle, TimerCycles, TimerEvent, TimerLoop, TimerState},
     transport::TimerAddress,

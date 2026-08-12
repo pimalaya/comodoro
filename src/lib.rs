@@ -19,9 +19,15 @@
 //! three modules are the contract, and they contain no I/O at all.
 //!
 //! The blocking layer arrives with the `client` and `server` features.
-//! [`transport`] resolves, opens and accepts connections, [`client`]
-//! drives a server over one of them, and [`server::std`] owns the timer,
-//! answers requests and pushes notifications.
+//! [`transport`] resolves, opens and accepts connections,
+//! [`client::std`] drives a server over one of them, and [`server::std`]
+//! owns the timer, answers requests and pushes notifications.
+//!
+//! Both sit in a module named after the runtime they are written
+//! against, so an asynchronous port lands beside them as `client::tokio`
+//! and `server::tokio` rather than replacing them. Inside such a module
+//! the standard library is reached through `::std`, since the module
+//! name shadows it.
 //!
 //! The CLI arrives with the `cli` feature, and lives entirely under
 //! [`cli`]: the command grammar, [`cli::config`] for the TOML

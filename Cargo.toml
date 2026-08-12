@@ -18,22 +18,10 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
 default = ["client", "server", "cli", "notify"]
-
-# Mid-level std client and server
-#
 client = ["dep:anyhow"]
 server = ["dep:anyhow"]
-
-# High-level CLI
-#
 cli = ["client", "server", "dep:clap", "dep:convert_case", "dep:pimalaya-cli", "dep:pimalaya-config"]
-
-# Optional CLI subsystem
-#
 notify = ["cli", "dep:notify-rust", "notify-rust/d"]
-
-# Vendored D-Bus
-#
 vendored = ["notify-rust?/d_vendored"]
 
 [[bin]]
@@ -81,7 +69,7 @@ serde = { version = "1", default-features = false, features = ["derive", "alloc"
 serde_json = { version = "1", default-features = false, features = ["alloc"] }
 
 [target.'cfg(windows)'.dependencies]
-uds_windows = "1"
+uds_windows = { version = "1", default-features = false }
 
 [dev-dependencies]
 toml = { version = "1.1", default-features = false, features = ["parse", "serde", "std"] }

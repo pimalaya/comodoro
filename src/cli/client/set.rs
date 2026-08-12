@@ -9,8 +9,8 @@ use clap::Parser;
 use pimalaya_cli::printer::{Message, Printer};
 
 use crate::{
-    cli::{client::ComodoroTransportArg, config::ComodoroAccountConfig},
-    client::TimerClient,
+    cli::{config::ComodoroAccountConfig, transport::ComodoroTransportArg},
+    client::std::TimerClient,
 };
 
 /// Set the remaining duration of the current cycle.
@@ -25,6 +25,8 @@ pub struct TimerSetCommand {
     // NOTE: the transport comes last here, unlike in the other client
     // commands: clap refuses an optional positional standing before a
     // required one.
+    /// The transport used to reach the server.
+    /// The transport used to reach the server.
     #[command(flatten)]
     pub transport: ComodoroTransportArg,
 }

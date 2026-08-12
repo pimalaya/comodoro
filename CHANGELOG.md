@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added the `watch` command, which subscribes and prints the timer on every change until interrupted, so a status bar no longer has to poll.
 - Added the `set` command, exposing the `timer.set` method that was previously reachable on the wire but not from the CLI.
-- Added `TimerClient`, a blocking client over one connection, and `TimerServer`, which owns the timer, answers requests and fans notifications out to subscribers. A server holds a list of `TimerAddress`, so it can serve the same timer over its socket and over TCP at once, and a client connected to either sees what the other does.
+- Added `TimerClient`, a blocking client over one connection, and `TimerServer`, which owns the timer, answers requests and fans notifications out to subscribers. Both live in a module named after the runtime they are written against, `client::std` and `server::std`, so an asynchronous port lands beside them rather than replacing them. A server holds a list of `TimerAddress`, so it can serve the same timer over its socket and over TCP at once, and a client connected to either sees what the other does.
 - Added the `transport` module, holding `TimerAddress`, the `TimerStream` connection and the `TimerListener` accepting them, so both transports carry the protocol behind one type.
 - Added the repository skeleton the Pimalaya guidelines require: a cairn/ folder with its AGENTS.md activation stanza, SECURITY.md, and the tests and audit CI workflows.
 
@@ -39,11 +39,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **BREAKING** Reshaped `TimerRequest` and `TimerResponse` into the protocol method surface, and moved them from `timer` to `protocol`. `TimerRequest::Update` is gone, since the tick belongs to the server rather than to the wire, and `Subscribe` and `Unsubscribe` joined. `TimerEvent` now serializes adjacently, as `{"event": "began", "cycle": {…}}`.
 
-- **BREAKING** Prefixed every public item with its domain, per the Pimalaya naming guidelines. `Cli`, `Config`, `AccountConfig` and `ConfigPathsArg` gained the `Comodoro` prefix, `ServerSubcommand` became `TimerServerCommand`, and `StartServerCommand` became `TimerServerStartCommand`.
+- **BREAKING** Prefixed every public item with its domain, per the Pimalaya naming guidelines. `Cli`, `Command`, `Config`, `AccountConfig` and `ConfigPathsArg` gained the `Comodoro` prefix, `ServerSubcommand` became `TimerServerCommand`, and `StartServerCommand` became `TimerServerStartCommand`.
 
 - **BREAKING** Moved everything the CLI needs under the `cli` module, so its cargo feature gates one subtree rather than a scattering of items.
 
-  `config` became `cli::config`, `hooks` became `cli::hook`, and each command now has its own module: `cli::client::{get, start, pause, resume, stop, set, watch}` and `cli::server::start`. What stays outside is what a library consumer can use without clap: `timer`, `protocol`, `jsonrpc20`, `transport`, `client` and `server`.
+  `config` became `cli::config`, `hooks` became `cli::hook`, the transport selection moved to `cli::transport`, and each command now has its own module: `cli::client::{get, start, pause, resume, stop, set, watch}` and `cli::server::start`. What stays outside is what a library consumer can use without clap: `timer`, `protocol`, `jsonrpc20`, `transport`, `client` and `server`.
 
 - **BREAKING** Replaced the io-hook, io-notify and io-process dependencies with an in-crate hook module.
 
@@ -84,7 +84,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bumped major dependencies.
 - Renamed cargo feature `hook-command` into `command`.
 - Renamed cargo feature `hook-notify` into `notify`.
-- Prefixed preset configs with `presets.`, see `./config.sample.toml`.
+- Prefixed preset configs with `presets.`, see config.sample.toml.
 - Used `dbus` instead of `zbus` for `notify-rust`.
 
 ### Fixed
@@ -114,7 +114,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added hook support for system notifications. A hook can now either execute a shell command, send a system notification or both.
 - Added cargo feature `hook-command` to enable hook based on shell commands (enabled by default).
 - Added cargo feature `hook-notify` to enable hook based on system notifications (enabled by default).
-- Added `config.sample.toml` at <https://github.com/pimalaya/comodoro/blob/master/config.sample.toml>.
+- Added config.sample.toml at <https://github.com/pimalaya/comodoro/blob/master/config.sample.toml>.
 
 ### Changed
 

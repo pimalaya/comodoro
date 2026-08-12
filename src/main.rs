@@ -9,11 +9,11 @@
 //! [`comodoro`](../comodoro/index.html) for the crate architecture.
 
 use clap::Parser;
-use comodoro::cli::Cli;
+use comodoro::cli::ComodoroCli;
 use pimalaya_cli::{error::ErrorReport, log::Logger, printer::StdoutPrinter};
 
 fn main() {
-    let cli = Cli::parse();
+    let cli = ComodoroCli::parse();
 
     Logger::try_init(&cli.log).expect("init logger");
     let mut printer = StdoutPrinter::new(&cli.json);

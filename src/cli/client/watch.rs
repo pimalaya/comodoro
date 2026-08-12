@@ -5,11 +5,8 @@ use clap::Parser;
 use pimalaya_cli::printer::Printer;
 
 use crate::{
-    cli::{
-        client::{ComodoroTransportArg, DisplayTimer},
-        config::ComodoroAccountConfig,
-    },
-    client::TimerClient,
+    cli::{client::DisplayTimer, config::ComodoroAccountConfig, transport::ComodoroTransportArg},
+    client::std::TimerClient,
 };
 
 /// Watch the timer.
@@ -19,6 +16,8 @@ use crate::{
 /// which no longer has to poll.
 #[derive(Debug, Parser)]
 pub struct TimerWatchCommand {
+    /// The transport used to reach the server.
+    /// The transport used to reach the server.
     #[command(flatten)]
     pub transport: ComodoroTransportArg,
 }

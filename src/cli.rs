@@ -1,22 +1,24 @@
 //! Command-line interface of Comodoro.
 //!
-//! [`Cli`] is the clap entry point parsed by main, and [`Command`] is
-//! the flat command grammar it dispatches to. Every command taking an
-//! account resolves it from the TOML configuration first, then hands it
-//! to the client or the server.
+//! [`ComodoroCli`] is the clap entry point parsed by main, and
+//! [`ComodoroCommand`] is the flat command grammar it dispatches to.
+//! Every command taking an account resolves it from the TOML
+//! configuration first, then hands it to the client or the server.
 //!
 //! Everything the CLI needs lives under this module, so the `cli`
 //! feature gates one subtree rather than a scattering of items:
-//! [`config`] reads the TOML document, [`hook`] runs the reactions bound
-//! to timer events, and [`client`] and [`server`] hold one module per
-//! command.
+//! [`config`] reads the TOML document, [`transport`] selects the one a
+//! command talks over, [`hook`] runs the reactions bound to timer
+//! events, and [`client`] and [`server`] hold one module per command.
 
 pub mod client;
 pub mod config;
 pub mod hook;
 pub mod server;
+pub mod transport;
 
 use alloc::{format, vec::Vec};
+
 use std::path::PathBuf;
 
 use anyhow::{Result, bail};
@@ -49,22 +51,27 @@ use crate::cli::{
 #[command(author, version, about)]
 #[command(long_version = long_version!())]
 #[command(propagate_version = true, infer_subcommands = true)]
-pub struct Cli {
+pub struct ComodoroCli {
+    /// The command to run.
     #[command(subcommand)]
-    pub cmd: Command,
+    pub cmd: ComodoroCommand,
+    /// The configuration file(s) to read the account from.
     #[command(flatten)]
     pub config: ComodoroConfigPathsArg,
+    /// The account the command applies to.
     #[command(flatten)]
     pub account: AccountFlag,
+    /// Whether the output is rendered as JSON.
     #[command(flatten)]
     pub json: JsonFlag,
+    /// How much the command logs, and where.
     #[command(flatten)]
     pub log: LogFlags,
 }
 
 /// The commands Comodoro exposes.
 #[derive(Debug, Subcommand)]
-pub enum Command {
+pub enum ComodoroCommand {
     /// Manage the timer servers.
     #[command(arg_required_else_help = true)]
     #[command(subcommand)]
@@ -92,7 +99,7 @@ pub enum Command {
     Completions(CompletionCommand),
 }
 
-impl Command {
+impl ComodoroCommand {
     /// Resolves the account when the command needs one, then runs it.
     pub fn execute(
         self,
@@ -137,8 +144,8 @@ impl Command {
                 cmd.execute(printer, &account)
             }
 
-            Self::Manuals(cmd) => cmd.execute(printer, Cli::command()),
-            Self::Completions(cmd) => cmd.execute(printer, Cli::command()),
+            Self::Manuals(cmd) => cmd.execute(printer, ComodoroCli::command()),
+            Self::Completions(cmd) => cmd.execute(printer, ComodoroCli::command()),
         }
     }
 }

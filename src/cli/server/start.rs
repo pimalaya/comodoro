@@ -4,10 +4,10 @@ use alloc::vec::Vec;
 
 use anyhow::Result;
 use clap::Parser;
-use log::{debug, error};
+use log::{debug, error, info};
 
 use crate::{
-    cli::config::{ComodoroAccountConfig, ComodoroTransport},
+    cli::{config::ComodoroAccountConfig, transport::ComodoroTransport},
     server::std::TimerServer,
     timer::{TimerConfig, TimerLoop},
 };
@@ -39,7 +39,15 @@ impl TimerServerStartCommand {
         };
 
         let addresses = account.addresses(&self.transports)?;
-        let events = TimerServer { config, addresses }.serve()?;
+        let events = TimerServer {
+            config,
+            addresses: addresses.clone(),
+        }
+        .serve()?;
+
+        for address in addresses {
+            info!("timer server listening at {address}");
+        }
 
         while let Ok(event) = events.recv() {
             debug!("received timer event {event:?}");
@@ -49,6 +57,8 @@ impl TimerServerStartCommand {
             let Some(hook) = account.hooks.get_mut(&name) else {
                 continue;
             };
+
+            info!("run hook {name}");
 
             if let Err(err) = hook.execute() {
                 error!("cannot execute hook {name}: {err}");

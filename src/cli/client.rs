@@ -2,8 +2,9 @@
 //!
 //! One module per command, each connecting to the server, sending its
 //! request and printing the outcome. What they share lives here: the
-//! transport argument selecting the connection, and the rendering the
-//! two commands that display a timer print.
+//! rendering the two commands that display a timer print. The transport
+//! argument they also share is in [`crate::cli::transport`], since the
+//! server commands select a transport too.
 
 pub mod get;
 pub mod pause;
@@ -15,24 +16,12 @@ pub mod watch;
 
 use core::fmt;
 
-use clap::Parser;
 use serde::{Serialize, Serializer};
 
 use crate::{
-    cli::config::{ComodoroAccountConfig, ComodoroTransport},
+    cli::config::ComodoroAccountConfig,
     timer::{Timer, TimerPrecision, TimerState},
 };
-
-/// The transport a client command reaches the server over.
-#[derive(Debug, Parser)]
-pub struct ComodoroTransportArg {
-    /// The transport used to send the request.
-    ///
-    /// Defaults to the transport the account configuration marks as
-    /// default, or to the local socket when neither does.
-    #[arg(name = "transport", value_name = "TRANSPORT")]
-    pub transport: Option<ComodoroTransport>,
-}
 
 /// A timer as the terminal shows it, at the account precision.
 struct DisplayTimer<'a> {

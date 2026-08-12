@@ -2,7 +2,10 @@
 //! resolves a command to.
 
 use comodoro::{
-    cli::config::{ComodoroAccountConfig, ComodoroConfig, ComodoroTransport},
+    cli::{
+        config::{ComodoroAccountConfig, ComodoroConfig},
+        transport::ComodoroTransport,
+    },
     transport::TimerAddress,
 };
 use pimalaya_config::toml::TomlConfig;
@@ -55,7 +58,7 @@ fn tcp_takes_the_default_only_when_the_socket_leaves_it() {
         "#,
     );
 
-    // The host defaults to loopback, which is the only default the TCP
+    // NOTE: the host defaults to loopback, which is the only default the TCP
     // table has: an account without a port opens none.
     assert_eq!(
         untied.address(None).unwrap(),

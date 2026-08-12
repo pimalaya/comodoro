@@ -5,8 +5,8 @@ use clap::Parser;
 use pimalaya_cli::printer::{Message, Printer};
 
 use crate::{
-    cli::{client::ComodoroTransportArg, config::ComodoroAccountConfig},
-    client::TimerClient,
+    cli::{config::ComodoroAccountConfig, transport::ComodoroTransportArg},
+    client::std::TimerClient,
 };
 
 /// Stop the timer.
@@ -14,6 +14,8 @@ use crate::{
 /// This command sends a stop request to the server.
 #[derive(Debug, Parser)]
 pub struct TimerStopCommand {
+    /// The transport used to reach the server.
+    /// The transport used to reach the server.
     #[command(flatten)]
     pub transport: ComodoroTransportArg,
 }

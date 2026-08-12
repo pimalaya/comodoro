@@ -11,15 +11,15 @@ use alloc::{
     vec,
     vec::Vec,
 };
+
 use std::{collections::HashMap, path::PathBuf};
 
 use anyhow::{Result, bail};
-use clap::ValueEnum;
 use pimalaya_config::toml::TomlConfig;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    cli::hook::TimerHook,
+    cli::{hook::TimerHook, transport::ComodoroTransport},
     timer::{TimerCycle, TimerPrecision},
     transport::{TimerAddress, default_socket_path},
 };
@@ -132,16 +132,6 @@ impl ComodoroAccountConfig {
             _ => ComodoroTransport::UnixSocket,
         }
     }
-}
-
-/// The transport a command talks to the server over.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, ValueEnum)]
-pub enum ComodoroTransport {
-    /// The local socket described by the `socket` table.
-    #[value(name = "socket", alias = "unix-socket")]
-    UnixSocket,
-    /// The TCP endpoint described by the `tcp` table.
-    Tcp,
 }
 
 /// The local socket transport configuration.

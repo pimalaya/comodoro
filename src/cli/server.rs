@@ -18,6 +18,7 @@ use crate::cli::{config::ComodoroAccountConfig, server::start::TimerServerStartC
 /// manipulate it.
 #[derive(Debug, Subcommand)]
 pub enum TimerServerCommand {
+    /// Start the server.
     Start(TimerServerStartCommand),
 }
 

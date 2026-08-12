@@ -7,6 +7,7 @@
 //! resume.
 
 use alloc::{format, string::String};
+
 use std::process::Command;
 
 #[cfg(not(feature = "notify"))]

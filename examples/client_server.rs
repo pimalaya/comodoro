@@ -7,7 +7,7 @@
 use std::{env, fs, thread, time::Duration};
 
 use comodoro::{
-    client::TimerClient,
+    client::std::TimerClient,
     server::std::TimerServer,
     timer::{TimerConfig, TimerCycle, TimerCycles, TimerLoop},
     transport::TimerAddress,

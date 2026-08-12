@@ -13,8 +13,10 @@
 //! shim, so the same path-based addressing works on every supported
 //! platform.
 
-use alloc::{format, string::String};
 use core::fmt;
+
+use alloc::{format, string::String};
+
 #[cfg(unix)]
 use std::os::unix::net::{UnixListener, UnixStream};
 use std::{
@@ -29,9 +31,6 @@ use log::{debug, warn};
 #[cfg(windows)]
 use uds_windows::{UnixListener, UnixStream};
 
-/// The file name of the socket, under whichever directory holds it.
-pub const SOCKET_FILE_NAME: &str = "comodoro.sock";
-
 /// The socket path used when the configuration names none.
 ///
 /// Resolves to `$XDG_RUNTIME_DIR/comodoro.sock` when the variable is
@@ -43,7 +42,7 @@ pub fn default_socket_path() -> PathBuf {
         .filter(|dir| dir.is_dir())
         .unwrap_or_else(env::temp_dir);
 
-    dir.join(SOCKET_FILE_NAME)
+    dir.join("comodoro.sock")
 }
 
 /// Where a timer server listens and a timer client connects.
@@ -52,7 +51,12 @@ pub enum TimerAddress {
     /// A Unix domain socket, addressed by its path.
     UnixSocket(PathBuf),
     /// A TCP endpoint, addressed by its host and its port.
-    Tcp { host: String, port: u16 },
+    Tcp {
+        /// The host to reach the server at.
+        host: String,
+        /// The port the server listens on.
+        port: u16,
+    },
 }
 
 impl fmt::Display for TimerAddress {
