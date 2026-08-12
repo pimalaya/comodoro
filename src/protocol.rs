@@ -45,6 +45,10 @@ pub enum TimerRequest {
     /// Stops the timer and resets it.
     Stop,
     /// Overrides the remaining duration of the current cycle.
+    ///
+    /// Clamped to the configured length of that cycle, and ignored
+    /// entirely on a stopped timer. The resulting event carries the
+    /// effective duration.
     Set {
         /// The new remaining duration, in seconds.
         duration: usize,

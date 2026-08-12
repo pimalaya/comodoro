@@ -38,7 +38,8 @@ use crate::{
 
 /// Blocking timer server.
 ///
-/// Owns the [`Timer`] behind a mutex, answers requests on the socket,
+/// Owns the [`Timer`] behind a mutex, answers requests on every bound
+/// address,
 /// and pushes every [`TimerEvent`] both to the subscribed connections
 /// and to the receiver [`serve`] returns, which is what the CLI drives
 /// its hooks from.

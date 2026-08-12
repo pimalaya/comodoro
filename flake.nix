@@ -1,9 +1,8 @@
 {
-  description = "Library and CLI to manage timers, written in Rust";
+  description = "CLI to manage timers";
 
   inputs = {
     nixpkgs = {
-      # until crates.io fix fully backported
       url = "github:nixos/nixpkgs/nixos-25.11";
     };
     fenix = {

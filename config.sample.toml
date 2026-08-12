@@ -1,50 +1,29 @@
+# ================================================================================
+# `comodoro` configuration file.
+#
+# Loaded from the first valid path among:
+#   - $XDG_CONFIG_HOME/comodoro/config.toml
+#   - $HOME/.config/comodoro/config.toml
+#   - $HOME/.comodororc
+#
+# Override with `comodoro -c <PATH>` or `COMODORO_CONFIG=<PATH>`. Multiple paths
+# can be passed at once, separated by `:`; the first one is the base and the
+# rest are deep-merged on top of it.
+#
+# Comodoro ships no wizard: this file is written by hand. One server owns a
+# timer and any number of clients drive it, so the same account has to be
+# readable by both sides.
+# ================================================================================
+
 [accounts.example]
 
-# Makes this account the default one when `--account` is omitted.
-#
+# Use this account when `-a/--account` is not passed.
 default = true
 
-# Path of the local socket the server binds and the clients connect
-# to.
+# Cycles the timer runs through, in order, each a name and a duration in
+# seconds. This is the only required field.
 #
-# Defaults to comodoro.sock inside $XDG_RUNTIME_DIR, or inside the
-# platform temporary directory when that variable is unset. Set it
-# when you run several timers at once, giving each account its own
-# socket. The table is also spelled "unix-socket", the name Comodoro
-# 1.x used.
-#
-#socket.path = "/run/user/1000/comodoro.sock"
-
-# Makes the local socket the client choice when the command names no
-# transport.
-#
-# The socket is already that choice when neither table claims the
-# default, so this only matters against a "tcp.default".
-#
-#socket.default = true
-
-# Host and port of the TCP endpoint the server binds and the clients
-# connect to.
-#
-# Absent by default, in which case the account opens no port at all.
-# The listener is unauthenticated, so whoever reaches the port drives
-# the timer: keep it on loopback unless you mean to expose it.
-#
-#tcp.host = "127.0.0.1"
-#tcp.port = 9999
-
-# Makes TCP the client choice when the command names no transport.
-#
-# Ignored when "socket.default" is set as well, since the socket is
-# the transport every account has.
-#
-#tcp.default = true
-
-# A cycle is a step in the timer lifetime, represented by a name and a
-# duration (in seconds).
-#
-# Example of a Pomodoro cycles:
-#
+# Pomodoro style:
 cycles = [
   { name = "Work", duration = 1500 },      # 25 min
   { name = "Rest", duration = 300 },       #  5 min
@@ -54,50 +33,76 @@ cycles = [
   { name = "Long rest", duration = 1800 }, # 30 min
 ]
 
-# Example of a 52/17 cycles:
-#
+# 52/17 style:
 #cycles = [
 #  { name = "Work", duration = 3120 }, # 52 min
 #  { name = "Rest", duration = 1020 }, # 17 min
 #]
 
-# Example of a 112/26 cycles:
-#
+# 112/26 style:
 #cycles = [
 #  { name = "Work", duration = 6720 }, # 112 min
 #  { name = "Rest", duration = 1560 }, #  26 min
 #]
 
-# Forces the timer to stop after the given amount of loops.
-#
+# Stop the timer after that many full loops. Loops forever when absent.
 #cycles-count = 5
 
-# Customize the timer precision.
-# Available options: second, minute, hour.
-#
+# Precision the remaining duration is displayed at: `second`, `minute` or
+# `hour`.
 precision = "minute"
 
-# A hook runs either a shell command or a system notification.
+# --------------------------------------------------------------------------------
+# Local socket transport
+# --------------------------------------------------------------------------------
 #
-# Hook names follow the format "on-{name}-{event}", where "name" is
-# the kebab-case version of the cycle name, and "event" the type of
-# event: begin, running, set, pause, resume, end.
+# The transport every account has, also spelled `unix-socket` for accounts
+# written against Comodoro 1.x. Filesystem permissions guard it and it opens no
+# port.
+
+# Path the server binds and the clients connect to. Defaults to comodoro.sock
+# inside $XDG_RUNTIME_DIR, or inside the platform temporary directory when that
+# variable is unset. Give each account its own path to run several timers.
+socket.path = "/run/user/1000/comodoro.sock"
+
+# Pick this transport when a command names none. Already the case when neither
+# transport claims the default, so this only matters against `tcp.default`.
+socket.default = true
+
+# --------------------------------------------------------------------------------
+# TCP transport
+# --------------------------------------------------------------------------------
 #
-# The two timer-wide events "on-timer-start" and "on-timer-stop" fire
-# when the timer itself starts and stops.
+# Absent by default, in which case the account opens no port at all. The
+# listener is unauthenticated: whoever reaches the port drives the timer, so
+# keep it on loopback unless you mean to expose it.
+
+# Host and port the server binds and the clients connect to. The port has no
+# default, the host falls back to loopback.
+#tcp.host = "127.0.0.1"
+#tcp.port = 9999
+
+# Pick this transport when a command names none. Ignored when `socket.default`
+# is set as well.
+#tcp.default = true
+
+# --------------------------------------------------------------------------------
+# Hooks
+# --------------------------------------------------------------------------------
 #
-# A command given as a string is run through the platform shell, so
-# pipes, redirections and globs work:
-#
+# Reactions bound to timer events by name: `on-{cycle}-{event}` where the cycle
+# is the kebab-case cycle name and the event one of begin, running, set, pause,
+# resume, end. The timer itself fires `on-timer-start` and `on-timer-stop`.
+
+# A command given as a string runs through the platform shell, so pipes,
+# redirections and globs work.
 #hooks.on-work-begin.command = "echo 'Work started!' >> /tmp/comodoro.log"
 
-# A command given as an array is executed directly, with no shell
-# involved, so no quoting rule applies beyond the kernel exec rules:
-#
+# A command given as an array executes directly, with no shell involved, so no
+# quoting rule applies beyond the kernel exec rules.
 #hooks.on-work-begin.command = ["notify-send", "Comodoro", "Work started!"]
 
-# A notification is sent to the system notification daemon. It
-# requires the `notify` cargo feature, enabled by default.
-#
+# A notification is sent to the system notification daemon. Requires the
+# `notify` cargo feature, enabled by default.
 hooks.on-work-begin.notify.summary = "Comodoro"
 hooks.on-work-begin.notify.body = "Work started!"

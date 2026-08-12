@@ -1,10 +1,10 @@
 //! Commands driving the timer from a client.
 //!
 //! One module per command, each connecting to the server, sending its
-//! request and printing the outcome. What they share lives here: the
-//! rendering the two commands that display a timer print. The transport
-//! argument they also share is in [`crate::cli::transport`], since the
-//! server commands select a transport too.
+//! request and printing the outcome. What lives here is the rendering
+//! the two commands displaying a timer share. The transport argument
+//! they also share sits in [`crate::cli::transport`], since the server
+//! commands select a transport too.
 
 pub mod get;
 pub mod pause;

@@ -77,6 +77,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed a configuration of zero-length cycles panicking the tick thread, by way of a modulo by zero. Such a timer now ticks and sets without effect, since no elapsed time can name a cycle in it.
 
+- Fixed the per-second tick reporting the previous second. `Timer::update` pushed the cycle it was about to replace, so every `timer.running` notification lagged one tick, and a duration written by `timer.set` was announced again by the next tick, twice when that tick landed in the same wall-clock second.
+
+  A tick now reports what it just computed. Staying inside a cycle emits `timer.running` with the current remaining duration, crossing into another emits `timer.ended` then `timer.began` and no `timer.running`, and changing nothing emits nothing. Two consecutive `timer.running` notifications therefore never carry the same duration, and `on-{cycle}-running` hooks no longer fire on the second a cycle ends.
+
 ## [1.0.0] - 2026-02-11
 
 ### Changed

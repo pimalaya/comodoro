@@ -1,17 +1,16 @@
-# ⏱ Comodoro [![Documentation](https://img.shields.io/docsrs/comodoro?style=flat&logo=docs.rs&logoColor=white)](https://docs.rs/comodoro/latest/comodoro) [![Matrix](https://img.shields.io/badge/chat-%23pimalaya-blue?style=flat&logo=matrix&logoColor=white)](https://matrix.to/#/#pimalaya:matrix.org) [![Mastodon](https://img.shields.io/badge/news-%40pimalaya-blue?style=flat&logo=mastodon&logoColor=white)](https://fosstodon.org/@pimalaya)
+# ⏳ Comodoro [![Documentation](https://img.shields.io/docsrs/comodoro?style=flat&logo=docs.rs&logoColor=white)](https://docs.rs/comodoro/latest/comodoro) [![Matrix](https://img.shields.io/badge/chat-%23pimalaya-blue?style=flat&logo=matrix&logoColor=white)](https://matrix.to/#/#pimalaya:matrix.org) [![Mastodon](https://img.shields.io/badge/news-%40pimalaya-blue?style=flat&logo=mastodon&logoColor=white)](https://fosstodon.org/@pimalaya)
 
-Library and CLI to manage timers
+CLI to manage timers
 
 One server owns a timer, any number of clients drive it and watch it. This project is composed of 3 feature-gated layers:
 
 - Low-level **contract**: the pure timer state machine and the JSON-RPC 2.0 method surface, no_std-compatible and free of any I/O
-- Mid-level **client and server**: a blocking client over a local socket, and a server owning the timer behind its listener
+- Mid-level **client and server**: a blocking client over one connection, and a server owning the timer behind the listeners it binds
 - High-level **CLI**: the client and the server behind a flat command grammar, a TOML configuration and per-event hooks
 
 ## Table of contents
 
 - [Features](#features)
-- [Specification coverage](#specification-coverage)
 - [Installation](#installation)
 - [Configuration](#configuration)
 - [Usage](#usage)
@@ -23,48 +22,16 @@ One server owns a timer, any number of clients drive it and watch it. This proje
 
 ## Features
 
-- **Pomodoro-style cycles**: any sequence of named cycles and durations, looping forever or a fixed number of times.
 - **Shared timer**: one server owns it, and any number of clients start, pause, resume, stop or query it concurrently.
 - **Push notifications**: subscribe once with `comodoro watch` and the server pushes every change, so a status bar never polls.
-- **Standard protocol**: plain [JSON-RPC 2.0](https://www.jsonrpc.org/specification) over a local socket or over TCP, so any language can drive the timer.
+- **Local socket and TCP**: a server binds either transport or both at once, and every command picks the one it talks over.
+- **Standard protocol**: plain [JSON-RPC 2.0](https://www.jsonrpc.org/specification), so any language can drive the timer.
+- **Pomodoro-style cycles**: any sequence of named cycles and durations, looping forever or a fixed number of times.
 - **Per-event hooks**: run a shell command or send a desktop notification when a cycle begins, ticks, is set, pauses, resumes or ends.
 - **Status-bar friendly output**: the remaining duration renders at second, minute or hour precision, and `--json` emits the raw timer for scripts.
 
 > [!TIP]
 > Comodoro is written in [Rust](https://www.rust-lang.org/) and uses [cargo features](https://doc.rust-lang.org/cargo/reference/features.html) to gate its layers. The default feature set is declared in [Cargo.toml](./Cargo.toml).
-
-## Specification coverage
-
-| Specification | What is covered |
-|---------------|-----------------|
-| [JSON-RPC 2.0] | The whole envelope: requests, notifications, batches, and the standard error codes |
-
-[JSON-RPC 2.0]: https://www.jsonrpc.org/specification
-
-Clients and servers exchange those messages over a Unix domain socket or over TCP, one compact JSON value per line. The specification defines the payload and leaves the transport alone, which is the whole point: anything that can open a connection and write a line can drive the timer, in any language.
-
-The server answers these methods:
-
-| Method | Parameters | Result |
-|--------|------------|--------|
-| `timer.get` | none | the timer |
-| `timer.start` | none | the events it emitted |
-| `timer.pause` | none | the events it emitted |
-| `timer.resume` | none | the events it emitted |
-| `timer.stop` | none | the events it emitted |
-| `timer.set` | `duration` in seconds | the events it emitted |
-| `timer.subscribe` | none | whether the connection is subscribed |
-| `timer.unsubscribe` | none | whether the connection is subscribed |
-
-A subscribed connection additionally receives a notification every time the timer changes: `timer.started`, `timer.began`, `timer.running`, `timer.durationSet`, `timer.paused`, `timer.resumed`, `timer.ended` and `timer.stopped`. Each one carries the cycle it concerns, except the two timer-wide ones which carry nothing. Requests are named after the imperative that performs them and notifications after the past tense of what happened, so the two directions never collide.
-
-Driving the timer by hand takes no client at all:
-
-```sh
-echo '{"jsonrpc":"2.0","method":"timer.start","id":1}' | socat - UNIX-CONNECT:$XDG_RUNTIME_DIR/comodoro.sock
-```
-
-Failures come back as the standard error codes: -32700 for unparsable JSON, -32600 for a malformed request, -32601 for an unknown method, -32602 for bad parameters and -32603 for an internal failure. The -32000 to -32099 range is reserved for future Comodoro errors and currently unused.
 
 ## Installation
 
@@ -164,24 +131,24 @@ cargo build --release
 
 Comodoro ships no wizard: the configuration is written by hand. A configuration is loaded from the first valid path among:
 
-- $XDG_CONFIG_HOME/comodoro/config.toml
-- $HOME/.config/comodoro/config.toml
-- $HOME/.comodororc
+- `$XDG_CONFIG_HOME/comodoro/config.toml`
+- `$HOME/.config/comodoro/config.toml`
+- `$HOME/.comodororc`
 
 Override the path with -c <PATH> or COMODORO_CONFIG=<PATH>. Multiple paths can be passed at once, separated by :. The first one is the base and the rest are deep-merged on top. The full field reference lives in [config.sample.toml](./config.sample.toml).
 
-An account only needs its `cycles`, the ordered steps the timer runs through. Everything else has a default: `socket.path` falls back to comodoro.sock inside `$XDG_RUNTIME_DIR` (or the platform temporary directory), `cycles-count` leaves the timer looping forever, and `precision` decides how the remaining duration renders. Set `socket.path` per account when running several timers at once.
+An account only needs its `cycles`, the ordered steps the timer runs through. Everything else has a default: a local socket under `$XDG_RUNTIME_DIR`, an endless loop, and a display precision of one minute. Give each account its own `socket.path` to run several timers side by side.
 
-Two transports carry the same protocol. The local socket is the one every account has, and is also spelled `unix-socket` for accounts written against Comodoro 1.x. TCP is added by a `tcp` table carrying a `port` and an optional `host`, defaulting to 127.0.0.1: an account without that table opens no port. That listener is unauthenticated, so whoever reaches the port drives the timer, which is why it stays on loopback unless you mean otherwise. When both are configured, `socket.default` or `tcp.default` decides which one a command reaches for.
+Add a `tcp` table to also reach the timer over the network. A server binds every transport its account configures, and a command talks over the one flagged `default`, falling back to the socket. That listener is unauthenticated, so whoever reaches the port drives the timer, and it stays on loopback unless you mean otherwise.
 
-Hooks are bound to events by name, `on-{cycle}-{event}` for a cycle and `on-timer-start` or `on-timer-stop` for the timer itself. A hook runs either a `command`, given as a shell line or as a program followed by its arguments, or a `notify` block carrying a summary and a body. Notifications require the `notify` cargo feature, enabled by default.
+Bind a `command` or a desktop `notify` block to any timer event to run something when a cycle begins, ticks, pauses, resumes or ends.
 
 ## Usage
 
 Start the server, which owns the timer and stays in the foreground:
 
 ```sh
-comodoro servers start
+comodoro server start
 ```
 
 Then drive the timer from anywhere:
@@ -212,7 +179,7 @@ Every command and every flag is documented behind `--help`. The library API is d
 Logs go to stderr, so they can be redirected to a file while the command output stays on stdout:
 
 ```sh
-comodoro servers start --log-level debug 2>/tmp/comodoro.log
+comodoro server start --log-level debug 2>/tmp/comodoro.log
 ```
 
 Use `--log-file <PATH>` to append them to a file directly. When `--log-level` is omitted the `RUST_LOG` environment variable is consulted, and `RUST_BACKTRACE=1` adds the full error backtrace.

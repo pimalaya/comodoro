@@ -111,6 +111,9 @@ pub enum TimerEvent {
     /// The timer began the given cycle.
     Began(TimerCycle),
     /// The timer is running the given cycle (periodic tick).
+    ///
+    /// Carries the remaining duration as of that tick, so two
+    /// consecutive ones never carry the same duration.
     Running(TimerCycle),
     /// The remaining duration was manually set.
     Set(TimerCycle),
@@ -224,7 +227,16 @@ impl Timer {
     /// Advances the timer by one tick and returns any events that
     /// fired.
     ///
-    /// Has no effect when the timer is paused or stopped.
+    /// Reports the cycle it just computed, never the one it replaced. A
+    /// tick staying inside its cycle emits [`TimerEvent::Running`], a
+    /// tick crossing into another emits [`TimerEvent::Ended`] then
+    /// [`TimerEvent::Began`] instead, and a tick changing nothing emits
+    /// nothing, which is what a tick landing less than a second after a
+    /// [`Self::set`] does.
+    ///
+    /// Has no effect when the timer is paused or stopped, nor when its
+    /// cycles add up to no time, since no elapsed time can name a cycle
+    /// in that configuration.
     pub fn update(&mut self, now: u64) -> impl IntoIterator<Item = TimerEvent> {
         let mut events = Vec::with_capacity(3);
 
@@ -258,13 +270,13 @@ impl Timer {
                 })
                 .unwrap_or(last_cycle);
 
-            events.push(TimerEvent::Running(self.cycle.clone()));
-
             if self.cycle.name != next_cycle.name {
                 let mut prev_cycle = self.cycle.clone();
                 prev_cycle.duration = 0;
                 events.push(TimerEvent::Ended(prev_cycle));
                 events.push(TimerEvent::Began(next_cycle.clone()));
+            } else if self.cycle.duration != next_cycle.duration {
+                events.push(TimerEvent::Running(next_cycle.clone()));
             }
 
             self.cycle = next_cycle;
@@ -471,15 +483,17 @@ mod tests {
         events.extend(timer.update(3));
         events.extend(timer.update(4));
 
+        // Each tick reports what it just computed, so the durations go
+        // down without repeating, and the tick ending a cycle says so
+        // rather than announcing the cycle it is leaving.
         assert_eq!(
             events,
             vec![
-                TimerEvent::Running(TimerCycle::new("a", 3)),
                 TimerEvent::Running(TimerCycle::new("a", 2)),
                 TimerEvent::Running(TimerCycle::new("a", 1)),
                 TimerEvent::Ended(TimerCycle::new("a", 0)),
                 TimerEvent::Began(TimerCycle::new("b", 2)),
-                TimerEvent::Running(TimerCycle::new("b", 2)),
+                TimerEvent::Running(TimerCycle::new("b", 1)),
             ]
         );
     }
@@ -573,6 +587,21 @@ mod tests {
     }
 
     #[test]
+    fn a_tick_changing_nothing_says_nothing() {
+        let mut timer = testing_timer();
+
+        timer.set(0, 2);
+
+        // The tick lands in the same second as the set, so it recomputes
+        // the duration the set already announced.
+        assert_eq!(timer.update(0).into_iter().count(), 0);
+        assert_eq!(timer.cycle, TimerCycle::new("a", 2));
+
+        let events: Vec<_> = timer.update(1).into_iter().collect();
+        assert_eq!(events, vec![TimerEvent::Running(TimerCycle::new("a", 1))]);
+    }
+
+    #[test]
     fn a_set_duration_is_clamped_to_the_cycle_length() {
         let mut timer = testing_timer();
         timer.update(2);
@@ -601,7 +630,6 @@ mod tests {
         assert_eq!(
             events,
             vec![
-                TimerEvent::Running(TimerCycle::new("a", 0)),
                 TimerEvent::Ended(TimerCycle::new("a", 0)),
                 TimerEvent::Began(TimerCycle::new("b", 2)),
             ]

@@ -1,6 +1,6 @@
 [package]
 name = "comodoro"
-description = "Library and CLI to manage timers"
+description = "CLI to manage timers"
 version = "1.0.0"
 authors = ["Clément DOUIN (soywod) <pimalaya.org@posteo.net>"]
 rust-version = "1.89"

@@ -78,6 +78,9 @@ impl TimerClient {
     }
 
     /// Overrides the remaining duration of the current cycle.
+    ///
+    /// The server clamps the request to the configured length of that
+    /// cycle, so the returned event is what to read the result from.
     pub fn set(&mut self, duration: usize) -> Result<Vec<TimerEvent>> {
         self.events(TimerRequest::Set { duration })
     }

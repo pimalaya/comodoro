@@ -1,4 +1,5 @@
 #![no_std]
+#![deny(missing_docs)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
 //! # Comodoro
@@ -45,17 +46,46 @@
 //! Rust.
 //!
 //! Requests flow client to server and are named after the imperative
-//! that performs them. Notifications flow server to client, are named
-//! after the past tense of what just happened, and reach only the
-//! connections that asked for them with `timer.subscribe`.
+//! that performs them.
+//!
+//! | Method | Parameters | Result |
+//! |---|---|---|
+//! | `timer.get` | none | the timer |
+//! | `timer.start` | none | the events it emitted |
+//! | `timer.pause` | none | the events it emitted |
+//! | `timer.resume` | none | the events it emitted |
+//! | `timer.stop` | none | the events it emitted |
+//! | `timer.set` | `duration` in seconds | the events it emitted |
+//! | `timer.subscribe` | none | whether the connection is subscribed |
+//! | `timer.unsubscribe` | none | whether the connection is subscribed |
+//!
+//! Notifications flow the other way, are named after the past tense of
+//! what just happened, and reach only the connections that asked for
+//! them with `timer.subscribe`. A connection receives `timer.started`,
+//! `timer.began`, `timer.running`, `timer.durationSet`, `timer.paused`,
+//! `timer.resumed`, `timer.ended` and `timer.stopped` as the timer
+//! changes, each carrying the cycle it concerns except the two
+//! timer-wide ones. Naming the two directions differently is what keeps
+//! a request method and a notification method from ever colliding.
+//!
+//! Failures come back as the standard codes, and only those.
+//!
+//! | Code | Meaning |
+//! |---|---|
+//! | -32700 | the payload is not valid JSON |
+//! | -32600 | the request is malformed |
+//! | -32601 | the method is unknown |
+//! | -32602 | the parameters are missing or wrong |
+//! | -32603 | the server failed internally |
+//! | -32000 to -32099 | reserved for Comodoro, unused today |
 //!
 //! ## Where to look next
 //!
 //! Runnable programs live in the examples folder. The tests cover the
 //! state machine, the envelope against the specification's own
-//! examples, and one full client-server exchange over a real socket.
-//! The development history and living design notes live in the cairn/
-//! folder.
+//! examples, the account configuration, and full client-server
+//! exchanges over both transports. The development history and living
+//! design notes live in the cairn/ folder.
 //!
 //! [JSON-RPC 2.0]: https://www.jsonrpc.org/specification
 
@@ -63,17 +93,14 @@ extern crate alloc;
 #[cfg(any(feature = "client", feature = "server"))]
 extern crate std;
 
-pub mod jsonrpc20;
-pub mod protocol;
-pub mod timer;
-
-#[cfg(any(feature = "client", feature = "server"))]
-pub mod transport;
-
-#[cfg(feature = "client")]
-pub mod client;
-#[cfg(feature = "server")]
-pub mod server;
-
 #[cfg(feature = "cli")]
 pub mod cli;
+#[cfg(feature = "client")]
+pub mod client;
+pub mod jsonrpc20;
+pub mod protocol;
+#[cfg(feature = "server")]
+pub mod server;
+pub mod timer;
+#[cfg(any(feature = "client", feature = "server"))]
+pub mod transport;
