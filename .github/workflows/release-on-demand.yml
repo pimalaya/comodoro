@@ -19,7 +19,6 @@ on:
         options:
           - aarch64-apple-darwin
           - aarch64-unknown-linux-musl
-          - aarch64-unknown-linux-musl
           - armv6l-unknown-linux-musleabihf
           - armv7l-unknown-linux-musleabihf
           - i686-unknown-linux-musl
