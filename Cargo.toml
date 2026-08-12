@@ -39,6 +39,11 @@ name = "config"
 path = "tests/config.rs"
 required-features = ["cli"]
 
+[[test]]
+name = "hook"
+path = "tests/hook.rs"
+required-features = ["cli"]
+
 [[example]]
 name = "timer"
 path = "examples/timer.rs"

@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.0.0] - 2026-08-12
+## [2.0.0] - 2026-08-13
 
 ### Added
 
@@ -103,6 +103,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed a configuration of zero-length cycles panicking the tick thread, by way of a modulo by zero.
 
   Such a timer now ticks and sets without effect, since no elapsed time can name a cycle in it.
+
+- Fixed a timer completing its last loop in silence.
+
+  `Timer::update` flipped the state to stopped and returned no events, so `timer.ended`, `timer.stopped` and the `on-timer-stop` hook never fired on the one moment a `cycles-count` timer exists for. It also left the cycle, the elapsed time and the start instant untouched, reporting a timer stopped in the middle of a cycle. The completing tick now emits `timer.ended` then `timer.stopped` and resets, exactly as `timer.stop` does.
+
+- Fixed a cycle boundary going unannounced between two cycles sharing a name.
+
+  Boundaries were detected by comparing names, so the simplest configuration there is, a single cycle looping forever, never announced a round. A boundary is now recognised by the remaining duration going back up as well as by the name changing, since remaining time only ever decreases inside a cycle.
 
 - Fixed the per-second tick reporting the previous second.
 

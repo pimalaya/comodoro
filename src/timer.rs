@@ -234,6 +234,10 @@ impl Timer {
     /// nothing, which is what a tick landing less than a second after a
     /// [`Self::set`] does.
     ///
+    /// The tick completing the last configured loop emits
+    /// [`TimerEvent::Ended`] then [`TimerEvent::Stopped`], and resets
+    /// the timer, exactly as [`Self::stop`] would.
+    ///
     /// Has no effect when the timer is paused or stopped, nor when its
     /// cycles add up to no time, since no elapsed time can name a cycle
     /// in that configuration.
@@ -252,7 +256,11 @@ impl Timer {
             if let TimerLoop::Fixed(cycles_count) = self.cycles_count
                 && elapsed >= total_duration * cycles_count
             {
-                self.state = TimerState::Stopped;
+                let mut ended_cycle = self.cycle.clone();
+                ended_cycle.duration = 0;
+                events.push(TimerEvent::Ended(ended_cycle));
+                events.push(TimerEvent::Stopped);
+                self.reset();
                 return events;
             }
 
@@ -270,7 +278,14 @@ impl Timer {
                 })
                 .unwrap_or(last_cycle);
 
-            if self.cycle.name != next_cycle.name {
+            // NOTE: a boundary shows as a different name, or as remaining
+            // time going back up, which is what a cycle repeating its
+            // predecessor's name looks like, and what a single looping
+            // cycle looks like every time it comes round.
+            let began_cycle =
+                self.cycle.name != next_cycle.name || next_cycle.duration > self.cycle.duration;
+
+            if began_cycle {
                 let mut prev_cycle = self.cycle.clone();
                 prev_cycle.duration = 0;
                 events.push(TimerEvent::Ended(prev_cycle));
@@ -386,16 +401,22 @@ impl Timer {
         let mut events = Vec::with_capacity(2);
 
         if !matches!(self.state, TimerState::Stopped) {
-            self.state = TimerState::Stopped;
             events.push(TimerEvent::Ended(self.cycle.clone()));
             events.push(TimerEvent::Stopped);
-            self.cycle = self.config.first_cycle();
-            self.cycles_count = self.config.cycles_count.clone();
-            self.started_at = None;
-            self.elapsed = 0;
+            self.reset();
         }
 
         events
+    }
+
+    /// Returns the timer to the state a fresh one is in, keeping no
+    /// elapsed time and no progress through the cycles.
+    fn reset(&mut self) {
+        self.state = TimerState::Stopped;
+        self.cycle = self.config.first_cycle();
+        self.cycles_count = self.config.cycles_count.clone();
+        self.started_at = None;
+        self.elapsed = 0;
     }
 }
 
@@ -663,6 +684,77 @@ mod tests {
 
         assert_eq!(timer.set(0, 2).into_iter().count(), 0);
         assert_eq!(timer, stopped);
+    }
+
+    #[test]
+    fn a_completed_timer_says_so_and_resets() {
+        let mut timer = Timer::new(TimerConfig {
+            cycles: TimerCycles::from([TimerCycle::new("a", 2), TimerCycle::new("b", 1)]),
+            cycles_count: TimerLoop::Fixed(2),
+        });
+
+        timer.start(0);
+        timer.update(5);
+
+        // The sixth second completes the second loop of a three second
+        // configuration, and the timer used to fall silent there.
+        let events: Vec<_> = timer.update(6).into_iter().collect();
+
+        assert_eq!(
+            events,
+            vec![
+                TimerEvent::Ended(TimerCycle::new("b", 0)),
+                TimerEvent::Stopped
+            ]
+        );
+        assert_eq!(timer.state, TimerState::Stopped);
+        assert_eq!(timer.cycle, TimerCycle::new("a", 2));
+        assert_eq!(timer.elapsed, 0);
+        assert_eq!(timer.started_at, None);
+    }
+
+    #[test]
+    fn a_single_looping_cycle_announces_every_round() {
+        let mut timer = Timer::new(TimerConfig {
+            cycles: TimerCycles::from([TimerCycle::new("a", 2)]),
+            ..Default::default()
+        });
+
+        timer.start(0);
+        timer.update(1);
+
+        // Comparing names alone missed this boundary, since the cycle
+        // coming round carries the name of the one that just ended.
+        let events: Vec<_> = timer.update(2).into_iter().collect();
+
+        assert_eq!(
+            events,
+            vec![
+                TimerEvent::Ended(TimerCycle::new("a", 0)),
+                TimerEvent::Began(TimerCycle::new("a", 2)),
+            ]
+        );
+    }
+
+    #[test]
+    fn two_cycles_sharing_a_name_are_still_two_cycles() {
+        let mut timer = Timer::new(TimerConfig {
+            cycles: TimerCycles::from([TimerCycle::new("a", 2), TimerCycle::new("a", 3)]),
+            ..Default::default()
+        });
+
+        timer.start(0);
+        timer.update(1);
+
+        let events: Vec<_> = timer.update(2).into_iter().collect();
+
+        assert_eq!(
+            events,
+            vec![
+                TimerEvent::Ended(TimerCycle::new("a", 0)),
+                TimerEvent::Began(TimerCycle::new("a", 3)),
+            ]
+        );
     }
 
     #[test]
