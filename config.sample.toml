@@ -4,22 +4,39 @@
 #
 default = true
 
-# Enables Unix socket client and server.
-# Requires Unix system.
+# Path of the local socket the server binds and the clients connect
+# to.
 #
-unix-socket.path = "/tmp/comodoro.sock"
-
-# Makes Unix socket the default client choice when `--protocol` is
-# omitted.
+# Defaults to comodoro.sock inside $XDG_RUNTIME_DIR, or inside the
+# platform temporary directory when that variable is unset. Set it
+# when you run several timers at once, giving each account its own
+# socket. The table is also spelled "unix-socket", the name Comodoro
+# 1.x used.
 #
-unix-socket.default = true
+#socket.path = "/run/user/1000/comodoro.sock"
 
-# Enables TCP client and server.
+# Makes the local socket the client choice when the command names no
+# transport.
+#
+# The socket is already that choice when neither table claims the
+# default, so this only matters against a "tcp.default".
+#
+#socket.default = true
+
+# Host and port of the TCP endpoint the server binds and the clients
+# connect to.
+#
+# Absent by default, in which case the account opens no port at all.
+# The listener is unauthenticated, so whoever reaches the port drives
+# the timer: keep it on loopback unless you mean to expose it.
 #
 #tcp.host = "127.0.0.1"
-tcp.port = 9999
+#tcp.port = 9999
 
-# Makes TCP the default client choice when `--protocol` is omitted.
+# Makes TCP the client choice when the command names no transport.
+#
+# Ignored when "socket.default" is set as well, since the socket is
+# the transport every account has.
 #
 #tcp.default = true
 
@@ -60,12 +77,27 @@ cycles = [
 #
 precision = "minute"
 
-# A hook can be either a shell command and/or a system notification.
+# A hook runs either a shell command or a system notification.
 #
 # Hook names follow the format "on-{name}-{event}", where "name" is
 # the kebab-case version of the cycle name, and "event" the type of
 # event: begin, running, set, pause, resume, end.
 #
+# The two timer-wide events "on-timer-start" and "on-timer-stop" fire
+# when the timer itself starts and stops.
+#
+# A command given as a string is run through the platform shell, so
+# pipes, redirections and globs work:
+#
 #hooks.on-work-begin.command = "echo 'Work started!' >> /tmp/comodoro.log"
+
+# A command given as an array is executed directly, with no shell
+# involved, so no quoting rule applies beyond the kernel exec rules:
+#
+#hooks.on-work-begin.command = ["notify-send", "Comodoro", "Work started!"]
+
+# A notification is sent to the system notification daemon. It
+# requires the `notify` cargo feature, enabled by default.
+#
 hooks.on-work-begin.notify.summary = "Comodoro"
 hooks.on-work-begin.notify.body = "Work started!"

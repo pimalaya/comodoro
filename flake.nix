@@ -1,8 +1,9 @@
 {
-  description = "I/O-free time client library written in Rust";
+  description = "Library and CLI to manage timers, written in Rust";
 
   inputs = {
     nixpkgs = {
+      # until crates.io fix fully backported
       url = "github:nixos/nixpkgs/nixos-25.11";
     };
     fenix = {
@@ -19,5 +20,6 @@
     inputs:
     (import inputs.pimalaya).mkFlakeOutputs inputs {
       shell = ./shell.nix;
+      default = ./default.nix;
     };
 }

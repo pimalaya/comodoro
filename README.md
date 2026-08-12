@@ -1,161 +1,221 @@
-# ⏱ Comodoro [![Releases](https://img.shields.io/github/v/release/pimalaya/comodoro?color=success)](https://github.com/pimalaya/comodoro/releases/latest) [![Repology](https://img.shields.io/repology/repositories/comodoro?color=success)]("https://repology.org/project/comodoro/versions) [![Matrix](https://img.shields.io/badge/chat-%23pimalaya-blue?style=flat&logo=matrix&logoColor=white)](https://matrix.to/#/#pimalaya:matrix.org) [![Mastodon](https://img.shields.io/badge/news-%40pimalaya-blue?style=flat&logo=mastodon&logoColor=white)](https://fosstodon.org/@pimalaya)
+# ⏱ Comodoro [![Documentation](https://img.shields.io/docsrs/comodoro?style=flat&logo=docs.rs&logoColor=white)](https://docs.rs/comodoro/latest/comodoro) [![Matrix](https://img.shields.io/badge/chat-%23pimalaya-blue?style=flat&logo=matrix&logoColor=white)](https://matrix.to/#/#pimalaya:matrix.org) [![Mastodon](https://img.shields.io/badge/news-%40pimalaya-blue?style=flat&logo=mastodon&logoColor=white)](https://fosstodon.org/@pimalaya)
 
-CLI to manage timers
+Library and CLI to manage timers
+
+One server owns a timer, any number of clients drive it and watch it. This project is composed of 3 feature-gated layers:
+
+- Low-level **contract**: the pure timer state machine and the JSON-RPC 2.0 method surface, no_std-compatible and free of any I/O
+- Mid-level **client and server**: a blocking client over a local socket, and a server owning the timer behind its listener
+- High-level **CLI**: the client and the server behind a flat command grammar, a TOML configuration and per-event hooks
 
 ## Table of contents
 
 - [Features](#features)
+- [Protocol](#protocol)
 - [Installation](#installation)
-  - [Pre-built binary](#pre-built-binary)
-  - [Cargo](#cargo)
-  - [Nix](#nix)
-  - [Sources](#sources)
 - [Configuration](#configuration)
-- [FAQ](#faq)
+- [Usage](#usage)
+- [AI policy](https://github.com/pimalaya/.github/blob/master/AI_POLICY.md)
+- [License](#license)
 - [Social](#social)
+- [Contributing](./CONTRIBUTING.md)
 - [Sponsoring](#sponsoring)
 
 ## Features
 
-- Centralized server timer controllable by multiple clients at the same time
-- **Multi protocols** (*Unix sockets* and *TCP* only supported for now)
-- Cycles customizable via config file (**Pomodoro** style, **52/17** style, custom)
-- Server and timer hooks customizable via config file (send system notification or run shell command)
+- **Pomodoro-style cycles**: any sequence of named cycles and durations, looping forever or a fixed number of times.
+- **Shared timer**: one server owns it, and any number of clients start, pause, resume, stop or query it concurrently.
+- **Push notifications**: subscribe once with `comodoro watch` and the server pushes every change, so a status bar never polls.
+- **Standard protocol**: plain [JSON-RPC 2.0](https://www.jsonrpc.org/specification) over a local socket or over TCP, so any language can drive the timer.
+- **Per-event hooks**: run a shell command or send a desktop notification when a cycle begins, ticks, is set, pauses, resumes or ends.
+- **Status-bar friendly output**: the remaining duration renders at second, minute or hour precision, and `--json` emits the raw timer for scripts.
 
-*Comodoro CLI is written in [Rust](https://www.rust-lang.org/), and relies on [cargo features](https://doc.rust-lang.org/cargo/reference/features.html) to enable or disable functionalities. Default features can be found in the `features` section of the [`Cargo.toml`](./Cargo.toml#L18), or on [docs.rs](https://docs.rs/crate/comodoro/latest/features).*
+*Comodoro relies on [cargo features](https://doc.rust-lang.org/cargo/reference/features.html) to enable or disable functionalities. Default features can be found in the `features` section of the [Cargo.toml](https://github.com/pimalaya/comodoro/blob/master/Cargo.toml), or on [docs.rs](https://docs.rs/crate/comodoro/latest/features).*
+
+## Protocol
+
+Clients and servers exchange [JSON-RPC 2.0](https://www.jsonrpc.org/specification) messages over a Unix domain socket or over TCP, one compact JSON value per line. The specification defines the payload and leaves the transport alone, which is the whole point: anything that can open a connection and write a line can drive the timer, in any language.
+
+The server answers these methods:
+
+| Method | Parameters | Result |
+|--------|------------|--------|
+| `timer.get` | none | the timer |
+| `timer.start` | none | the events it emitted |
+| `timer.pause` | none | the events it emitted |
+| `timer.resume` | none | the events it emitted |
+| `timer.stop` | none | the events it emitted |
+| `timer.set` | `duration` in seconds | the events it emitted |
+| `timer.subscribe` | none | whether the connection is subscribed |
+| `timer.unsubscribe` | none | whether the connection is subscribed |
+
+A subscribed connection additionally receives a notification every time the timer changes: `timer.started`, `timer.began`, `timer.running`, `timer.durationSet`, `timer.paused`, `timer.resumed`, `timer.ended` and `timer.stopped`. Each one carries the cycle it concerns, except the two timer-wide ones which carry nothing. Requests are named after the imperative that performs them and notifications after the past tense of what happened, so the two directions never collide.
+
+Driving the timer by hand takes no client at all:
+
+```sh
+echo '{"jsonrpc":"2.0","method":"timer.start","id":1}' | socat - UNIX-CONNECT:$XDG_RUNTIME_DIR/comodoro.sock
+```
+
+Failures come back as the standard error codes: -32700 for unparsable JSON, -32600 for a malformed request, -32601 for an unknown method, -32602 for bad parameters and -32603 for an internal failure. The -32000 to -32099 range is reserved for future Comodoro errors and currently unused.
 
 ## Installation
 
 ### Pre-built binary
 
-Comodoro CLI can be installed with the `install.sh` installer:
+Comodoro can be installed with the install.sh installer:
 
 *As root:*
 
-```ignore
+```sh
 curl -sSL https://raw.githubusercontent.com/pimalaya/comodoro/master/install.sh | sudo sh
 ```
 
 *As a regular user:*
 
-```ignore
+```sh
 curl -sSL https://raw.githubusercontent.com/pimalaya/comodoro/master/install.sh | PREFIX=~/.local sh
 ```
 
 These commands install the latest binary from the GitHub [releases](https://github.com/pimalaya/comodoro/releases) section.
 
-If you want a more up-to-date version than the latest release, check out the [releases](https://github.com/pimalaya/comodoro/actions/workflows/releases.yml) GitHub workflow and look for the *Artifacts* section. You will find a pre-built binary matching your OS. These pre-built binaries are built from the `master` branch.
+If you want a more up-to-date version than the latest release, check out the [releases](https://github.com/pimalaya/comodoro/actions/workflows/releases.yml) GitHub workflow and look for the *Artifacts* section. You will find a pre-built binary matching your OS. These pre-built binaries are built from the master branch.
 
 *Such binaries are built with the default cargo features. If you need more features, please use another installation method.*
 
 ### Cargo
 
-Comodoro CLI can be installed with [cargo](https://doc.rust-lang.org/cargo/):
+Comodoro can be installed with [cargo](https://doc.rust-lang.org/cargo/):
 
-```ignore
+```sh
 cargo install comodoro --locked
-```
-
-With only server support:
-
-```ignore
-cargo install comodoro --locked --no-default-features --features server
 ```
 
 You can also use the git repository for a more up-to-date (but less stable) version:
 
-```ignore
+```sh
 cargo install --locked --git https://github.com/pimalaya/comodoro.git
 ```
 
 ### Nix
 
-Comodoro CLI can be installed with [Nix](https://serokell.io/blog/what-is-nix):
+Comodoro can be installed with [Nix](https://serokell.io/blog/what-is-nix):
 
-```ignore
+```sh
 nix-env -i comodoro
 ```
 
 You can also use the git repository for a more up-to-date (but less stable) version:
 
-```ignore
+```sh
 nix-env -if https://github.com/pimalaya/comodoro/archive/master.tar.gz
 ```
 
 *Or, from within the source tree checkout:*
 
-```ignore
+```sh
 nix-env -if .
 ```
 
 If you have the [Flakes](https://nixos.wiki/wiki/Flakes) feature enabled:
 
-```ignore
+```sh
 nix profile install comodoro
 ```
 
 *Or, from within the source tree checkout:*
 
-```ignore
+```sh
 nix profile install
 ```
 
 *You can also run Comodoro directly without installing it:*
 
-```ignore
+```sh
 nix run comodoro
 ```
 
 ### Sources
 
-Comodoro CLI can be installed from sources.
+Comodoro can be installed from sources. First you need to install the Rust development environment (see the [rust installation documentation](https://doc.rust-lang.org/cargo/getting-started/installation.html)):
 
-First you need to install the Rust development environment (see the [rust installation documentation](https://doc.rust-lang.org/cargo/getting-started/installation.html)):
-
-```ignore
+```sh
 curl https://sh.rustup.rs -sSf | sh
 ```
 
-Then, you need to clone the repository and install dependencies:
+Then, clone the repository and build:
 
-```ignore
+```sh
 git clone https://github.com/pimalaya/comodoro.git
 cd comodoro
-cargo check
-```
-
-Now, you can build Comodoro:
-
-```ignore
 cargo build --release
 ```
 
-*Binaries are available under the `target/release` folder.*
+*Binaries are available under the target/release folder.*
 
 ## Configuration
 
-The wizard is not yet available (it should come soon), meanwhile you can manually edit your own configuration from scratch:
+Comodoro ships no wizard: the configuration is written by hand. A configuration is loaded from the first valid path among:
 
-- Copy the content of the documented [`./config.sample.toml`](./config.sample.toml)
-- Paste it into a new file `~/.config/comodoro/config.toml`
-- Edit, then comment or uncomment the options you want
+- $XDG_CONFIG_HOME/comodoro/config.toml
+- $HOME/.config/comodoro/config.toml
+- $HOME/.comodororc
 
-## FAQ
+Override the path with -c <PATH> or COMODORO_CONFIG=<PATH>. Multiple paths can be passed at once, separated by :. The first one is the base and the rest are deep-merged on top. The full field reference lives in [config.sample.toml](./config.sample.toml).
 
-### How to debug Comodoro CLI?
+An account only needs its `cycles`, the ordered steps the timer runs through. Everything else has a default: `socket.path` falls back to comodoro.sock inside `$XDG_RUNTIME_DIR` (or the platform temporary directory), `cycles-count` leaves the timer looping forever, and `precision` decides how the remaining duration renders. Set `socket.path` per account when running several timers at once.
 
-The simplest way is to use `--debug` and/or `--trace` arguments.
+Two transports carry the same protocol. The local socket is the one every account has, and is also spelled `unix-socket` for accounts written against Comodoro 1.x. TCP is added by a `tcp` table carrying a `port` and an optional `host`, defaulting to 127.0.0.1: an account without that table opens no port. That listener is unauthenticated, so whoever reaches the port drives the timer, which is why it stays on loopback unless you mean otherwise. When both are configured, `socket.default` or `tcp.default` decides which one a command reaches for.
 
-The advanced way is based on environment variables:
+Hooks are bound to events by name, `on-{cycle}-{event}` for a cycle and `on-timer-start` or `on-timer-stop` for the timer itself. A hook runs either a `command`, given as a shell line or as a program followed by its arguments, or a `notify` block carrying a summary and a body. Notifications require the `notify` cargo feature, enabled by default.
 
-- `RUST_LOG=<level>`: determines the log level filter, can be one of `off`, `error`, `warn`, `info`, `debug` and `trace`.
-- `RUST_BACKTRACE=1`: enables the full error backtrace, which include source lines where the error originated from.
+## Usage
 
-Logs are written to the `stderr`, which means that you can redirect them easily to a file:
+Start the server, which owns the timer and stays in the foreground:
 
-```ignore
-comodoro server start --debug 2>/tmp/comodoro.log
+```sh
+comodoro servers start
 ```
+
+Then drive the timer from anywhere:
+
+```sh
+comodoro start
+comodoro get
+comodoro pause
+comodoro resume
+comodoro stop
+```
+
+Feed a status bar without polling, which prints the timer once and then on every change until interrupted:
+
+```sh
+comodoro watch
+```
+
+Every command takes an optional transport, `socket` or `tcp`, and falls back to the one the configuration marks as default. The server takes the list of transports to bind, and binds every configured one when given none:
+
+```sh
+comodoro server start socket tcp
+comodoro get tcp
+```
+
+Every command and every flag is documented behind `--help`. The library API is documented on [docs.rs](https://docs.rs/comodoro/latest/comodoro), and complete runnable programs live in [./examples](./examples).
+
+Logs go to stderr, so they can be redirected to a file while the command output stays on stdout:
+
+```sh
+comodoro servers start --log-level debug 2>/tmp/comodoro.log
+```
+
+Use `--log-file <PATH>` to append them to a file directly. When `--log-level` is omitted the `RUST_LOG` environment variable is consulted, and `RUST_BACKTRACE=1` adds the full error backtrace.
+
+## License
+
+This project is licensed under either of:
+
+- [MIT license](LICENSE-MIT)
+- [Apache License, Version 2.0](LICENSE-APACHE)
 
 ## Social
 
@@ -169,9 +229,10 @@ comodoro server start --debug 2>/tmp/comodoro.log
 
 Special thanks to the [NLnet foundation](https://nlnet.nl/) and the [European Commission](https://www.ngi.eu/) that have been financially supporting the project for years:
 
-- 2022: [NGI Assure](https://nlnet.nl/project/Himalaya/)
-- 2023: [NGI Zero Entrust](https://nlnet.nl/project/Pimalaya/)
-- 2024: [NGI Zero Core](https://nlnet.nl/project/Pimalaya-PIM/) *(still ongoing in 2026)*
+- 2022 → 2023: [NGI Assure](https://nlnet.nl/project/Himalaya/)
+- 2023 → 2024: [NGI Zero Entrust](https://nlnet.nl/project/Pimalaya/)
+- 2024 → 2026: [NGI Zero Core](https://nlnet.nl/project/Pimalaya-PIM/)
+- 2026 → 2027: [NGI Zero Commons Fund](https://nlnet.nl/project/Pimalaya-pimdir/)
 
 If you appreciate the project, feel free to donate using one of the following providers:
 

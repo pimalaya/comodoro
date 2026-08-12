@@ -1,57 +1,59 @@
-// This file is part of Comodoro, a CLI to manage timers.
-//
-// Copyright (C) 2025-2026 Clément DOUIN <pimalaya.org@posteo.net>
-//
-// This program is free software: you can redistribute it and/or
-// modify it under the terms of the GNU Affero General Public License
-// as published by the Free Software Foundation, either version 3 of
-// the License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-// Affero General Public License for more details.
-//
-// You should have received a copy of the GNU Affero General Public
-// License along with this program. If not, see
-// <https://www.gnu.org/licenses/>.
+//! Command-line interface of Comodoro.
+//!
+//! [`Cli`] is the clap entry point parsed by main, and [`Command`] is
+//! the flat command grammar it dispatches to. Every command taking an
+//! account resolves it from the TOML configuration first, then hands it
+//! to the client or the server.
+//!
+//! Everything the CLI needs lives under this module, so the `cli`
+//! feature gates one subtree rather than a scattering of items:
+//! [`config`] reads the TOML document, [`hook`] runs the reactions bound
+//! to timer events, and [`client`] and [`server`] hold one module per
+//! command.
 
+pub mod client;
+pub mod config;
+pub mod hook;
+pub mod server;
+
+use alloc::{format, vec::Vec};
 use std::path::PathBuf;
 
-use anyhow::Result;
+use anyhow::{Result, bail};
 use clap::{CommandFactory, Parser, Subcommand};
 use log::trace;
-use pimalaya_toolbox::{
-    config::TomlConfig,
-    long_version,
-    terminal::{
-        clap::{
-            args::{AccountFlag, ConfigPathsArg, JsonFlag, LogFlags},
-            commands::{CompletionCommand, ManualCommand},
-        },
-        printer::Printer,
+use pimalaya_cli::{
+    clap::{
+        args::{AccountFlag, JsonFlag, LogFlags},
+        commands::{CompletionCommand, ManualCommand},
+        parsers::path_parser,
     },
+    long_version,
+    printer::Printer,
 };
+use pimalaya_config::toml::TomlConfig;
 
-use crate::{
+use crate::cli::{
     client::{
         get::TimerGetCommand, pause::TimerPauseCommand, resume::TimerResumeCommand,
-        start::TimerStartCommand, stop::TimerStopCommand,
+        set::TimerSetCommand, start::TimerStartCommand, stop::TimerStopCommand,
+        watch::TimerWatchCommand,
     },
-    config::Config,
-    server::ServerSubcommand,
+    config::{ComodoroAccountConfig, ComodoroConfig},
+    server::TimerServerCommand,
 };
 
-#[derive(Parser, Debug)]
+/// The Comodoro command-line interface.
+#[derive(Debug, Parser)]
 #[command(name = env!("CARGO_PKG_NAME"))]
 #[command(author, version, about)]
 #[command(long_version = long_version!())]
 #[command(propagate_version = true, infer_subcommands = true)]
 pub struct Cli {
     #[command(subcommand)]
-    pub command: ComodoroCommand,
+    pub cmd: Command,
     #[command(flatten)]
-    pub config: ConfigPathsArg,
+    pub config: ComodoroConfigPathsArg,
     #[command(flatten)]
     pub account: AccountFlag,
     #[command(flatten)]
@@ -60,26 +62,38 @@ pub struct Cli {
     pub log: LogFlags,
 }
 
-#[derive(Subcommand, Debug)]
-pub enum ComodoroCommand {
-    #[command(arg_required_else_help = true, alias = "mans")]
-    Manuals(ManualCommand),
-    #[command(arg_required_else_help = true, alias = "cpl")]
-    Completions(CompletionCommand),
-
+/// The commands Comodoro exposes.
+#[derive(Debug, Subcommand)]
+pub enum Command {
+    /// Manage the timer servers.
     #[command(arg_required_else_help = true)]
     #[command(subcommand)]
-    #[command(alias = "srvs", visible_alias = "srv")]
-    Servers(ServerSubcommand),
-
+    #[command(visible_alias = "srv")]
+    Server(TimerServerCommand),
+    /// Start the timer.
     Start(TimerStartCommand),
+    /// Get the timer.
     Get(TimerGetCommand),
+    /// Watch the timer.
+    Watch(TimerWatchCommand),
+    /// Pause the timer.
     Pause(TimerPauseCommand),
+    /// Resume the timer.
     Resume(TimerResumeCommand),
+    /// Stop the timer.
     Stop(TimerStopCommand),
+    /// Set the remaining duration of the current cycle.
+    Set(TimerSetCommand),
+    /// Generate the man pages.
+    #[command(arg_required_else_help = true, alias = "mans")]
+    Manuals(ManualCommand),
+    /// Generate the shell completion scripts.
+    #[command(arg_required_else_help = true, alias = "cpl")]
+    Completions(CompletionCommand),
 }
 
-impl ComodoroCommand {
+impl Command {
+    /// Resolves the account when the command needs one, then runs it.
     pub fn execute(
         self,
         printer: &mut impl Printer,
@@ -90,40 +104,70 @@ impl ComodoroCommand {
         trace!("account name: {account_name:?}");
 
         match self {
-            Self::Manuals(cmd) => cmd.execute(printer, Cli::command()),
-            Self::Completions(cmd) => cmd.execute(printer, Cli::command()),
-
-            Self::Servers(cmd) => {
-                let config = Config::from_paths_or_default(config_paths)?;
-                let (_, account) = config.get_account(account_name)?;
-                cmd.execute(&account)
+            Self::Server(cmd) => {
+                let mut account = take_account(config_paths, account_name)?;
+                cmd.execute(&mut account)
             }
-
             Self::Start(cmd) => {
-                let config = Config::from_paths_or_default(config_paths)?;
-                let (_, account) = config.get_account(account_name)?;
+                let account = take_account(config_paths, account_name)?;
                 cmd.execute(printer, &account)
             }
             Self::Get(cmd) => {
-                let config = Config::from_paths_or_default(config_paths)?;
-                let (_, account) = config.get_account(account_name)?;
+                let account = take_account(config_paths, account_name)?;
+                cmd.execute(printer, &account)
+            }
+            Self::Watch(cmd) => {
+                let account = take_account(config_paths, account_name)?;
+                cmd.execute(printer, &account)
+            }
+            Self::Set(cmd) => {
+                let account = take_account(config_paths, account_name)?;
                 cmd.execute(printer, &account)
             }
             Self::Pause(cmd) => {
-                let config = Config::from_paths_or_default(config_paths)?;
-                let (_, account) = config.get_account(account_name)?;
+                let account = take_account(config_paths, account_name)?;
                 cmd.execute(printer, &account)
             }
             Self::Resume(cmd) => {
-                let config = Config::from_paths_or_default(config_paths)?;
-                let (_, account) = config.get_account(account_name)?;
+                let account = take_account(config_paths, account_name)?;
                 cmd.execute(printer, &account)
             }
             Self::Stop(cmd) => {
-                let config = Config::from_paths_or_default(config_paths)?;
-                let (_, account) = config.get_account(account_name)?;
+                let account = take_account(config_paths, account_name)?;
                 cmd.execute(printer, &account)
             }
+
+            Self::Manuals(cmd) => cmd.execute(printer, Cli::command()),
+            Self::Completions(cmd) => cmd.execute(printer, Cli::command()),
         }
     }
+}
+
+/// Path(s) to the TOML configuration file(s).
+#[derive(Debug, Default, Parser)]
+pub struct ComodoroConfigPathsArg {
+    /// Override the default configuration file path.
+    ///
+    /// The given paths are shell-expanded then canonicalized (if
+    /// applicable). Other paths are merged with the first one, which
+    /// allows you to separate your public config from your private
+    /// one(s).
+    #[arg(long = "config", short = 'c', global = true)]
+    #[arg(name = "config_paths", value_name = "PATH", value_parser = path_parser)]
+    pub paths: Vec<PathBuf>,
+}
+
+fn take_account(
+    config_paths: &[PathBuf],
+    account_name: Option<&str>,
+) -> Result<ComodoroAccountConfig> {
+    let Some(mut config) = ComodoroConfig::from_paths_or_default(config_paths)? else {
+        bail!("Config file not found");
+    };
+
+    let Some((_, account)) = config.take_account(account_name)? else {
+        bail!("Account not found");
+    };
+
+    Ok(account)
 }

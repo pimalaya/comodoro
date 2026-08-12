@@ -1,14 +1,15 @@
 [package]
 name = "comodoro"
-description = "CLI to manage timers"
+description = "Library and CLI to manage timers"
 version = "1.0.0"
-authors = ["soywod <clement.douin@posteo.net>"]
-edition = "2021"
-license = "AGPL-3.0-or-later"
-categories = ["command-line-utilities", "network-programming"]
-keywords = ["cli", "pomodoro", "timer", "client", "server"]
+authors = ["Clément DOUIN (soywod) <pimalaya.org@posteo.net>"]
+rust-version = "1.89"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+categories = ["command-line-utilities", "date-and-time", "no-std"]
+keywords = ["pomodoro", "timer", "jsonrpc", "no-std", "cli"]
 homepage = "https://pimalaya.org"
-documentation = "https://github.com/pimalaya/comodoro"
+documentation = "https://docs.rs/comodoro/latest/comodoro"
 repository = "https://github.com/pimalaya/comodoro"
 
 [package.metadata.docs.rs]
@@ -16,34 +17,71 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
-default = ["command", "notify"]
-command = ["dep:io-process", "io-hook/command"]
-notify = ["dep:io-notify", "io-hook/notify"]
-vendored = ["io-hook/vendored"]
+default = ["client", "server", "cli", "notify"]
+
+# Mid-level std client and server
+#
+client = ["dep:anyhow"]
+server = ["dep:anyhow"]
+
+# High-level CLI
+#
+cli = ["client", "server", "dep:clap", "dep:convert_case", "dep:pimalaya-cli", "dep:pimalaya-config"]
+
+# Optional CLI subsystem
+#
+notify = ["cli", "dep:notify-rust", "notify-rust/d"]
+
+# Vendored D-Bus
+#
+vendored = ["notify-rust?/d_vendored"]
+
+[[bin]]
+name = "comodoro"
+path = "src/main.rs"
+required-features = ["cli"]
+
+[[test]]
+name = "timer"
+path = "tests/timer.rs"
+required-features = ["client", "server"]
+
+[[test]]
+name = "config"
+path = "tests/config.rs"
+required-features = ["cli"]
+
+[[example]]
+name = "timer"
+path = "examples/timer.rs"
+
+[[example]]
+name = "client-server"
+path = "examples/client_server.rs"
+required-features = ["client", "server"]
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+strip = "symbols"
+panic = "abort"
 
 [build-dependencies]
-pimalaya-toolbox = { version = "0.0.4", default-features = false, features = ["build"] }
+pimalaya-cli = { version = "0.2", default-features = false, features = ["build"], optional = true }
 
 [dependencies]
-anyhow = "1"
-clap = { version = "4.4", features = ["derive"] }
-clap_complete = "4.4"
-clap_mangen = "0.3"
-convert_case = "0.11"
-env_logger = "0.11"
-io-hook = { version = "0.0.1", default-features = false, features = ["serde"], optional = true }
-io-notify = { version = "0.0.1", default-features = false, features = ["std"], optional = true }
-io-process = { version = "0.0.2", default-features = false, features = ["std"], optional = true }
-io-socket = { version = "0.0.1", default-features = false, features = ["std-stream"] }
-io-time = { version = "0.0.2", default-features = false, features = ["std", "timer"] }
-log = "0.4"
-pimalaya-toolbox = { version = "0.0.4", default-features = false, features = ["config", "terminal"] }
-serde = "1"
+anyhow = { version = "1", default-features = false, features = ["std"], optional = true }
+clap = { version = "4.4", default-features = false, features = ["derive", "error-context", "help", "std", "usage", "wrap_help"], optional = true }
+convert_case = { version = "0.11", default-features = false, optional = true }
+log = { version = "0.4", default-features = false }
+notify-rust = { version = "4", default-features = false, optional = true }
+pimalaya-cli = { version = "0.2", default-features = false, features = ["terminal"], optional = true }
+pimalaya-config = { version = "0.1", default-features = false, features = ["toml", "secret"], optional = true }
+serde = { version = "1", default-features = false, features = ["derive", "alloc"] }
+serde_json = { version = "1", default-features = false, features = ["alloc"] }
 
-[patch.crates-io]
-io-hook.git = "https://github.com/pimalaya/io-hook"
-io-notify.git = "https://github.com/pimalaya/io-notify"
-io-process.git = "https://github.com/pimalaya/io-process"
-io-socket.git = "https://github.com/pimalaya/io-socket"
-io-time.git = "https://github.com/pimalaya/io-time"
-pimalaya-toolbox.git = "https://github.com/pimalaya/toolbox"
+[target.'cfg(windows)'.dependencies]
+uds_windows = "1"
+
+[dev-dependencies]
+toml = { version = "1.1", default-features = false, features = ["parse", "serde", "std"] }
