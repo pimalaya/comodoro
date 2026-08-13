@@ -27,6 +27,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added the `watch` command, which subscribes and prints the timer on every change until interrupted, so a status bar no longer has to poll.
 - Added the `set` command, exposing the `timer.set` method that was previously reachable on the wire but not from the CLI.
+- Added the `configure` command, which generates an account from one of the documented cycle presets.
+
+  It asks for a preset and nothing else, naming the account after it, then saves the account to the configuration file, appends it to the one already there, or prints it on stdout when the offer is declined, when stdout is redirected (`comodoro configure > config.toml`) or in JSON mode. A bare `comodoro`, which is what a newcomer runs first, and any command that needs an account both open with a welcome naming the configuration file they looked for when they find none, then offer the same wizard, and fall back to the help when the offer is declined. A bare `comodoro` with a configuration already there still shows the help. Appending is a plain text append, so the comments and the formatting already in the file come out untouched, and a name the configuration already holds is suffixed rather than reused, since two `[accounts.<name>]` tables make the whole document fail to parse. The generated account claims `default` only when no other account does. Anything beyond the presets, meaning custom cycles, the TCP transport, the socket path, the display precision and the hooks, is still written by hand against config.sample.toml.
+
 - Added the `transport` module, holding `TimerAddress`, the `TimerStream` connection and the `TimerListener` accepting them, so both transports carry the protocol behind one type.
 - Added the repository skeleton the Pimalaya guidelines require: a cairn/ folder with its AGENTS.md activation stanza, SECURITY.md, and the tests and audit CI workflows.
 
@@ -50,7 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **BREAKING** Prefixed every public item with its domain, per the Pimalaya naming guidelines.
 
-  `Cli`, `Command`, `Config`, `AccountConfig` and `ConfigPathsArg` gained the `Comodoro` prefix, `ServerSubcommand` became `TimerServerCommand`, and `StartServerCommand` became `TimerServerStartCommand`.
+  `Config`, `AccountConfig` and `ConfigPathsArg` gained the `Comodoro` prefix, `ServerSubcommand` became `TimerServerCommand`, and `StartServerCommand` became `TimerServerStartCommand`.
 
 - **BREAKING** Moved everything the CLI needs under the `cli` module, so its cargo feature gates one subtree rather than a scattering of items.
 
@@ -77,6 +81,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Rewrote the README, CONTRIBUTING.md and config.sample.toml against the Pimalaya documentation guidelines.
 
 ### Fixed
+
+- Fixed the configuration paths ignoring what the documentation describes.
+
+  `-c` now reads the `COMODORO_CONFIG` environment variable when it is given no path, and splits `:`-delimited paths into the base and the ones deep-merged on top, rather than taking the whole string as a single filename.
+
+- Fixed the errors raised when no account can be resolved saying nothing actionable.
+
+  A missing configuration now names the path it was looked for, which is where `-c` pointed or the default location, and offers the wizard, or points at `comodoro configure` when no one is there to answer, meaning a redirected stdin or JSON output. A missing named account lists the accounts the configuration does hold, and a missing default account names the two ways to pick one.
 
 - Fixed a client connection blocking every other one.
 

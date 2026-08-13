@@ -102,7 +102,7 @@ nix run
 
 ## Configuration
 
-Comodoro ships no wizard: the configuration is written by hand. A configuration is loaded from the first valid path among:
+Run `comodoro` with no command on a machine that has no configuration: it offers to generate a first account from one of the documented presets, and either saves it, appends it to the configuration already there, or prints it for you to place. `comodoro configure` runs the same wizard on demand, and any command needing an account offers it too. Declining shows the help. Everything beyond those presets is written by hand. A configuration is loaded from the first valid path among:
 
 - `$XDG_CONFIG_HOME/comodoro/config.toml`
 - `$HOME/.config/comodoro/config.toml`
@@ -117,6 +117,12 @@ Add a `tcp` table to also reach the timer over the network. A server binds every
 Bind a `command` or a desktop `notify` block to any timer event to run something when a cycle begins, ticks, pauses, resumes or ends.
 
 ## Usage
+
+Generate a first account, unless you wrote the configuration by hand already:
+
+```sh
+comodoro
+```
 
 Start the server, which owns the timer and stays in the foreground:
 

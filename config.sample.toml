@@ -10,9 +10,10 @@
 # can be passed at once, separated by `:`; the first one is the base and the
 # rest are deep-merged on top of it.
 #
-# Comodoro ships no wizard: this file is written by hand. One server owns a
-# timer and any number of clients drive it, so the same account has to be
-# readable by both sides.
+# `comodoro configure` generates an account from one of the presets below;
+# everything else in this file is written by hand. One server owns a timer and
+# any number of clients drive it, so the same account has to be readable by
+# both sides.
 # ================================================================================
 
 [accounts.example]

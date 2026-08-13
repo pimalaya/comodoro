@@ -62,13 +62,16 @@ panic = "abort"
 [build-dependencies]
 pimalaya-cli = { version = "0.2", default-features = false, features = ["build"], optional = true }
 
+[dev-dependencies]
+toml = { version = "1.1", default-features = false, features = ["parse", "serde", "std"] }
+
 [dependencies]
 anyhow = { version = "1", default-features = false, features = ["std"], optional = true }
-clap = { version = "4.4", default-features = false, features = ["derive", "error-context", "help", "std", "usage", "wrap_help"], optional = true }
+clap = { version = "4.4", default-features = false, features = ["derive", "env", "error-context", "help", "std", "usage", "wrap_help"], optional = true }
 convert_case = { version = "0.11", default-features = false, optional = true }
 log = { version = "0.4", default-features = false }
 notify-rust = { version = "4", default-features = false, optional = true }
-pimalaya-cli = { version = "0.2", default-features = false, features = ["terminal"], optional = true }
+pimalaya-cli = { version = "0.2", default-features = false, features = ["prompt", "terminal"], optional = true }
 pimalaya-config = { version = "0.1", default-features = false, features = ["toml", "secret"], optional = true }
 serde = { version = "1", default-features = false, features = ["derive", "alloc"] }
 serde_json = { version = "1", default-features = false, features = ["alloc"] }
@@ -76,5 +79,5 @@ serde_json = { version = "1", default-features = false, features = ["alloc"] }
 [target.'cfg(windows)'.dependencies]
 uds_windows = { version = "1", default-features = false }
 
-[dev-dependencies]
-toml = { version = "1.1", default-features = false, features = ["parse", "serde", "std"] }
+[patch.crates-io]
+pimalaya-cli.git = "https://github.com/pimalaya/cli"

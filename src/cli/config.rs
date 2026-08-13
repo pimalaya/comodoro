@@ -24,6 +24,11 @@ use crate::{
     transport::{TimerAddress, default_socket_path},
 };
 
+/// The annotated field reference, pointed at whenever a configuration
+/// is missing or a field needs a human rather than a prompt.
+pub const CONFIG_SAMPLE_URL: &str =
+    "https://github.com/pimalaya/comodoro/blob/master/config.sample.toml";
+
 /// The whole Comodoro configuration.
 #[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
