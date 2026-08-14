@@ -5,6 +5,13 @@
 //! notification. Both reactions perform their I/O directly, since
 //! neither the process nor the notification backend has anything to
 //! resume.
+//!
+//! Both are also read straight into the type performing them, through
+//! the pimalaya-config serde adapters: a shell line or an argument list
+//! becomes a [`Command`], a summary and a body become a
+//! [`Notification`]. A build without the `notify` feature has no
+//! notification backend, so an account carrying one is refused as it
+//! loads, naming the cargo feature to rebuild with.
 
 use alloc::{format, string::String};
 
@@ -12,8 +19,7 @@ use std::process::Command;
 
 use convert_case::{Case, Casing};
 use log::{debug, error, warn};
-#[cfg(feature = "notify")]
-use notify_rust::Notification;
+use pimalaya_config::notify::Notification;
 use serde::{Deserialize, Serialize};
 
 use crate::timer::TimerEvent;
@@ -56,9 +62,8 @@ pub enum TimerHook {
     /// Runs a command, given either as a shell line or as a program
     /// followed by its arguments.
     Command(#[serde(with = "pimalaya_config::command")] Command),
-    /// Sends a desktop notification, which requires the `notify`
-    /// feature.
-    Notify(TimerHookNotification),
+    /// Sends a desktop notification, given as a summary and a body.
+    Notify(#[serde(with = "pimalaya_config::notify")] Notification),
 }
 
 impl TimerHook {
@@ -83,45 +88,15 @@ impl TimerHook {
 
                 debug!("end of hook command execution");
             }
-            Self::Notify(notification) => notification.send(),
+            Self::Notify(notification) => {
+                debug!("begin hook notification send");
+
+                if let Err(err) = notification.show() {
+                    error!("cannot send hook notification: {err}");
+                }
+
+                debug!("end of hook notification send");
+            }
         }
-    }
-}
-
-/// The summary and body of a desktop notification.
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "kebab-case", deny_unknown_fields)]
-pub struct TimerHookNotification {
-    /// The notification title.
-    pub summary: String,
-    /// The notification content.
-    pub body: String,
-}
-
-impl TimerHookNotification {
-    /// Sends the notification to the system notification daemon,
-    /// logging a daemon that cannot be reached.
-    #[cfg(feature = "notify")]
-    pub fn send(&self) {
-        debug!("begin hook notification send");
-
-        if let Err(err) = Notification::new()
-            .summary(&self.summary)
-            .body(&self.body)
-            .show()
-        {
-            error!("cannot send hook notification: {err}");
-        }
-
-        debug!("end of hook notification send");
-    }
-
-    /// Logs that this build cannot send notifications.
-    #[cfg(not(feature = "notify"))]
-    pub fn send(&self) {
-        error!(
-            "cannot send hook notification `{}`: this build carries no notification backend, rebuild with the `notify` feature",
-            self.summary,
-        );
     }
 }

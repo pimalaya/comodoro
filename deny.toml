@@ -1,27 +1,11 @@
 [sources]
+allow-org.github = ["pimalaya"]
 unknown-registry = "deny"
 unknown-git = "deny"
-
-[advisories]
-ignore = [
-  # Both advisories sit in quick-xml, reached only through
-  # tauri-winrt-notification, which is the Windows backend of
-  # notify-rust and pins quick-xml at ^0.37. They describe a quadratic
-  # parse and an unbounded allocation when reading hostile XML.
-  # Comodoro never reads XML: the toast document is generated locally
-  # from the summary and body the user wrote in their own config, and
-  # the parser is never pointed at anything else. Drop these entries
-  # once notify-rust bumps tauri-winrt-notification.
-  "RUSTSEC-2026-0194",
-  "RUSTSEC-2026-0195",
-]
 
 [licenses]
 allow = [
   "Apache-2.0",
-  "BSD-3-Clause",
-  "CDLA-Permissive-2.0",
-  "ISC",
   "MIT",
   "MPL-2.0",
   "Unicode-3.0",

@@ -76,7 +76,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **BREAKING** Replaced the io-hook, io-notify and io-process dependencies with an in-crate hook module.
 
-  A hook is now a `TimerHook`, running either a `std::process::Command` deserialized through `pimalaya_config::command`, or a `TimerHookNotification` sent through notify-rust. The TOML shape is unchanged. Comodoro was the only consumer of those three crates, and the rest of the Pimalaya stack had already moved to calling notify-rust and the process API directly.
+  A hook is now a `TimerHook`, running either a `std::process::Command` deserialized through `pimalaya_config::command`, or a `pimalaya_config::notify::Notification` deserialized through `pimalaya_config::notify`. Both adapters read the configuration straight into the type that performs the reaction, and the shared crate carries the notification backend, so Comodoro no longer depends on notify-rust itself: its `notify` feature forwards to pimalaya-config, and a build without it refuses an account carrying notify hooks as it loads, naming the cargo feature to rebuild with. The TOML shape is unchanged. Comodoro was the only consumer of those three crates, and the rest of the Pimalaya stack had already moved to calling notify-rust and the process API directly.
 
 - **BREAKING** Reworked the cargo features, dropping `std`, `timer` and `command`.
 

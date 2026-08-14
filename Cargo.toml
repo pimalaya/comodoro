@@ -21,8 +21,8 @@ default = ["client", "server", "cli", "notify"]
 client = ["dep:anyhow"]
 server = ["dep:anyhow"]
 cli = ["client", "server", "dep:clap", "dep:convert_case", "dep:pimalaya-cli", "dep:pimalaya-config"]
-notify = ["dep:notify-rust", "notify-rust/d"]
-vendored = ["notify-rust?/d_vendored"]
+notify = ["pimalaya-config?/notify"]
+vendored = ["pimalaya-config?/vendored"]
 
 [[bin]]
 name = "comodoro"
@@ -60,7 +60,7 @@ strip = "symbols"
 panic = "abort"
 
 [build-dependencies]
-pimalaya-cli = { version = "0.2.1", default-features = false, features = ["build"], optional = true }
+pimalaya-cli = { version = "0.2", default-features = false, features = ["build"], optional = true }
 
 [dev-dependencies]
 toml = { version = "1.1", default-features = false, features = ["parse", "serde", "std"] }
@@ -70,8 +70,7 @@ anyhow = { version = "1", default-features = false, features = ["std"], optional
 clap = { version = "4.4", default-features = false, features = ["derive", "env", "error-context", "help", "std", "usage", "wrap_help"], optional = true }
 convert_case = { version = "0.11", default-features = false, optional = true }
 log = { version = "0.4", default-features = false }
-notify-rust = { version = "4", default-features = false, optional = true }
-pimalaya-cli = { version = "0.2.1", default-features = false, features = ["prompt", "terminal"], optional = true }
+pimalaya-cli = { version = "0.2", default-features = false, features = ["prompt", "terminal"], optional = true }
 pimalaya-config = { version = "0.1", default-features = false, features = ["toml", "secret"], optional = true }
 serde = { version = "1", default-features = false, features = ["derive", "alloc"] }
 serde_json = { version = "1", default-features = false, features = ["alloc"] }

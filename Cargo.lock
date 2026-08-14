@@ -184,7 +184,6 @@ dependencies = [
  "clap",
  "convert_case 0.11.0",
  "log",
- "notify-rust",
  "pimalaya-cli",
  "pimalaya-config",
  "serde",
@@ -558,9 +557,9 @@ dependencies = [
 
 [[package]]
 name = "libredox"
-version = "0.1.19"
+version = "0.1.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2026a5056764a10b2bf5d56488cba40da507f5493a6a429340e2004d9ed085fa"
+checksum = "28d0a00925a9f930d679b6789b721e3a7f9ed110f41b86d2497caa780c3a070a"
 dependencies = [
  "libc",
 ]
@@ -774,13 +773,14 @@ dependencies = [
 
 [[package]]
 name = "pimalaya-config"
-version = "0.1.1"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cb8003d82767b0337f8b73b908d022d41ca7a7a41a789a9bd1e6544f8d80338b"
+checksum = "2119c2109d8aef16260615552a6d57d111fc5efab87f9e9b15a1fba514e05522"
 dependencies = [
  "anyhow",
  "dirs",
  "log",
+ "notify-rust",
  "secrecy",
  "serde",
  "shellexpand",
