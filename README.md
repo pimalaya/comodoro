@@ -1,4 +1,4 @@
-# ⏳ Comodoro [![Documentation](https://img.shields.io/docsrs/comodoro?style=flat&logo=docs.rs&logoColor=white)](https://docs.rs/comodoro/latest/comodoro) [![Matrix](https://img.shields.io/badge/chat-%23pimalaya-blue?style=flat&logo=matrix&logoColor=white)](https://matrix.to/#/#pimalaya:matrix.org) [![Mastodon](https://img.shields.io/badge/news-%40pimalaya-blue?style=flat&logo=mastodon&logoColor=white)](https://fosstodon.org/@pimalaya)
+# ⏳ Comodoro [![Documentation](https://img.shields.io/docsrs/comodoro?style=flat&logo=docs.rs&logoColor=white)](https://docs.rs/comodoro/latest/comodoro) [![Matrix](https://img.shields.io/badge/chat-%23pimalaya-blue?style=flat&logo=matrix&logoColor=white)](https://matrix.to/#/#pimalaya:matrix.org) [![Mastodon](https://img.shields.io/badge/news-%40pimalaya-blue?style=flat&logo=mastodon&logoColor=white)](https://fosstodon.org/@pimalaya) [![Sponsor](https://img.shields.io/badge/sponsor-pimalaya-blue?style=flat&logo=github-sponsors&logoColor=white)](https://pimalaya.org/sponsor/)
 
 CLI to manage timers
 
@@ -22,13 +22,13 @@ One server owns a timer, any number of clients drive it and watch it. This proje
 
 ## Features
 
-- **Shared timer**: one server owns it, and any number of clients start, pause, resume, stop or query it concurrently.
-- **Push notifications**: subscribe once with `comodoro watch` and the server pushes every change, so a status bar never polls.
-- **Local socket and TCP**: a server binds either transport or both at once, and every command picks the one it talks over.
-- **Standard protocol**: plain [JSON-RPC 2.0](https://www.jsonrpc.org/specification), so any language can drive the timer.
-- **Pomodoro-style cycles**: any sequence of named cycles and durations, looping forever or a fixed number of times.
-- **Per-event hooks**: run a shell command or send a desktop notification when a cycle begins, ticks, is set, pauses, resumes or ends.
-- **Status-bar friendly output**: the remaining duration renders at second, minute or hour precision, and `--json` emits the raw timer for scripts.
+- **Shared timer**: one server owns it, any number of clients drive it.
+- **Push notifications**: `comodoro watch` subscribes, the server pushes, nothing polls.
+- **Local socket and TCP**: either transport, or both at once.
+- **Standard protocol**: plain [JSON-RPC 2.0](https://www.jsonrpc.org/specification), drivable from any language.
+- **Pomodoro-style cycles**: any named durations, looping forever or a fixed number of times.
+- **Per-event hooks**: a shell command or a desktop notification on any timer event.
+- **Status-bar friendly**: second, minute or hour precision, plus `--json` for scripts.
 
 > [!TIP]
 > Comodoro is written in [Rust](https://www.rust-lang.org/) and uses [cargo features](https://doc.rust-lang.org/cargo/reference/features.html) to gate its layers. The default feature set is declared in [Cargo.toml](./Cargo.toml).
@@ -102,19 +102,11 @@ nix run
 
 ## Configuration
 
-Run `comodoro` with no command on a machine that has no configuration: it offers to generate a first account, asking for a cycle preset and for the endpoints to serve the timer over, then either saves it, appends it to the configuration already there, or prints it for you to place. `comodoro configure` runs the same wizard on demand, and any command needing an account offers it too, then carries on. Everything beyond those presets is written by hand. A configuration is loaded from the first valid path among:
+Run `comodoro` with no command: it offers to generate a first account, which `comodoro configure` does again later. Everything beyond its presets is written by hand, against the annotated [config.sample.toml](./config.sample.toml).
 
-- `$XDG_CONFIG_HOME/comodoro/config.toml`
-- `$HOME/.config/comodoro/config.toml`
-- `$HOME/.comodororc`
+A configuration is loaded from the first valid path among `$XDG_CONFIG_HOME/comodoro/config.toml`, `$HOME/.config/comodoro/config.toml` and `$HOME/.comodororc`. Override it with `-c <PATH>` or `COMODORO_CONFIG=<PATH>`, `:`-separated to deep-merge several files on top of the first.
 
-Override the path with -c <PATH> or COMODORO_CONFIG=<PATH>. Multiple paths can be passed at once, separated by :. The first one is the base and the rest are deep-merged on top. The full field reference lives in [config.sample.toml](./config.sample.toml).
-
-An account only needs its `cycles`, the ordered steps the timer runs through. Everything else has a default: a local socket under `$XDG_RUNTIME_DIR`, a TCP endpoint on loopback port 9999, an endless loop, and a display precision of one minute. The transport tables adjust addresses rather than switch transports on, so give each account its own `socket.path` or `tcp.port` to run several timers side by side.
-
-Which transport a server binds is what `comodoro server start [TRANSPORTS]` decides, and which one a client talks over is what `socket.default` or `tcp.default` decides, the socket winning when neither claims it. So a bare `comodoro server start` binds the socket alone and opens no port, `comodoro server start tcp` serves the same timer over TCP alone, and naming both serves both. That listener is unauthenticated, so whoever reaches the port drives the timer, and it stays on loopback unless you mean otherwise.
-
-Bind a `command` or a desktop `notify` block to any timer event to run something when a cycle begins, ticks, is set, pauses, resumes or ends, and when the timer itself starts or stops. A hook that fails is logged and never stops the timer.
+An account only needs its `cycles`. Everything else defaults: a socket under `$XDG_RUNTIME_DIR`, TCP on loopback port 9999, an endless loop, a precision of one minute. Which transport a server binds is what `comodoro server start [TRANSPORTS]` says, and which one a client talks over is what `socket.default` or `tcp.default` says. The TCP listener is unauthenticated, so keep it on loopback unless you mean otherwise.
 
 ## Usage
 
