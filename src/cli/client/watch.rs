@@ -25,7 +25,7 @@ pub struct TimerWatchCommand {
 impl TimerWatchCommand {
     /// Prints the timer state on every event the server pushes.
     pub fn execute(self, printer: &mut impl Printer, account: &Account) -> Result<()> {
-        let address = account.address(self.transport.transport)?;
+        let address = account.address(self.transport.transport);
         let mut client = TimerClient::connect(&address)?;
         client.subscribe()?;
 

@@ -110,9 +110,9 @@ Run `comodoro` with no command on a machine that has no configuration: it offers
 
 Override the path with -c <PATH> or COMODORO_CONFIG=<PATH>. Multiple paths can be passed at once, separated by :. The first one is the base and the rest are deep-merged on top. The full field reference lives in [config.sample.toml](./config.sample.toml).
 
-An account only needs its `cycles`, the ordered steps the timer runs through. Everything else has a default: a local socket under `$XDG_RUNTIME_DIR`, an endless loop, and a display precision of one minute. Give each account its own `socket.path` to run several timers side by side.
+An account only needs its `cycles`, the ordered steps the timer runs through. Everything else has a default: a local socket under `$XDG_RUNTIME_DIR`, a TCP endpoint on loopback port 9999, an endless loop, and a display precision of one minute. The transport tables adjust addresses rather than switch transports on, so give each account its own `socket.path` or `tcp.port` to run several timers side by side.
 
-Add a `tcp` table to also reach the timer over the network. A server binds every transport its account configures, and a command talks over the one flagged `default`, falling back to the socket. That listener is unauthenticated, so whoever reaches the port drives the timer, and it stays on loopback unless you mean otherwise.
+Which transport a server binds is what `comodoro server start [TRANSPORTS]` decides, and which one a client talks over is what `socket.default` or `tcp.default` decides, the socket winning when neither claims it. So a bare `comodoro server start` binds the socket alone and opens no port, `comodoro server start tcp` serves the same timer over TCP alone, and naming both serves both. That listener is unauthenticated, so whoever reaches the port drives the timer, and it stays on loopback unless you mean otherwise.
 
 Bind a `command` or a desktop `notify` block to any timer event to run something when a cycle begins, ticks, is set, pauses, resumes or ends, and when the timer itself starts or stops. A hook that fails is logged and never stops the timer.
 
@@ -147,7 +147,7 @@ Feed a status bar without polling, which prints the timer once and then on every
 comodoro watch
 ```
 
-Every command takes an optional transport, `socket` or `tcp`, and falls back to the one the configuration marks as default. The server takes the list of transports to bind, and binds every configured one when given none:
+Every command takes an optional transport, `socket` or `tcp`, and falls back to the one the configuration marks as default. The server takes the list of transports to bind, and binds the default one when given none:
 
 ```sh
 comodoro server start socket tcp

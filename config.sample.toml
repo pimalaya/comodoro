@@ -57,14 +57,18 @@ precision = "minute"
 # Local socket transport
 # --------------------------------------------------------------------------------
 #
-# The transport every account has, also spelled `unix-socket` for accounts
-# written against Comodoro 1.x. Filesystem permissions guard it and it opens no
-# port.
+# The transport that needs no port, guarded by filesystem permissions. Also
+# spelled `unix-socket` for accounts written against Comodoro 1.x.
+#
+# Every field below has a default, so this table adjusts an address rather than
+# switching a transport on: which one a server binds is what `comodoro server
+# start [TRANSPORTS]` decides, and which one a client talks over is what
+# `default` below decides.
 
 # Path the server binds and the clients connect to. Defaults to comodoro.sock
 # inside $XDG_RUNTIME_DIR, or inside the platform temporary directory when that
 # variable is unset. Give each account its own path to run several timers.
-socket.path = "/run/user/1000/comodoro.sock"
+#socket.path = "/run/user/1000/comodoro.sock"
 
 # Pick this transport when a command names none. Already the case when neither
 # transport claims the default, so this only matters against `tcp.default`.
@@ -74,12 +78,12 @@ socket.default = true
 # TCP transport
 # --------------------------------------------------------------------------------
 #
-# Absent by default, in which case the account opens no port at all. The
-# listener is unauthenticated: whoever reaches the port drives the timer, so
-# keep it on loopback unless you mean to expose it.
+# Defaulted like the socket, so `comodoro server start tcp` opens a port on an
+# account that says nothing about TCP. The listener is unauthenticated: whoever
+# reaches the port drives the timer, so keep it on loopback unless you mean to
+# expose it, and start it only when you want it.
 
-# Host and port the server binds and the clients connect to. The port has no
-# default, the host falls back to loopback.
+# Host and port the server binds and the clients connect to.
 #tcp.host = "127.0.0.1"
 #tcp.port = 9999
 

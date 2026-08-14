@@ -24,7 +24,7 @@ pub struct TimerGetCommand {
 impl TimerGetCommand {
     /// Prints the timer state the server reports.
     pub fn execute(self, printer: &mut impl Printer, account: &Account) -> Result<()> {
-        let address = account.address(self.transport.transport)?;
+        let address = account.address(self.transport.transport);
         let timer = TimerClient::connect(&address)?.get()?;
         printer.out(DisplayTimer { account, timer })
     }

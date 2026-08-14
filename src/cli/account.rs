@@ -20,8 +20,6 @@ use alloc::{string::String, vec, vec::Vec};
 
 use std::collections::HashMap;
 
-use anyhow::{Result, bail};
-
 use crate::{
     cli::{config::AccountConfig, hook::TimerHook, transport::Transport},
     timer::{TimerLoop, TimerPrecision, TimerSchedule},
@@ -37,43 +35,36 @@ pub struct Account {
     pub precision: TimerPrecision,
     /// The hooks to run, by event name.
     pub hooks: HashMap<String, TimerHook>,
-    /// The local socket, which every account has.
+    /// Where the local socket is.
     pub socket: TimerAddress,
-    /// The TCP endpoint, absent when the account opens no port.
-    pub tcp: Option<TimerAddress>,
+    /// Where the TCP endpoint is.
+    pub tcp: TimerAddress,
     /// The transport a command talks over when it names none.
     pub default_transport: Transport,
 }
 
 impl Account {
-    /// The address a client reaches the server at.
+    /// The address of the given transport, or of the default one when
+    /// the command names none.
     ///
-    /// Falls back to [`Account::default_transport`] when the command
-    /// names no transport.
-    pub fn address(&self, transport: Option<Transport>) -> Result<TimerAddress> {
+    /// Every transport has an address, since every field describing one
+    /// has a default. Naming a transport picks which address a command
+    /// talks over, never whether that transport exists.
+    pub fn address(&self, transport: Option<Transport>) -> TimerAddress {
         match transport.unwrap_or(self.default_transport) {
-            Transport::UnixSocket => Ok(self.socket.clone()),
-            Transport::Tcp => match &self.tcp {
-                Some(tcp) => Ok(tcp.clone()),
-                None => bail!("Missing TCP configuration"),
-            },
+            Transport::UnixSocket => self.socket.clone(),
+            Transport::Tcp => self.tcp.clone(),
         }
     }
 
-    /// The addresses a server binds.
+    /// The addresses a server binds, one per transport it was given.
     ///
-    /// Falls back to every transport the account describes when the
-    /// command names none, which is the local socket alone unless the
-    /// account opens a port.
-    pub fn addresses(&self, transports: &[Transport]) -> Result<Vec<TimerAddress>> {
+    /// A server given none binds the default transport alone, so no
+    /// socket appears under an account meant for TCP, and no port opens
+    /// under one meant for the socket. Binding both is asking for both.
+    pub fn addresses(&self, transports: &[Transport]) -> Vec<TimerAddress> {
         if transports.is_empty() {
-            let mut addresses = vec![self.socket.clone()];
-
-            if let Some(tcp) = &self.tcp {
-                addresses.push(tcp.clone());
-            }
-
-            return Ok(addresses);
+            return vec![self.address(None)];
         }
 
         transports
@@ -95,12 +86,13 @@ impl From<AccountConfig> for Account {
             hooks,
         } = config;
 
-        // NOTE: the local socket wins a tie, since it is the transport
-        // every account has: `tcp.default` is honoured only when the
+        // NOTE: the local socket wins the tie, since it is the transport
+        // that opens no port: `tcp.default` is honoured only when the
         // socket does not claim the default itself.
-        let default_transport = match &tcp {
-            Some(tcp) if tcp.default && !socket.default => Transport::Tcp,
-            _ => Transport::UnixSocket,
+        let default_transport = if tcp.default && !socket.default {
+            Transport::Tcp
+        } else {
+            Transport::UnixSocket
         };
 
         Self {
@@ -113,8 +105,8 @@ impl From<AccountConfig> for Account {
             },
             precision,
             hooks,
-            socket: TimerAddress::UnixSocket(socket.path()),
-            tcp: tcp.map(|tcp| tcp.address()),
+            socket: socket.address(),
+            tcp: tcp.address(),
             default_transport,
         }
     }

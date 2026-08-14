@@ -34,7 +34,7 @@ pub struct TimerSetCommand {
 impl TimerSetCommand {
     /// Overrides the remaining duration of the current cycle.
     pub fn execute(self, printer: &mut impl Printer, account: &Account) -> Result<()> {
-        let address = account.address(self.transport.transport)?;
+        let address = account.address(self.transport.transport);
         TimerClient::connect(&address)?.set(self.duration)?;
         printer.out(Message::new("Timer duration successfully set"))
     }

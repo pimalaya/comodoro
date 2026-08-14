@@ -3,7 +3,11 @@
 //! to once folded into an account.
 
 use comodoro::{
-    cli::{account::Account, config::Config, transport::Transport},
+    cli::{
+        account::Account,
+        config::{Config, LOCALHOST, TCP_PORT},
+        transport::Transport,
+    },
     transport::TimerAddress,
 };
 use pimalaya_config::toml::TomlConfig;
@@ -34,14 +38,39 @@ fn a_v1_account_file_loads_unchanged() {
     );
 
     assert_eq!(
-        account.address(None).unwrap(),
+        account.address(None),
         TimerAddress::UnixSocket("/tmp/comodoro.sock".into())
     );
     assert_eq!(
-        account.address(Some(Transport::Tcp)).unwrap(),
+        account.address(Some(Transport::Tcp)),
         TimerAddress::Tcp {
             host: "127.0.0.1".into(),
             port: 9999
+        }
+    );
+}
+
+#[test]
+fn an_account_naming_no_transport_takes_every_default() {
+    // Every transport field has a default, so an account holding only
+    // its cycles reaches both, and the socket wins the tie.
+    let account = account(
+        r#"
+        [accounts.example]
+        cycles = [{ name = "Work", duration = 1500 }]
+        "#,
+    );
+
+    assert!(matches!(account.address(None), TimerAddress::UnixSocket(_)));
+    assert!(matches!(
+        account.address(Some(Transport::UnixSocket)),
+        TimerAddress::UnixSocket(_)
+    ));
+    assert_eq!(
+        account.address(Some(Transport::Tcp)),
+        TimerAddress::Tcp {
+            host: LOCALHOST.into(),
+            port: TCP_PORT
         }
     );
 }
@@ -51,19 +80,16 @@ fn tcp_takes_the_default_only_when_the_socket_leaves_it() {
     let untied = account(
         r#"
         [accounts.example]
-        tcp.port = 9999
         tcp.default = true
         cycles = [{ name = "Work", duration = 1500 }]
         "#,
     );
 
-    // NOTE: the host defaults to loopback, which is the only default the TCP
-    // table has: an account without a port opens none.
     assert_eq!(
-        untied.address(None).unwrap(),
+        untied.address(None),
         TimerAddress::Tcp {
-            host: "127.0.0.1".into(),
-            port: 9999
+            host: LOCALHOST.into(),
+            port: TCP_PORT
         }
     );
 
@@ -71,65 +97,39 @@ fn tcp_takes_the_default_only_when_the_socket_leaves_it() {
         r#"
         [accounts.example]
         socket.default = true
-        tcp.port = 9999
         tcp.default = true
         cycles = [{ name = "Work", duration = 1500 }]
         "#,
     );
 
-    assert!(matches!(
-        tied.address(None).unwrap(),
-        TimerAddress::UnixSocket(_)
-    ));
+    assert!(matches!(tied.address(None), TimerAddress::UnixSocket(_)));
 }
 
 #[test]
-fn an_account_without_tcp_binds_the_socket_alone() {
-    let account = account(
-        r#"
-        [accounts.example]
-        cycles = [{ name = "Work", duration = 1500 }]
-        "#,
-    );
-
-    let addresses = account.addresses(&[]).unwrap();
-    assert_eq!(addresses.len(), 1);
-    assert!(matches!(addresses[0], TimerAddress::UnixSocket(_)));
-
-    let err = account
-        .address(Some(Transport::Tcp))
-        .unwrap_err()
-        .to_string();
-    assert_eq!(err, "Missing TCP configuration");
-}
-
-#[test]
-fn a_server_binds_every_configured_transport() {
+fn a_server_binds_the_transports_it_is_given() {
     let account = account(
         r#"
         [accounts.example]
         socket.path = "/tmp/comodoro.sock"
-        tcp.port = 9999
+        tcp.port = 19999
         cycles = [{ name = "Work", duration = 1500 }]
         "#,
     );
 
-    assert_eq!(
-        account.addresses(&[]).unwrap(),
-        [
-            TimerAddress::UnixSocket("/tmp/comodoro.sock".into()),
-            TimerAddress::Tcp {
-                host: "127.0.0.1".into(),
-                port: 9999
-            },
-        ]
-    );
+    let tcp = TimerAddress::Tcp {
+        host: LOCALHOST.into(),
+        port: 19999,
+    };
+    let socket = TimerAddress::UnixSocket("/tmp/comodoro.sock".into());
 
+    // Given none, a server binds the default transport alone, so no
+    // port opens under an account nobody asked to expose.
+    assert_eq!(account.addresses(&[]), vec![socket.clone()]);
+
+    // Given some, it binds those, whatever the account marks default.
+    assert_eq!(account.addresses(&[Transport::Tcp]), vec![tcp.clone()]);
     assert_eq!(
-        account.addresses(&[Transport::Tcp]).unwrap(),
-        [TimerAddress::Tcp {
-            host: "127.0.0.1".into(),
-            port: 9999
-        }]
+        account.addresses(&[Transport::UnixSocket, Transport::Tcp]),
+        vec![socket, tcp]
     );
 }

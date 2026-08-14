@@ -72,15 +72,23 @@ pub struct AccountConfig {
     /// Whether this account is picked when none is given.
     #[serde(default)]
     pub default: bool,
-    /// The local socket the client and the server meet on.
+    /// Where the client and the server meet over a local socket.
+    ///
+    /// Every field has a default, so an account describes a socket
+    /// without holding a `socket` table at all. What the table adjusts
+    /// is the address, never whether the transport exists: which one a
+    /// server binds is what `server start` decides.
     ///
     /// Also spelled `unix-socket`, the name Comodoro 1.x used, so a 1.x
     /// account file loads unchanged.
     #[serde(default, alias = "unix-socket")]
     pub socket: SocketConfig,
-    /// The TCP endpoint the client and the server meet on, absent when
-    /// the account opens no port.
-    pub tcp: Option<TcpConfig>,
+    /// Where the client and the server meet over TCP.
+    ///
+    /// Defaulted like the socket, so `comodoro server start tcp` opens
+    /// a port on an account that says nothing about TCP.
+    #[serde(default)]
+    pub tcp: TcpConfig,
     /// The ordered cycles the timer runs through.
     pub cycles: Vec<TimerCycle>,
     /// How many full loops the timer runs before stopping, unbounded
@@ -136,69 +144,83 @@ impl AccountConfig {
             document.push_str(&format!("cycles-count = {count}\n"));
         }
 
-        if let Some(path) = &self.socket.path {
-            document.push_str(&format!("socket.path = \"{}\"\n", path.display()));
+        // NOTE: every transport field has a default, so what is written
+        // is what departs from one. An account taking them all holds
+        // its cycles and nothing else.
+        if self.socket.path != default_socket_path() {
+            document.push_str(&format!(
+                "socket.path = \"{}\"\n",
+                self.socket.path.display()
+            ));
         }
 
         if self.socket.default {
             document.push_str("socket.default = true\n");
         }
 
-        if let Some(tcp) = &self.tcp {
-            document.push_str(&format!("tcp.port = {}\n", tcp.port));
+        if self.tcp.host != LOCALHOST {
+            document.push_str(&format!("tcp.host = \"{}\"\n", self.tcp.host));
+        }
 
-            if tcp.host != LOCALHOST {
-                document.push_str(&format!("tcp.host = \"{}\"\n", tcp.host));
-            }
+        if self.tcp.port != TCP_PORT {
+            document.push_str(&format!("tcp.port = {}\n", self.tcp.port));
+        }
 
-            if tcp.default {
-                document.push_str("tcp.default = true\n");
-            }
+        if self.tcp.default {
+            document.push_str("tcp.default = true\n");
         }
 
         document
     }
 }
 
-/// The local socket transport configuration.
-#[derive(Debug, Default, Eq, PartialEq, Deserialize, Serialize)]
+/// Where a client and a server meet over a local socket.
+#[derive(Debug, Eq, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct SocketConfig {
-    /// Whether a client picks this transport when the command names
-    /// none.
+    /// Whether a command talks over this transport when it names none.
     #[serde(default)]
     pub default: bool,
     /// The socket path to bind and connect to.
     ///
     /// Defaults to comodoro.sock inside `$XDG_RUNTIME_DIR`, or inside
     /// the platform temporary directory when that variable is unset.
-    pub path: Option<PathBuf>,
+    #[serde(default = "default_socket_path")]
+    pub path: PathBuf,
 }
 
 impl SocketConfig {
-    /// The configured socket path, or the platform default.
-    pub fn path(&self) -> PathBuf {
-        self.path.clone().unwrap_or_else(default_socket_path)
+    /// The address this configuration points at.
+    pub fn address(&self) -> TimerAddress {
+        TimerAddress::UnixSocket(self.path.clone())
     }
 }
 
-/// The TCP transport configuration.
+impl Default for SocketConfig {
+    fn default() -> Self {
+        Self {
+            default: false,
+            path: default_socket_path(),
+        }
+    }
+}
+
+/// Where a client and a server meet over TCP.
 ///
 /// The listener it describes is unauthenticated, so whoever reaches the
-/// port drives the timer. Hence the loopback default, and hence the
-/// absence of any default for the port: an account opens one only by
-/// saying so.
+/// port drives the timer. Hence the loopback host, which is the one
+/// default an account should have to overrule deliberately.
 #[derive(Debug, Eq, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct TcpConfig {
-    /// Whether a client picks this transport when the command names
-    /// none.
+    /// Whether a command talks over this transport when it names none.
     #[serde(default)]
     pub default: bool,
     /// The host to bind and connect to.
     #[serde(default = "localhost")]
     pub host: String,
     /// The port to bind and connect to.
+    #[serde(default = "tcp_port")]
     pub port: u16,
 }
 
@@ -212,12 +234,29 @@ impl TcpConfig {
     }
 }
 
+impl Default for TcpConfig {
+    fn default() -> Self {
+        Self {
+            default: false,
+            host: localhost(),
+            port: TCP_PORT,
+        }
+    }
+}
+
 /// The host a `tcp` table falls back to.
 ///
 /// The listener is unauthenticated, so an account that names no host
 /// stays where only this machine can reach it.
 pub const LOCALHOST: &str = "127.0.0.1";
 
+/// The port a `tcp` table falls back to.
+pub const TCP_PORT: u16 = 9999;
+
 fn localhost() -> String {
     LOCALHOST.to_string()
+}
+
+fn tcp_port() -> u16 {
+    TCP_PORT
 }

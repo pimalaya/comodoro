@@ -23,7 +23,7 @@ pub struct TimerStopCommand {
 impl TimerStopCommand {
     /// Stops the timer the server owns.
     pub fn execute(self, printer: &mut impl Printer, account: &Account) -> Result<()> {
-        let address = account.address(self.transport.transport)?;
+        let address = account.address(self.transport.transport);
         TimerClient::connect(&address)?.stop()?;
         printer.out(Message::new("Timer successfully stopped"))
     }

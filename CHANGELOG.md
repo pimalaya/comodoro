@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.0.0] - 2026-08-13
+## [2.0.0] - 2026-08-14
 
 ### Added
 
@@ -29,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added the `set` command, exposing the `timer.set` method that was previously reachable on the wire but not from the CLI.
 - Added the `configure` command, which generates an account from one of the documented cycle presets.
 
-  It asks two questions, the cycle preset and the endpoints to serve the timer over, both the local socket and TCP on loopback port 9999 being ticked by default, then names the account after the preset and saves it to the configuration file, appends it to the one already there, or prints it on stdout when the offer is declined, when stdout is redirected (`comodoro configure > config.toml`) or in JSON mode. A bare `comodoro`, which is what a newcomer runs first, and any command that needs an account both open with a welcome naming the configuration file they looked for when they find none, then offer the same wizard. The offer is a hook rather than a gate: a command runs afterwards either way, so accepting is what gives it a chance to work and declining leaves it to fail on the configuration it still has not got. A bare `comodoro` has nothing to run, so it shows the help, which is also what it shows when a configuration is already there. Appending is a plain text append, so the comments and the formatting already in the file come out untouched, and a name the configuration already holds is suffixed rather than reused, since two `[accounts.<name>]` tables make the whole document fail to parse. The generated account claims `default` only when no other account does. Anything beyond the presets, meaning custom cycles, the TCP transport, the socket path, the display precision and the hooks, is still written by hand against config.sample.toml.
+  It asks one question, the cycle preset, then names the account after it and saves it to the configuration file, appends it to the one already there, or prints it on stdout when the offer is declined, when stdout is redirected (`comodoro configure > config.toml`) or in JSON mode. A bare `comodoro`, which is what a newcomer runs first, and any command that needs an account both open with a welcome naming the configuration file they looked for when they find none, then offer the same wizard. The offer is a hook rather than a gate: a command runs afterwards either way, so accepting is what gives it a chance to work and declining leaves it to fail on the configuration it still has not got. A bare `comodoro` has nothing to run, so it shows the help, which is also what it shows when a configuration is already there. Appending is a plain text append, so the comments and the formatting already in the file come out untouched, and a name the configuration already holds is suffixed rather than reused, since two `[accounts.<name>]` tables make the whole document fail to parse. The generated account claims `default` only when no other account does. The account it writes holds its cycles and nothing else, since every other field has a default, so no address of this machine lands in a file that may be copied to another. Anything beyond the presets, meaning custom cycles, a transport address, the display precision and the hooks, is still written by hand against config.sample.toml.
 
 - Added the `transport` module, holding `TimerAddress`, the `TimerStream` connection and the `TimerListener` accepting them, so both transports carry the protocol behind one type.
 - Added the repository skeleton the Pimalaya guidelines require: a cairn/ folder with its AGENTS.md activation stanza, SECURITY.md, and the tests and audit CI workflows.
@@ -48,13 +48,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
   It serialized transparently and dereferenced to the vector, so it was already a vector everywhere but in the type name, and the `From` impl it added is what `vec!` gives for free. `TimerSchedule { cycles }` now holds the vector itself, and no wire shape changes.
 
-- **BREAKING** Renamed the `unix-socket` configuration table to `socket`, and made its `path` optional.
+- **BREAKING** Renamed the `unix-socket` configuration table to `socket`, and gave every transport field a default, so a table adjusts an address rather than switching a transport on.
 
-  A 1.x account file still loads, since `unix-socket` remains an accepted alias and the `tcp` table keeps its `host`, `port` and `default` fields. What changed is that an account requires no transport table at all: the socket path now defaults to comodoro.sock inside `$XDG_RUNTIME_DIR`, or inside the platform temporary directory when that variable is unset, so an account only requires its `cycles`. Windows reaches that same path-addressed socket through uds_windows, as the rest of the Pimalaya stack does.
+  A 1.x account file still loads, since `unix-socket` remains an accepted alias and both tables keep their fields. What changed is that none of them is required: `socket.path` defaults to comodoro.sock inside `$XDG_RUNTIME_DIR`, or inside the platform temporary directory when that variable is unset, `tcp.host` to 127.0.0.1 and `tcp.port` to 9999. An account therefore requires nothing but its `cycles`, and describes both transports at both default addresses. Windows reaches that same path-addressed socket through uds_windows, as the rest of the Pimalaya stack does.
+
+  Which transport actually runs is no longer a configuration matter at all: `server start` binds what it is given, and the default transport alone when given none, so `comodoro server start` opens no port and `comodoro server start tcp` binds no socket. Which transport a client talks over stays what `socket.default` and `tcp.default` say, the socket winning when neither claims it.
 
 - **BREAKING** Renamed the `[PROTOCOL]` argument to `[TRANSPORT]`, since a protocol is now what the two peers speak rather than what carries it.
 
-  It takes `socket`, aliased `unix-socket`, or `tcp`, and still defaults to the transport the configuration marks as default. `server start` takes the list of transports to bind and still binds every configured one when given none. Only `set` orders its arguments differently, as `comodoro set <SECONDS> [TRANSPORT]`, because an optional argument cannot stand before a required one.
+  It takes `socket`, aliased `unix-socket`, or `tcp`, and still defaults to the transport the configuration marks as default. `server start` takes the list of transports to bind, and binds the default one when given none, so serving the same timer over both at once is `comodoro server start socket tcp`. Only `set` orders its arguments differently, as `comodoro set <SECONDS> [TRANSPORT]`, because an optional argument cannot stand before a required one.
 
 - **BREAKING** Removed the I/O-free coroutine layer, roughly half the crate.
 

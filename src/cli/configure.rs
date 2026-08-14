@@ -46,7 +46,7 @@ use pimalaya_config::toml::TomlConfig;
 use serde::Serialize;
 
 use crate::{
-    cli::config::{AccountConfig, CONFIG_SAMPLE_URL, Config, LOCALHOST, SocketConfig, TcpConfig},
+    cli::config::{AccountConfig, CONFIG_SAMPLE_URL, Config, SocketConfig, TcpConfig},
     timer::{TimerCycle, TimerPrecision},
 };
 
@@ -89,8 +89,6 @@ impl ConfigureCommand {
             Some(TimerPreset::Pomodoro),
         )?;
 
-        let endpoints = prompt::items("Serve the timer over:", TimerEndpoint::ALL, [0, 1])?;
-
         let path = Config::target_path(config_paths)?;
         let existing = ExistingConfig::read(&path)?;
         let name = account_name(preset, existing.as_ref());
@@ -99,7 +97,7 @@ impl ConfigureCommand {
         // command picks depend on map ordering, so the generated one
         // claims the default only when no other account does.
         let default = !existing.as_ref().is_some_and(|config| config.has_default);
-        let account = preset.account(default, &endpoints);
+        let account = preset.account(default);
 
         let config = GeneratedConfig {
             document: account.render(&name),
@@ -114,41 +112,6 @@ impl ConfigureCommand {
         match existing {
             Some(_) => append_or_print(printer, &path, config),
             None => save_or_print(printer, &path, config),
-        }
-    }
-}
-
-/// The TCP port the wizard configures, the one the sample
-/// configuration illustrates.
-///
-/// The `tcp` table has no port default on purpose, since an account
-/// opens a port only by saying so, and the wizard says so on behalf of
-/// whoever ticks TCP.
-const TCP_PORT: u16 = 9999;
-
-/// The endpoints the wizard offers to serve the timer over.
-///
-/// Both are ticked by default. Neither takes a custom address here:
-/// the socket keeps its default path, TCP keeps loopback and
-/// [`TCP_PORT`], and moving either is one edit in the generated file.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-enum TimerEndpoint {
-    /// The local socket, at its default path.
-    Socket,
-    /// The TCP endpoint, on loopback.
-    Tcp,
-}
-
-impl TimerEndpoint {
-    /// Every endpoint, in the order the prompt lists them.
-    const ALL: [Self; 2] = [Self::Socket, Self::Tcp];
-}
-
-impl fmt::Display for TimerEndpoint {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Socket => write!(f, "Local socket, no port, guarded by file permissions"),
-            Self::Tcp => write!(f, "TCP on loopback port {TCP_PORT}, unauthenticated"),
         }
     }
 }
@@ -178,28 +141,16 @@ impl TimerPreset {
         Self::HundredTwelveTwentySix,
     ];
 
-    /// The account this preset and the chosen endpoints generate.
+    /// The account this preset generates.
     ///
-    /// Only what was chosen lands in it, so the document the wizard
-    /// writes holds no field the answers did not set: the local socket
-    /// needs no table at all, since its default path is what an absent
-    /// `socket` table means, and TCP takes its port and leaves the host
-    /// to the loopback default.
-    fn account(self, default: bool, endpoints: &[TimerEndpoint]) -> AccountConfig {
-        let tcp = endpoints.contains(&TimerEndpoint::Tcp).then(|| TcpConfig {
-            // NOTE: the server binds its socket whatever the account
-            // says, so an account that asked for TCP alone cannot have
-            // the socket taken away. What it gets instead is TCP as the
-            // transport its commands talk over unless one names another.
-            default: !endpoints.contains(&TimerEndpoint::Socket),
-            host: LOCALHOST.to_string(),
-            port: TCP_PORT,
-        });
-
+    /// Nothing but the cycles: every transport field has a default, so
+    /// an account that adjusts none of them writes none of them, and
+    /// which transport a server binds is what `server start` decides.
+    fn account(self, default: bool) -> AccountConfig {
         AccountConfig {
             default,
             socket: SocketConfig::default(),
-            tcp,
+            tcp: TcpConfig::default(),
             cycles: self.cycles(),
             cycles_count: None,
             precision: TimerPrecision::default(),
@@ -448,9 +399,7 @@ mod tests {
 
     #[test]
     fn a_generated_account_parses_back() {
-        let document = TimerPreset::Pomodoro
-            .account(true, &TimerEndpoint::ALL)
-            .render("pomodoro");
+        let document = TimerPreset::Pomodoro.account(true).render("pomodoro");
         let config: Config = toml::from_str(&document).expect("parse the generated config");
         let account = &config.accounts["pomodoro"];
 
@@ -458,46 +407,20 @@ mod tests {
         assert_eq!(account.cycles, TimerPreset::Pomodoro.cycles());
         assert!(account.default);
 
-        // The fields the wizard leaves alone stay out of the document,
-        // rather than freezing today's defaults into the user's file.
-        assert!(!document.contains("precision"));
+        // Every transport field has a default, so the generated account
+        // holds its cycles and nothing else: no address is frozen into
+        // the file, and `server start` still reaches either transport.
         assert!(!document.contains("socket"));
+        assert!(!document.contains("tcp"));
+        assert!(!document.contains("precision"));
         assert!(!document.contains("hooks"));
+        assert_eq!(account.socket, SocketConfig::default());
+        assert_eq!(account.tcp, TcpConfig::default());
 
         // One cycle per line, in the order and the shape the sample
         // configuration documents.
         assert!(document.contains("  { name = \"Work\", duration = 1500 },\n"));
-        assert_eq!(document.lines().count(), 11);
-    }
-
-    #[test]
-    fn the_endpoints_decide_the_tcp_table() {
-        let tcp = |endpoints: &[TimerEndpoint]| {
-            let document = TimerPreset::Pomodoro
-                .account(true, endpoints)
-                .render("pomodoro");
-            let mut config: Config = toml::from_str(&document).expect("parse the account");
-            config
-                .accounts
-                .remove("pomodoro")
-                .expect("the generated account")
-                .tcp
-        };
-
-        // Both endpoints, which is what the prompt ticks by default:
-        // the socket needs no table, TCP takes the port and leaves the
-        // host to its loopback default.
-        let both = tcp(&TimerEndpoint::ALL).expect("a tcp table");
-        assert_eq!(both.port, TCP_PORT);
-        assert_eq!(both.host, "127.0.0.1");
-        assert!(!both.default);
-
-        // The socket alone opens no port at all.
-        assert!(tcp(&[TimerEndpoint::Socket]).is_none());
-
-        // TCP alone cannot take the socket away, since the server binds
-        // it regardless, so it claims the default instead.
-        assert!(tcp(&[TimerEndpoint::Tcp]).expect("a tcp table").default);
+        assert_eq!(document.lines().count(), 10);
     }
 
     #[test]
@@ -520,7 +443,7 @@ mod tests {
         assert!(existing.has_default);
 
         let document = TimerPreset::Pomodoro
-            .account(!existing.has_default, &TimerEndpoint::ALL)
+            .account(!existing.has_default)
             .render("pomodoro");
         let mut file = OpenOptions::new().append(true).open(&path).expect("open");
         write!(file, "\n{document}").expect("append the generated account");

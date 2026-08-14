@@ -19,8 +19,9 @@ use crate::{
 pub struct TimerServerStartCommand {
     /// The transports the server accepts requests on.
     ///
-    /// Defaults to every transport the account configures, which is the
-    /// local socket alone unless a `tcp` table is present.
+    /// Defaults to the one the account marks as default, which is the
+    /// local socket unless `tcp.default` says otherwise. Name both to
+    /// serve the same timer over both at once.
     #[arg(name = "transports", value_name = "TRANSPORTS")]
     pub transports: Vec<Transport>,
 }
@@ -29,7 +30,7 @@ impl TimerServerStartCommand {
     /// Binds the transports, then runs the hook bound to every event
     /// the timer emits, until the server is killed.
     pub fn execute(self, account: &mut Account) -> Result<()> {
-        let addresses = account.addresses(&self.transports)?;
+        let addresses = account.addresses(&self.transports);
         let events = TimerServer {
             schedule: account.schedule.clone(),
             addresses: addresses.clone(),
