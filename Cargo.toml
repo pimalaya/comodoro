@@ -20,7 +20,8 @@ rustdoc-args = ["--cfg", "docsrs"]
 default = ["client", "server", "cli", "notify"]
 client = ["dep:anyhow"]
 server = ["dep:anyhow"]
-cli = ["client", "server", "dep:clap", "dep:convert_case", "dep:pimalaya-cli", "dep:pimalaya-config"]
+cli = ["client", "server", "schemars", "dep:clap", "dep:convert_case", "dep:pimalaya-cli", "dep:pimalaya-config"]
+schemars = ["dep:schemars"]
 notify = ["pimalaya-config?/notify"]
 vendored = ["pimalaya-config?/vendored"]
 
@@ -72,6 +73,7 @@ convert_case = { version = "0.11", default-features = false, optional = true }
 log = { version = "0.4", default-features = false }
 pimalaya-cli = { version = "0.2", default-features = false, features = ["prompt", "terminal"], optional = true }
 pimalaya-config = { version = "0.1", default-features = false, features = ["toml", "secret"], optional = true }
+schemars = { version = "1", default-features = false, features = ["derive"], optional = true }
 serde = { version = "1", default-features = false, features = ["derive", "alloc"] }
 serde_json = { version = "1", default-features = false, features = ["alloc"] }
 

@@ -14,14 +14,16 @@
 //! [`config`] holds the TOML document, [`account`] the resolved view a
 //! command runs against, [`configure`] the wizard writing a document,
 //! [`transport`] the selection of the one a command talks over,
-//! [`hook`] the reactions bound to timer events, and [`client`] and
-//! [`server`] one module per command.
+//! [`hook`] the reactions bound to timer events, [`json_schema`] the
+//! schemas of what the commands print, and [`client`] and [`server`]
+//! one module per command.
 
 pub mod account;
 pub mod client;
 pub mod config;
 pub mod configure;
 pub mod hook;
+pub mod json_schema;
 pub mod server;
 pub mod transport;
 
@@ -38,7 +40,7 @@ use log::trace;
 use pimalaya_cli::{
     clap::{
         args::{AccountFlag, JsonFlag, LogFlags},
-        commands::{CompletionCommand, ManualCommand},
+        commands::{CompletionCommand, JsonSchemaCommand, ManualCommand},
         parsers::path_parser,
     },
     footer, long_version,
@@ -63,12 +65,6 @@ use crate::cli::{
 #[derive(Debug, Parser)]
 #[command(name = env!("CARGO_PKG_NAME"))]
 #[command(author, version, about, long_version = long_version!())]
-#[command(long_about = concat!(
-    "CLI to manage timers.\n\n",
-    "First time here? Run `comodoro` with no command: it offers to generate an ",
-    "account from one of the documented presets, which `comodoro configure` does ",
-    "again later. Everything else is written by hand.",
-))]
 #[command(after_help = footer!())]
 #[command(propagate_version = true, infer_subcommands = true)]
 pub struct Cli {
@@ -118,12 +114,15 @@ pub enum Command {
     Stop(TimerStopCommand),
     /// Set the remaining duration of the current cycle.
     Set(TimerSetCommand),
-    /// Generate the man pages.
-    #[command(arg_required_else_help = true, alias = "mans")]
-    Manuals(ManualCommand),
     /// Generate the shell completion scripts.
     #[command(arg_required_else_help = true, alias = "cpl")]
-    Completions(CompletionCommand),
+    Completion(CompletionCommand),
+    /// Generate the man pages.
+    #[command(arg_required_else_help = true, alias = "mans")]
+    Manual(ManualCommand),
+    /// Generate the JSON Schemas of the command outputs.
+    #[command(arg_required_else_help = true)]
+    JsonSchema(JsonSchemaCommand),
 }
 
 impl Cli {
@@ -213,8 +212,9 @@ impl Command {
                 cmd.execute(printer, &account)
             }
 
-            Self::Manuals(cmd) => cmd.execute(printer, Cli::command()),
-            Self::Completions(cmd) => cmd.execute(printer, Cli::command()),
+            Self::Completion(cmd) => cmd.execute(printer, Cli::command()),
+            Self::Manual(cmd) => cmd.execute(printer, Cli::command()),
+            Self::JsonSchema(cmd) => cmd.execute(printer, json_schema::generate()),
         }
     }
 }
@@ -276,22 +276,12 @@ fn take_account(
     let mut config = match Config::from_paths_or_default(config_paths)? {
         Some(config) => config,
         None => {
-            // NOTE: the target path is where `-c` pointed, or the
-            // default location when it named none, so a mistyped path
-            // shows up as itself rather than as a generic first run.
             let path = Config::target_path(config_paths)?;
 
-            // NOTE: nobody is there to answer a prompt in a script or a
-            // cron job, and a JSON consumer wants a failure it can
-            // read, so both skip the offer and fail below.
             if !printer.is_json() && stdin().is_terminal() {
                 offer_configuration(printer, config_paths, &path)?;
             }
 
-            // NOTE: the wizard also prints the account instead of
-            // writing it, so having run it proves nothing: the
-            // configuration is looked up again, and the command fails
-            // the ordinary way when nothing landed.
             match Config::from_paths_or_default(config_paths)? {
                 Some(config) => config,
                 None => bail!(
@@ -302,8 +292,6 @@ fn take_account(
         }
     };
 
-    // NOTE: an empty name and `default` both mean the default account,
-    // which is the next block's business.
     let named = account_name.filter(|name| !name.is_empty() && *name != "default");
 
     if let Some(name) = named.filter(|name| !config.accounts.contains_key(*name)) {

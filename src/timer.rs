@@ -14,6 +14,7 @@ use alloc::{
 use serde::{Deserialize, Serialize};
 
 /// Controls how many full loops the timer runs before stopping.
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub enum TimerLoop {
     /// The timer loops indefinitely and never stops by itself.
@@ -37,6 +38,7 @@ impl From<usize> for TimerLoop {
 
 /// A single step in the timer lifecycle, identified by a name and a
 /// duration in seconds.
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub struct TimerCycle {
     /// The name of this cycle.
@@ -60,6 +62,7 @@ impl TimerCycle {
 }
 
 /// The current state of a timer.
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub enum TimerState {
     /// The timer is running.
@@ -104,6 +107,7 @@ pub enum TimerEvent {
 ///
 /// Named after what it describes rather than after where it comes from,
 /// since a CLI has a configuration of its own and this is not it.
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct TimerSchedule {
     /// The ordered list of timer cycles.
@@ -156,6 +160,7 @@ impl TimerSchedule {
 /// (seconds since the Unix epoch) rather than reading the clock
 /// internally, which is what keeps the timer testable without a clock
 /// and usable under no_std.
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct Timer {
     /// What the timer runs: its cycles, and how many loops of them.

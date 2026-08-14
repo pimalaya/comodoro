@@ -229,8 +229,9 @@ impl ExistingConfig {
 }
 
 /// The generated account, as the printer takes it.
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[derive(Serialize)]
-struct GeneratedConfig {
+pub struct GeneratedConfig {
     /// The account name, which is the `[accounts.<name>]` table key.
     name: String,
     /// Whether the account claims the default.
