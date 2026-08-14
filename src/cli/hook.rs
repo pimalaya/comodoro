@@ -10,11 +10,8 @@ use alloc::{format, string::String};
 
 use std::process::Command;
 
-#[cfg(not(feature = "notify"))]
-use anyhow::bail;
-use anyhow::{Context, Result};
 use convert_case::{Case, Casing};
-use log::{debug, warn};
+use log::{debug, error, warn};
 #[cfg(feature = "notify")]
 use notify_rust::Notification;
 use serde::{Deserialize, Serialize};
@@ -65,19 +62,26 @@ pub enum TimerHook {
 }
 
 impl TimerHook {
-    /// Runs the reaction and waits for it to complete.
-    pub fn execute(&mut self) -> Result<()> {
+    /// Runs the reaction and waits for it to complete, logging whatever
+    /// goes wrong.
+    ///
+    /// A hook reacts to the timer, it is never a step of it, so it
+    /// reports nothing back: a command that cannot be run, one that
+    /// exits non-zero, and a notification that reaches no daemon are
+    /// all logged and left there. Returning no error is what makes it
+    /// impossible for a hook to stop the timer.
+    pub fn execute(&mut self) {
         match self {
             Self::Command(cmd) => {
                 debug!("begin hook command execution");
-                let status = cmd.status().context("Run hook command error")?;
 
-                if !status.success() {
-                    warn!("hook command exited with {status}");
+                match cmd.status() {
+                    Ok(status) if status.success() => {}
+                    Ok(status) => warn!("hook command exited with {status}"),
+                    Err(err) => error!("cannot run hook command: {err}"),
                 }
 
                 debug!("end of hook command execution");
-                Ok(())
             }
             Self::Notify(notification) => notification.send(),
         }
@@ -95,27 +99,29 @@ pub struct TimerHookNotification {
 }
 
 impl TimerHookNotification {
-    /// Sends the notification to the system notification daemon.
+    /// Sends the notification to the system notification daemon,
+    /// logging a daemon that cannot be reached.
     #[cfg(feature = "notify")]
-    pub fn send(&self) -> Result<()> {
+    pub fn send(&self) {
         debug!("begin hook notification send");
 
-        Notification::new()
+        if let Err(err) = Notification::new()
             .summary(&self.summary)
             .body(&self.body)
             .show()
-            .context("Send hook notification error")?;
+        {
+            error!("cannot send hook notification: {err}");
+        }
 
         debug!("end of hook notification send");
-        Ok(())
     }
 
-    /// Reports that this build cannot send notifications.
+    /// Logs that this build cannot send notifications.
     #[cfg(not(feature = "notify"))]
-    pub fn send(&self) -> Result<()> {
-        bail!(
-            "Cannot send notification `{}`: this build carries no notification backend, rebuild with the `notify` feature",
-            self.summary
-        )
+    pub fn send(&self) {
+        error!(
+            "cannot send hook notification `{}`: this build carries no notification backend, rebuild with the `notify` feature",
+            self.summary,
+        );
     }
 }

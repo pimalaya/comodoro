@@ -9,7 +9,7 @@ use std::{env, fs, thread, time::Duration};
 use comodoro::{
     client::std::TimerClient,
     server::std::TimerServer,
-    timer::{TimerConfig, TimerCycle, TimerCycles, TimerLoop},
+    timer::{TimerCycle, TimerLoop, TimerSchedule},
     transport::TimerAddress,
 };
 
@@ -17,15 +17,15 @@ fn main() {
     let path = env::temp_dir().join("comodoro-example.sock");
     let _ = fs::remove_file(&path);
 
-    let config = TimerConfig {
-        cycles: TimerCycles::from([TimerCycle::new("Work", 2), TimerCycle::new("Rest", 2)]),
-        cycles_count: TimerLoop::Infinite,
+    let schedule = TimerSchedule {
+        cycles: vec![TimerCycle::new("Work", 2), TimerCycle::new("Rest", 2)],
+        loops: TimerLoop::Infinite,
     };
 
     let address = TimerAddress::UnixSocket(path.clone());
 
     let events = TimerServer {
-        config,
+        schedule,
         addresses: vec![address.clone()],
     }
     .serve()

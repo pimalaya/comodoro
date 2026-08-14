@@ -4,12 +4,11 @@ use alloc::vec::Vec;
 
 use anyhow::Result;
 use clap::Parser;
-use log::{debug, error, info};
+use log::{debug, info};
 
 use crate::{
-    cli::{config::ComodoroAccountConfig, transport::ComodoroTransport},
+    cli::{account::Account, transport::Transport},
     server::std::TimerServer,
-    timer::{TimerConfig, TimerLoop},
 };
 
 /// Start the server.
@@ -23,24 +22,16 @@ pub struct TimerServerStartCommand {
     /// Defaults to every transport the account configures, which is the
     /// local socket alone unless a `tcp` table is present.
     #[arg(name = "transports", value_name = "TRANSPORTS")]
-    pub transports: Vec<ComodoroTransport>,
+    pub transports: Vec<Transport>,
 }
 
 impl TimerServerStartCommand {
     /// Binds the transports, then runs the hook bound to every event
     /// the timer emits, until the server is killed.
-    pub fn execute(self, account: &mut ComodoroAccountConfig) -> Result<()> {
-        let config = TimerConfig {
-            cycles: account.cycles.clone().into(),
-            cycles_count: match account.cycles_count {
-                Some(count) => TimerLoop::Fixed(count),
-                None => TimerLoop::Infinite,
-            },
-        };
-
+    pub fn execute(self, account: &mut Account) -> Result<()> {
         let addresses = account.addresses(&self.transports)?;
         let events = TimerServer {
-            config,
+            schedule: account.schedule.clone(),
             addresses: addresses.clone(),
         }
         .serve()?;
@@ -60,9 +51,7 @@ impl TimerServerStartCommand {
 
             info!("run hook {name}");
 
-            if let Err(err) = hook.execute() {
-                error!("cannot execute hook {name}: {err}");
-            }
+            hook.execute();
         }
 
         Ok(())

@@ -1,32 +1,25 @@
-//! Commands driving the timer from a client.
+//! Rendering of a timer for the terminal.
 //!
-//! One module per command, each connecting to the server, sending its
-//! request and printing the outcome. What lives here is the rendering
-//! the two commands displaying a timer share. The transport argument
-//! they also share sits in [`crate::cli::transport`], since the server
-//! commands select a transport too.
-
-pub mod get;
-pub mod pause;
-pub mod resume;
-pub mod set;
-pub mod start;
-pub mod stop;
-pub mod watch;
+//! [`DisplayTimer`] is what the two commands showing a timer, `get` and
+//! `watch`, print. It pairs the timer the server reported with the
+//! account that asked for it, since how coarsely a duration reads is an
+//! account setting.
 
 use core::fmt;
 
 use serde::{Serialize, Serializer};
 
 use crate::{
-    cli::config::ComodoroAccountConfig,
+    cli::account::Account,
     timer::{Timer, TimerPrecision, TimerState},
 };
 
 /// A timer as the terminal shows it, at the account precision.
-struct DisplayTimer<'a> {
-    account: &'a ComodoroAccountConfig,
-    timer: Timer,
+pub struct DisplayTimer<'a> {
+    /// The account the timer is rendered for, which sets the precision.
+    pub account: &'a Account,
+    /// The timer the server reported.
+    pub timer: Timer,
 }
 
 impl fmt::Display for DisplayTimer<'_> {

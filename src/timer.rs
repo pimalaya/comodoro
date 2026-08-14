@@ -6,8 +6,6 @@
 //! from. This is the whole of Comodoro's logic, and it knows nothing
 //! about sockets, JSON-RPC or configuration.
 
-use core::ops::{Deref, DerefMut};
-
 use alloc::{
     string::{String, ToString},
     vec::Vec,
@@ -61,31 +59,6 @@ impl TimerCycle {
     }
 }
 
-/// The ordered list of cycles that a timer runs through.
-#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
-#[serde(transparent)]
-pub struct TimerCycles(Vec<TimerCycle>);
-
-impl<T: IntoIterator<Item = TimerCycle>> From<T> for TimerCycles {
-    fn from(cycles: T) -> Self {
-        Self(cycles.into_iter().collect())
-    }
-}
-
-impl Deref for TimerCycles {
-    type Target = Vec<TimerCycle>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for TimerCycles {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-
 /// The current state of a timer.
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub enum TimerState {
@@ -127,21 +100,25 @@ pub enum TimerEvent {
     Stopped,
 }
 
-/// Timer configuration: cycle definitions and loop count.
+/// What a timer runs: the ordered cycles, and how many loops of them.
+///
+/// Named after what it describes rather than after where it comes from,
+/// since a CLI has a configuration of its own and this is not it.
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
-pub struct TimerConfig {
+pub struct TimerSchedule {
     /// The ordered list of timer cycles.
-    pub cycles: TimerCycles,
-    /// How many full loops the timer should run.
-    pub cycles_count: TimerLoop,
+    pub cycles: Vec<TimerCycle>,
+    /// How many full loops through the cycles the timer runs before
+    /// stopping.
+    pub loops: TimerLoop,
 }
 
-impl TimerConfig {
+impl TimerSchedule {
     fn first_cycle(&self) -> TimerCycle {
         self.cycles
             .first()
             .cloned()
-            .expect("timer config must have at least one cycle")
+            .expect("timer schedule must have at least one cycle")
     }
 
     /// The cycles with their durations accumulated, so each one carries
@@ -181,14 +158,12 @@ impl TimerConfig {
 /// and usable under no_std.
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct Timer {
-    /// The timer configuration.
-    pub config: TimerConfig,
+    /// What the timer runs: its cycles, and how many loops of them.
+    pub schedule: TimerSchedule,
     /// The current timer state.
     pub state: TimerState,
     /// The current cycle (with remaining duration).
     pub cycle: TimerCycle,
-    /// The configured loop count, decremented as loops complete.
-    pub cycles_count: TimerLoop,
     /// Unix epoch seconds at which the timer was last started or
     /// resumed. `None` when the timer is stopped or paused.
     pub started_at: Option<u64>,
@@ -198,18 +173,17 @@ pub struct Timer {
 }
 
 impl Timer {
-    /// Creates a new timer from the given configuration.
+    /// Creates a new timer running the given schedule.
     ///
     /// # Panics
     ///
-    /// Panics if `config` has no cycles.
-    pub fn new(config: TimerConfig) -> Self {
-        let cycle = config.first_cycle();
-        let cycles_count = config.cycles_count.clone();
+    /// Panics if `schedule` has no cycles.
+    pub fn new(schedule: TimerSchedule) -> Self {
+        let cycle = schedule.first_cycle();
+
         Self {
-            config,
+            schedule,
             cycle,
-            cycles_count,
             ..Default::default()
         }
     }
@@ -247,14 +221,14 @@ impl Timer {
         if let TimerState::Running = self.state {
             let mut elapsed = self.elapsed(now);
 
-            let cycles = self.config.cumulated_cycles();
+            let cycles = self.schedule.cumulated_cycles();
 
             let Some(total_duration) = cycles.last().map(|cycle| cycle.duration) else {
                 return events;
             };
 
-            if let TimerLoop::Fixed(cycles_count) = self.cycles_count
-                && elapsed >= total_duration * cycles_count
+            if let TimerLoop::Fixed(loops) = self.schedule.loops
+                && elapsed >= total_duration * loops
             {
                 let mut ended_cycle = self.cycle.clone();
                 ended_cycle.duration = 0;
@@ -308,8 +282,7 @@ impl Timer {
 
         if matches!(self.state, TimerState::Stopped) {
             self.state = TimerState::Running;
-            self.cycle = self.config.first_cycle();
-            self.cycles_count = self.config.cycles_count.clone();
+            self.cycle = self.schedule.first_cycle();
             self.started_at = Some(now);
             self.elapsed = 0;
             events.push(TimerEvent::Started);
@@ -340,7 +313,7 @@ impl Timer {
             return None;
         }
 
-        let cycles = self.config.cumulated_cycles();
+        let cycles = self.schedule.cumulated_cycles();
         let total_duration = cycles.last().map(|cycle| cycle.duration)?;
 
         let elapsed = self.elapsed(now);
@@ -413,8 +386,7 @@ impl Timer {
     /// elapsed time and no progress through the cycles.
     fn reset(&mut self) {
         self.state = TimerState::Stopped;
-        self.cycle = self.config.first_cycle();
-        self.cycles_count = self.config.cycles_count.clone();
+        self.cycle = self.schedule.first_cycle();
         self.started_at = None;
         self.elapsed = 0;
     }
@@ -455,12 +427,12 @@ mod tests {
 
     fn testing_timer() -> Timer {
         Timer {
-            config: TimerConfig {
-                cycles: TimerCycles::from([
+            schedule: TimerSchedule {
+                cycles: vec![
                     TimerCycle::new("a", 3),
                     TimerCycle::new("b", 2),
                     TimerCycle::new("c", 1),
-                ]),
+                ],
                 ..Default::default()
             },
             state: TimerState::Running,
@@ -539,12 +511,12 @@ mod tests {
 
     #[test]
     fn timer_lifecycle() {
-        let mut timer = Timer::new(TimerConfig {
-            cycles: TimerCycles::from([
+        let mut timer = Timer::new(TimerSchedule {
+            cycles: vec![
                 TimerCycle::new("a", 3),
                 TimerCycle::new("b", 2),
                 TimerCycle::new("c", 1),
-            ]),
+            ],
             ..Default::default()
         });
 
@@ -688,9 +660,9 @@ mod tests {
 
     #[test]
     fn a_completed_timer_says_so_and_resets() {
-        let mut timer = Timer::new(TimerConfig {
-            cycles: TimerCycles::from([TimerCycle::new("a", 2), TimerCycle::new("b", 1)]),
-            cycles_count: TimerLoop::Fixed(2),
+        let mut timer = Timer::new(TimerSchedule {
+            cycles: vec![TimerCycle::new("a", 2), TimerCycle::new("b", 1)],
+            loops: TimerLoop::Fixed(2),
         });
 
         timer.start(0);
@@ -715,8 +687,8 @@ mod tests {
 
     #[test]
     fn a_single_looping_cycle_announces_every_round() {
-        let mut timer = Timer::new(TimerConfig {
-            cycles: TimerCycles::from([TimerCycle::new("a", 2)]),
+        let mut timer = Timer::new(TimerSchedule {
+            cycles: vec![TimerCycle::new("a", 2)],
             ..Default::default()
         });
 
@@ -738,8 +710,8 @@ mod tests {
 
     #[test]
     fn two_cycles_sharing_a_name_are_still_two_cycles() {
-        let mut timer = Timer::new(TimerConfig {
-            cycles: TimerCycles::from([TimerCycle::new("a", 2), TimerCycle::new("a", 3)]),
+        let mut timer = Timer::new(TimerSchedule {
+            cycles: vec![TimerCycle::new("a", 2), TimerCycle::new("a", 3)],
             ..Default::default()
         });
 
@@ -787,8 +759,8 @@ mod tests {
 
     #[test]
     fn cycles_lasting_no_time_are_inert() {
-        let mut timer = Timer::new(TimerConfig {
-            cycles: TimerCycles::from([TimerCycle::new("a", 0)]),
+        let mut timer = Timer::new(TimerSchedule {
+            cycles: vec![TimerCycle::new("a", 0)],
             ..Default::default()
         });
 

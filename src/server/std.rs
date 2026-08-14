@@ -32,7 +32,7 @@ use crate::{
         Jsonrpc20Error, Jsonrpc20Incoming, Jsonrpc20Outgoing, Jsonrpc20Request, Jsonrpc20Response,
     },
     protocol::{TimerRequest, TimerResponse},
-    timer::{Timer, TimerConfig, TimerEvent},
+    timer::{Timer, TimerEvent, TimerSchedule},
     transport::{TimerAddress, TimerListener, TimerStream},
 };
 
@@ -47,7 +47,7 @@ use crate::{
 /// [`serve`]: TimerServer::serve
 pub struct TimerServer {
     /// The timer configuration.
-    pub config: TimerConfig,
+    pub schedule: TimerSchedule,
     /// The addresses to bind, one listener each.
     pub addresses: Vec<TimerAddress>,
 }
@@ -67,7 +67,7 @@ impl TimerServer {
             .map(TimerListener::bind)
             .collect::<Result<Vec<_>>>()?;
 
-        let timer = Arc::new(Mutex::new(Timer::new(self.config)));
+        let timer = Arc::new(Mutex::new(Timer::new(self.schedule)));
         let (tx, rx) = mpsc::channel();
         let broadcast = TimerBroadcast::new(tx);
 

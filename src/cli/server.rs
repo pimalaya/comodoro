@@ -10,7 +10,7 @@ use alloc::format;
 use anyhow::Result;
 use clap::Subcommand;
 
-use crate::cli::{config::ComodoroAccountConfig, server::start::TimerServerStartCommand};
+use crate::cli::{account::Account, server::start::TimerServerStartCommand};
 
 /// Manage servers.
 ///
@@ -24,7 +24,7 @@ pub enum TimerServerCommand {
 
 impl TimerServerCommand {
     /// Dispatches to the matching server subcommand.
-    pub fn execute(self, account: &mut ComodoroAccountConfig) -> Result<()> {
+    pub fn execute(self, account: &mut Account) -> Result<()> {
         match self {
             Self::Start(cmd) => cmd.execute(account),
         }

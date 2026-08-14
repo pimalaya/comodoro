@@ -29,12 +29,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added the `set` command, exposing the `timer.set` method that was previously reachable on the wire but not from the CLI.
 - Added the `configure` command, which generates an account from one of the documented cycle presets.
 
-  It asks for a preset and nothing else, naming the account after it, then saves the account to the configuration file, appends it to the one already there, or prints it on stdout when the offer is declined, when stdout is redirected (`comodoro configure > config.toml`) or in JSON mode. A bare `comodoro`, which is what a newcomer runs first, and any command that needs an account both open with a welcome naming the configuration file they looked for when they find none, then offer the same wizard, and fall back to the help when the offer is declined. A bare `comodoro` with a configuration already there still shows the help. Appending is a plain text append, so the comments and the formatting already in the file come out untouched, and a name the configuration already holds is suffixed rather than reused, since two `[accounts.<name>]` tables make the whole document fail to parse. The generated account claims `default` only when no other account does. Anything beyond the presets, meaning custom cycles, the TCP transport, the socket path, the display precision and the hooks, is still written by hand against config.sample.toml.
+  It asks two questions, the cycle preset and the endpoints to serve the timer over, both the local socket and TCP on loopback port 9999 being ticked by default, then names the account after the preset and saves it to the configuration file, appends it to the one already there, or prints it on stdout when the offer is declined, when stdout is redirected (`comodoro configure > config.toml`) or in JSON mode. A bare `comodoro`, which is what a newcomer runs first, and any command that needs an account both open with a welcome naming the configuration file they looked for when they find none, then offer the same wizard. The offer is a hook rather than a gate: a command runs afterwards either way, so accepting is what gives it a chance to work and declining leaves it to fail on the configuration it still has not got. A bare `comodoro` has nothing to run, so it shows the help, which is also what it shows when a configuration is already there. Appending is a plain text append, so the comments and the formatting already in the file come out untouched, and a name the configuration already holds is suffixed rather than reused, since two `[accounts.<name>]` tables make the whole document fail to parse. The generated account claims `default` only when no other account does. Anything beyond the presets, meaning custom cycles, the TCP transport, the socket path, the display precision and the hooks, is still written by hand against config.sample.toml.
 
 - Added the `transport` module, holding `TimerAddress`, the `TimerStream` connection and the `TimerListener` accepting them, so both transports carry the protocol behind one type.
 - Added the repository skeleton the Pimalaya guidelines require: a cairn/ folder with its AGENTS.md activation stanza, SECURITY.md, and the tests and audit CI workflows.
 
 ### Changed
+
+- **BREAKING** Renamed `TimerConfig` to `TimerSchedule`, and its `cycles_count` field to `loops`.
+
+  A CLI has a configuration of its own, and this was never it: the struct says what a timer runs, its ordered cycles and how many full loops of them. `loops` also stops the field from reading as a count of cycles, which is what `cycles_count` suggested and never meant. `Timer` carries it as `schedule`, and so does `TimerServer`. The account table keeps its `cycles-count` key, since a 1.x configuration still has to load.
+
+- **BREAKING** Removed `Timer::cycles_count`, which duplicated the schedule's own loop count.
+
+  It was written on creation, start and reset, always from the configured value, read once, and never decremented despite saying so. The completion check reads the schedule directly, so a timer now holds one loop count instead of two, and `timer.get` answers with one instead of the same number under two names.
+
+- **BREAKING** Replaced the `TimerCycles` wrapper with the `Vec<TimerCycle>` it wrapped.
+
+  It serialized transparently and dereferenced to the vector, so it was already a vector everywhere but in the type name, and the `From` impl it added is what `vec!` gives for free. `TimerSchedule { cycles }` now holds the vector itself, and no wire shape changes.
 
 - **BREAKING** Renamed the `unix-socket` configuration table to `socket`, and made its `path` optional.
 
@@ -52,13 +64,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
   `TimerRequest::Update` is gone, since the tick belongs to the server rather than to the wire, and `Subscribe` and `Unsubscribe` joined. `TimerEvent` now serializes adjacently, as `{"event": "began", "cycle": {…}}`.
 
-- **BREAKING** Prefixed every public item with its domain, per the Pimalaya naming guidelines.
+- **BREAKING** Prefixed every library item with its domain, per the Pimalaya naming guidelines.
 
-  `Config`, `AccountConfig` and `ConfigPathsArg` gained the `Comodoro` prefix, `ServerSubcommand` became `TimerServerCommand`, and `StartServerCommand` became `TimerServerStartCommand`.
+  `ServerSubcommand` became `TimerServerCommand` and `StartServerCommand` became `TimerServerStartCommand`. The `cli` module is the exception: `Cli`, `Command`, `Config`, `AccountConfig`, `Transport` and their neighbours carry no product prefix, since nothing under it is meant to be consumed as a library.
 
 - **BREAKING** Moved everything the CLI needs under the `cli` module, so its cargo feature gates one subtree rather than a scattering of items.
 
-  `config` became `cli::config`, `hooks` became `cli::hook`, the transport selection moved to `cli::transport`, and each command now has its own module: `cli::client::{get, start, pause, resume, stop, set, watch}` and `cli::server::start`. What stays outside is what a library consumer can use without clap: `timer`, `protocol`, `jsonrpc20`, `transport`, `client` and `server`.
+  `config` became `cli::config`, `hooks` became `cli::hook`, the transport selection moved to `cli::transport`, and each command now has its own module: `cli::client::{get, start, pause, resume, stop, set, watch}` and `cli::server::start`. `cli::config` holds the TOML document alone, and the merged view every command runs against is `cli::account::Account`, resolved from it. What stays outside is what a library consumer can use without clap: `timer`, `protocol`, `jsonrpc20`, `transport`, `client` and `server`.
 
 - **BREAKING** Replaced the io-hook, io-notify and io-process dependencies with an in-crate hook module.
 

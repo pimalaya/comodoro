@@ -5,15 +5,15 @@
 //! This is the layer that compiles under no_std, and the reason the
 //! interesting behaviour is testable without a socket or a clock.
 
-use comodoro::timer::{Timer, TimerConfig, TimerCycle, TimerCycles, TimerLoop};
+use comodoro::timer::{Timer, TimerCycle, TimerLoop, TimerSchedule};
 
 fn main() {
-    let config = TimerConfig {
-        cycles: TimerCycles::from([TimerCycle::new("Work", 3), TimerCycle::new("Rest", 2)]),
-        cycles_count: TimerLoop::Fixed(2),
+    let schedule = TimerSchedule {
+        cycles: vec![TimerCycle::new("Work", 3), TimerCycle::new("Rest", 2)],
+        loops: TimerLoop::Fixed(2),
     };
 
-    let mut timer = Timer::new(config);
+    let mut timer = Timer::new(schedule);
 
     println!("start at t=0:");
     for event in timer.start(0) {

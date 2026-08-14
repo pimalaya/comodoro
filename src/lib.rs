@@ -33,6 +33,7 @@
 //! The CLI arrives with the `cli` feature, and lives entirely under
 //! [`cli`]: the command grammar, [`cli::config`] for the TOML
 //! configuration and [`cli::configure`] for generating one,
+//! [`cli::account`] for the resolved view every command runs against,
 //! [`cli::hook`] for the reactions run when the timer emits an event,
 //! and one module per command under [`cli::client`] and [`cli::server`].
 //! One feature therefore gates one subtree.

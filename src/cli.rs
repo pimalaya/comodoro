@@ -11,11 +11,13 @@
 //!
 //! Everything the CLI needs lives under this module, so the `cli`
 //! feature gates one subtree rather than a scattering of items:
-//! [`config`] reads the TOML document, [`configure`] generates one,
-//! [`transport`] selects the one a command talks over, [`hook`] runs
-//! the reactions bound to timer events, and [`client`] and [`server`]
-//! hold one module per command.
+//! [`config`] holds the TOML document, [`account`] the resolved view a
+//! command runs against, [`configure`] the wizard writing a document,
+//! [`transport`] the selection of the one a command talks over,
+//! [`hook`] the reactions bound to timer events, and [`client`] and
+//! [`server`] one module per command.
 
+pub mod account;
 pub mod client;
 pub mod config;
 pub mod configure;
@@ -28,7 +30,6 @@ use alloc::{format, string::String, vec::Vec};
 use std::{
     io::{IsTerminal, stdin},
     path::{Path, PathBuf},
-    process::exit,
 };
 
 use anyhow::{Result, bail};
@@ -47,13 +48,14 @@ use pimalaya_cli::{
 use pimalaya_config::toml::TomlConfig;
 
 use crate::cli::{
+    account::Account,
     client::{
         get::TimerGetCommand, pause::TimerPauseCommand, resume::TimerResumeCommand,
         set::TimerSetCommand, start::TimerStartCommand, stop::TimerStopCommand,
         watch::TimerWatchCommand,
     },
-    config::{CONFIG_SAMPLE_URL, ComodoroAccountConfig, ComodoroConfig},
-    configure::ComodoroConfigureCommand,
+    config::{CONFIG_SAMPLE_URL, Config},
+    configure::ConfigureCommand,
     server::TimerServerCommand,
 };
 
@@ -79,7 +81,7 @@ pub struct Cli {
     pub cmd: Option<Command>,
     /// The configuration file(s) to read the account from.
     #[command(flatten)]
-    pub config: ComodoroConfigPathsArg,
+    pub config: ConfigPathsArg,
     /// The account the command applies to.
     #[command(flatten)]
     pub account: AccountFlag,
@@ -96,7 +98,7 @@ pub struct Cli {
 pub enum Command {
     /// Configure an account interactively.
     #[command(visible_alias = "wizard")]
-    Configure(ComodoroConfigureCommand),
+    Configure(ConfigureCommand),
     /// Manage the timer servers.
     #[command(arg_required_else_help = true)]
     #[command(subcommand)]
@@ -139,19 +141,25 @@ impl Cli {
         let account_name = self.account.name.as_deref();
 
         let Some(cmd) = self.cmd else {
-            let configured = ComodoroConfig::from_paths_or_default(config_paths)
+            let configured = Config::from_paths_or_default(config_paths)
                 .ok()
                 .flatten()
                 .is_some();
 
-            if configured || printer.is_json() || !stdin().is_terminal() {
-                Cli::command().print_help()?;
-                return Ok(());
+            if !configured && !printer.is_json() && stdin().is_terminal() {
+                let path = Config::target_path(config_paths)?;
+
+                // NOTE: a bare invocation has nothing to run after the
+                // offer, so a declined one falls back to the help. The
+                // wizard already says what to run next when it ran.
+                if offer_configuration(printer, config_paths, &path)? {
+                    return Ok(());
+                }
             }
 
-            let path = ComodoroConfig::target_path(config_paths)?;
+            Cli::command().print_help()?;
 
-            return offer_configuration(printer, config_paths, &path);
+            return Ok(());
         };
 
         cmd.execute(printer, config_paths, account_name)
@@ -213,7 +221,7 @@ impl Command {
 
 /// Path(s) to the TOML configuration file(s).
 #[derive(Debug, Default, Parser)]
-pub struct ComodoroConfigPathsArg {
+pub struct ConfigPathsArg {
     /// Override the default configuration file path.
     ///
     /// The given paths are shell-expanded then canonicalized (if
@@ -226,64 +234,72 @@ pub struct ComodoroConfigPathsArg {
     pub paths: Vec<PathBuf>,
 }
 
-/// Welcomes, then offers to generate a first configuration, falling
-/// back to the help when the offer is declined.
+/// Welcomes, then offers to generate a first configuration. Returns
+/// whether the wizard ran.
 ///
 /// Raised from the two places nothing can happen without a
 /// configuration: a bare invocation, and a command that needs an
-/// account. Only the caller knows what to do afterwards, so this one
-/// just runs the offer.
+/// account. It is a hook rather than a gate, so declining it decides
+/// nothing: what happens next is the caller's business, and for a
+/// command that is simply carrying on.
 fn offer_configuration(
     printer: &mut impl Printer,
     config_paths: &[PathBuf],
     path: &Path,
-) -> Result<()> {
+) -> Result<bool> {
     configure::print_welcome(path);
 
-    if prompt::bool("Create a configuration with a default account?", true)? {
-        return ComodoroConfigureCommand.execute(printer, config_paths);
+    if !prompt::bool("Create a configuration with a default account?", true)? {
+        return Ok(false);
     }
 
-    Cli::command().print_help()?;
+    ConfigureCommand.execute(printer, config_paths)?;
 
-    Ok(())
+    Ok(true)
 }
 
-/// Loads the configuration and takes the account the command runs
-/// against, the one `-a` names or the one marked as default.
+/// Loads the configuration, takes the account the command runs against,
+/// the one `-a` names or the one marked as default, and resolves it into
+/// the [`Account`] the command consumes.
 ///
 /// A missing configuration is met with the wizard rather than with an
-/// error: the welcome frames what Comodoro is, then the offer either
-/// generates a first account or falls back to the help, and the process
-/// stops there either way. The two other failures name what is missing
-/// and how to pick an account.
+/// error: the welcome frames what Comodoro is and offers to generate an
+/// account, then the command carries on either way. Accepting is what
+/// gives it a chance to work; declining leaves it to fail on the
+/// configuration it still has not got. The two other failures name what
+/// is missing and how to pick an account.
 fn take_account(
     printer: &mut impl Printer,
     config_paths: &[PathBuf],
     account_name: Option<&str>,
-) -> Result<ComodoroAccountConfig> {
-    let Some(mut config) = ComodoroConfig::from_paths_or_default(config_paths)? else {
-        // NOTE: the target path is where `-c` pointed, or the default
-        // location when it named none, so a mistyped path shows up as
-        // itself rather than as a generic first run.
-        let path = ComodoroConfig::target_path(config_paths)?;
+) -> Result<Account> {
+    let mut config = match Config::from_paths_or_default(config_paths)? {
+        Some(config) => config,
+        None => {
+            // NOTE: the target path is where `-c` pointed, or the
+            // default location when it named none, so a mistyped path
+            // shows up as itself rather than as a generic first run.
+            let path = Config::target_path(config_paths)?;
 
-        // NOTE: nobody is there to answer a prompt in a script or a
-        // cron job, and a JSON consumer wants a failure it can read, so
-        // both get the pointer rather than the offer.
-        if printer.is_json() || !stdin().is_terminal() {
-            bail!(
-                "No configuration found at {}, run `comodoro configure` to generate one or write it by hand: {CONFIG_SAMPLE_URL}",
-                path.display(),
-            );
+            // NOTE: nobody is there to answer a prompt in a script or a
+            // cron job, and a JSON consumer wants a failure it can
+            // read, so both skip the offer and fail below.
+            if !printer.is_json() && stdin().is_terminal() {
+                offer_configuration(printer, config_paths, &path)?;
+            }
+
+            // NOTE: the wizard also prints the account instead of
+            // writing it, so having run it proves nothing: the
+            // configuration is looked up again, and the command fails
+            // the ordinary way when nothing landed.
+            match Config::from_paths_or_default(config_paths)? {
+                Some(config) => config,
+                None => bail!(
+                    "No configuration found at {}, run `comodoro configure` to generate one or write it by hand: {CONFIG_SAMPLE_URL}",
+                    path.display(),
+                ),
+            }
         }
-
-        offer_configuration(printer, config_paths, &path)?;
-
-        // NOTE: the command that raised the offer is not resumed: the
-        // account it wanted may not be the one just generated, and no
-        // server is running behind it yet.
-        exit(0);
     };
 
     // NOTE: an empty name and `default` both mean the default account,
@@ -306,5 +322,5 @@ fn take_account(
         );
     };
 
-    Ok(account)
+    Ok(account.into())
 }

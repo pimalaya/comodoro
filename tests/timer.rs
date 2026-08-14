@@ -13,17 +13,17 @@ use std::{
 use comodoro::{
     client::std::TimerClient,
     server::std::TimerServer,
-    timer::{TimerConfig, TimerCycle, TimerCycles, TimerEvent, TimerLoop, TimerState},
+    timer::{TimerCycle, TimerEvent, TimerLoop, TimerSchedule, TimerState},
     transport::TimerAddress,
 };
 
 static NEXT_SOCKET: AtomicUsize = AtomicUsize::new(0);
 
 /// The cycles every server in this file runs.
-fn config() -> TimerConfig {
-    TimerConfig {
-        cycles: TimerCycles::from([TimerCycle::new("Work", 1500), TimerCycle::new("Break", 300)]),
-        cycles_count: TimerLoop::Infinite,
+fn schedule() -> TimerSchedule {
+    TimerSchedule {
+        cycles: vec![TimerCycle::new("Work", 1500), TimerCycle::new("Break", 300)],
+        loops: TimerLoop::Infinite,
     }
 }
 
@@ -37,7 +37,7 @@ fn serve() -> (TimerClient, PathBuf) {
     let address = TimerAddress::UnixSocket(path.clone());
 
     let events = TimerServer {
-        config: config(),
+        schedule: schedule(),
         addresses: vec![address.clone()],
     }
     .serve()
@@ -215,7 +215,7 @@ fn a_second_server_refuses_a_socket_in_use() {
     let (_client, path) = serve();
 
     let err = TimerServer {
-        config: config(),
+        schedule: schedule(),
         addresses: vec![TimerAddress::UnixSocket(path.clone())],
     }
     .serve()
@@ -241,7 +241,7 @@ fn both_transports_serve_the_same_timer() {
     };
 
     let events = TimerServer {
-        config: config(),
+        schedule: schedule(),
         addresses: vec![socket.clone(), tcp.clone()],
     }
     .serve()
@@ -271,7 +271,7 @@ fn a_second_server_refuses_a_port_in_use() {
     };
 
     let events = TimerServer {
-        config: config(),
+        schedule: schedule(),
         addresses: vec![address.clone()],
     }
     .serve()
@@ -280,7 +280,7 @@ fn a_second_server_refuses_a_port_in_use() {
     thread::spawn(move || while events.recv().is_ok() {});
 
     let err = TimerServer {
-        config: config(),
+        schedule: schedule(),
         addresses: vec![address],
     }
     .serve()

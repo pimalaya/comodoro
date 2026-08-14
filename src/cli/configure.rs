@@ -1,18 +1,18 @@
 //! Command generating a timer account.
 //!
-//! The wizard generates, it never edits: it asks for a cycle preset,
-//! names the account after it, then hands the resulting
-//! `[accounts.<name>]` table back as a file to create, a block to
-//! append, or a document on stdout. Everything it does not cover,
-//! meaning custom cycles, the TCP transport, the socket path, the
-//! display precision and the hooks, is written by hand against the
-//! documented sample.
+//! The wizard generates, it never edits: it asks for a cycle preset and
+//! for the endpoints to serve the timer over, names the account after
+//! the preset, then hands the resulting `[accounts.<name>]` table back
+//! as a file to create, a block to append, or a document on stdout.
+//! Everything it does not cover, meaning custom cycles, a socket path
+//! or a TCP endpoint other than the default one, the display precision
+//! and the hooks, is written by hand against the documented sample.
 //!
 //! It runs from `comodoro configure`, and from the offer a bare
 //! `comodoro` or a command needing an account raises when it finds no
 //! configuration file. That offer is the only place the wizard
 //! introduces itself, with a welcome naming the file that is missing:
-//! the command asked for by name goes straight to the prompt.
+//! the command asked for by name goes straight to the prompts.
 //!
 //! Appending is a plain text append rather than a re-serialization of
 //! the whole file, so comments, ordering and hand-written formatting
@@ -32,6 +32,7 @@ use alloc::{
 };
 
 use std::{
+    collections::HashMap,
     eprintln,
     fs::{self, OpenOptions},
     io::{IsTerminal, Write, stdin, stdout},
@@ -45,24 +46,26 @@ use pimalaya_config::toml::TomlConfig;
 use serde::Serialize;
 
 use crate::{
-    cli::config::{CONFIG_SAMPLE_URL, ComodoroConfig},
-    timer::TimerCycle,
+    cli::config::{AccountConfig, CONFIG_SAMPLE_URL, Config, LOCALHOST, SocketConfig, TcpConfig},
+    timer::{TimerCycle, TimerPrecision},
 };
 
 /// Configure a timer account.
 ///
-/// This command asks for one of the documented cycle presets, then
-/// saves the resulting account to the configuration file, appends it to
-/// the one already there, or prints it for you to place by hand.
-/// Anything the presets do not cover is written by hand.
+/// This command asks for one of the documented cycle presets and for
+/// the endpoints to serve the timer over, then saves the resulting
+/// account to the configuration file, appends it to the one already
+/// there, or prints it for you to place by hand. Anything the presets
+/// do not cover is written by hand.
 #[derive(Debug, Parser)]
-pub struct ComodoroConfigureCommand;
+pub struct ConfigureCommand;
 
-impl ComodoroConfigureCommand {
-    /// Asks for a preset, then saves, appends or prints the account.
+impl ConfigureCommand {
+    /// Asks the two questions, then saves, appends or prints the
+    /// account.
     ///
-    /// One question, and no welcome: whoever typed the command knows
-    /// what it does. The banner belongs to the offer a missing
+    /// No welcome: whoever typed the command knows what it does. The
+    /// banner belongs to the offer a missing
     /// configuration raises, which is where the wizard meets someone
     /// who did not ask for it. The account name is not asked either,
     /// since it is only the TOML table key, and renaming it is one edit
@@ -75,12 +78,20 @@ impl ComodoroConfigureCommand {
     pub fn execute(self, printer: &mut impl Printer, config_paths: &[PathBuf]) -> Result<()> {
         if !stdin().is_terminal() {
             bail!(
-                "Configuring needs a terminal to prompt on, write the configuration by hand instead: {CONFIG_SAMPLE_URL}"
+                "Configuring needs a terminal to prompt on, \
+		 write the configuration by hand instead: {CONFIG_SAMPLE_URL}"
             );
         }
 
-        let preset = prompt::item("Timer:", TimerPreset::ALL, Some(TimerPreset::Pomodoro))?;
-        let path = ComodoroConfig::target_path(config_paths)?;
+        let preset = prompt::item(
+            "Timer style:",
+            TimerPreset::ALL,
+            Some(TimerPreset::Pomodoro),
+        )?;
+
+        let endpoints = prompt::items("Serve the timer over:", TimerEndpoint::ALL, [0, 1])?;
+
+        let path = Config::target_path(config_paths)?;
         let existing = ExistingConfig::read(&path)?;
         let name = account_name(preset, existing.as_ref());
 
@@ -88,9 +99,10 @@ impl ComodoroConfigureCommand {
         // command picks depend on map ordering, so the generated one
         // claims the default only when no other account does.
         let default = !existing.as_ref().is_some_and(|config| config.has_default);
+        let account = preset.account(default, &endpoints);
 
         let config = GeneratedConfig {
-            document: render(&name, default, preset),
+            document: account.render(&name),
             name,
             default,
         };
@@ -106,35 +118,39 @@ impl ComodoroConfigureCommand {
     }
 }
 
-/// Renders the account the way the sample configuration writes one: one
-/// cycle per line, `name` before `duration`.
+/// The TCP port the wizard configures, the one the sample
+/// configuration illustrates.
 ///
-/// Hand-rendered rather than serialized, because the shared serializer
-/// renders a whole array on one line. That suits the short arrays the
-/// other Pimalaya wizards emit, and turns a six-cycle pomodoro into a
-/// two-hundred-column line, in a document whose whole point is to be
-/// edited by hand afterwards.
+/// The `tcp` table has no port default on purpose, since an account
+/// opens a port only by saying so, and the wizard says so on behalf of
+/// whoever ticks TCP.
+const TCP_PORT: u16 = 9999;
+
+/// The endpoints the wizard offers to serve the timer over.
 ///
-/// Nothing here needs escaping: the cycles come from the presets, and
-/// so does the account name, which is a bare TOML key by construction.
-fn render(name: &str, default: bool, preset: TimerPreset) -> String {
-    let mut document = format!("[accounts.{name}]\n");
+/// Both are ticked by default. Neither takes a custom address here:
+/// the socket keeps its default path, TCP keeps loopback and
+/// [`TCP_PORT`], and moving either is one edit in the generated file.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum TimerEndpoint {
+    /// The local socket, at its default path.
+    Socket,
+    /// The TCP endpoint, on loopback.
+    Tcp,
+}
 
-    if default {
-        document.push_str("default = true\n");
+impl TimerEndpoint {
+    /// Every endpoint, in the order the prompt lists them.
+    const ALL: [Self; 2] = [Self::Socket, Self::Tcp];
+}
+
+impl fmt::Display for TimerEndpoint {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Socket => write!(f, "Local socket, no port, guarded by file permissions"),
+            Self::Tcp => write!(f, "TCP on loopback port {TCP_PORT}, unauthenticated"),
+        }
     }
-
-    document.push_str("cycles = [\n");
-
-    for TimerCycle { name, duration } in preset.cycles() {
-        document.push_str(&format!(
-            "  {{ name = \"{name}\", duration = {duration} }},\n"
-        ));
-    }
-
-    document.push_str("]\n");
-
-    document
 }
 
 /// The cycle presets the wizard offers, the three documented in the
@@ -161,6 +177,35 @@ impl TimerPreset {
         Self::FiftyTwoSeventeen,
         Self::HundredTwelveTwentySix,
     ];
+
+    /// The account this preset and the chosen endpoints generate.
+    ///
+    /// Only what was chosen lands in it, so the document the wizard
+    /// writes holds no field the answers did not set: the local socket
+    /// needs no table at all, since its default path is what an absent
+    /// `socket` table means, and TCP takes its port and leaves the host
+    /// to the loopback default.
+    fn account(self, default: bool, endpoints: &[TimerEndpoint]) -> AccountConfig {
+        let tcp = endpoints.contains(&TimerEndpoint::Tcp).then(|| TcpConfig {
+            // NOTE: the server binds its socket whatever the account
+            // says, so an account that asked for TCP alone cannot have
+            // the socket taken away. What it gets instead is TCP as the
+            // transport its commands talk over unless one names another.
+            default: !endpoints.contains(&TimerEndpoint::Socket),
+            host: LOCALHOST.to_string(),
+            port: TCP_PORT,
+        });
+
+        AccountConfig {
+            default,
+            socket: SocketConfig::default(),
+            tcp,
+            cycles: self.cycles(),
+            cycles_count: None,
+            precision: TimerPrecision::default(),
+            hooks: HashMap::new(),
+        }
+    }
 
     /// The account name proposed for this preset.
     fn account_name(self) -> &'static str {
@@ -222,7 +267,7 @@ impl ExistingConfig {
             return Ok(None);
         }
 
-        let config = ComodoroConfig::from_paths(&[path.to_path_buf()])
+        let config = Config::from_paths(&[path.to_path_buf()])
             .with_context(|| format!("Read the configuration at {}", path.display()))?;
 
         Ok(Some(Self {
@@ -267,12 +312,18 @@ pub(crate) fn print_welcome(path: &Path) {
     eprintln!("Comodoro runs a shared timer: one server owns it, any number of clients");
     eprintln!("drive it and watch it. It needs one account to know which cycles to run,");
     eprintln!("and no configuration file was found at:");
+    eprintln!();
     eprintln!("  {}", path.display());
     eprintln!();
     eprintln!("The wizard sets up one account from a documented preset. Custom cycles,");
-    eprintln!("the TCP transport, the socket path, the display precision and the hooks");
-    eprintln!("are written by hand, and every field is documented at:");
+    eprintln!("the socket path, the display precision and the hooks are written by hand,");
+    eprintln!("and every field is documented at:");
+    eprintln!();
     eprintln!("  {CONFIG_SAMPLE_URL}");
+    eprintln!();
+    eprintln!("At anytime, you can create a new account with the command:");
+    eprintln!();
+    eprintln!("  comodoro configure");
     eprintln!();
 }
 
@@ -397,8 +448,10 @@ mod tests {
 
     #[test]
     fn a_generated_account_parses_back() {
-        let document = render("pomodoro", true, TimerPreset::Pomodoro);
-        let config: ComodoroConfig = toml::from_str(&document).expect("parse the generated config");
+        let document = TimerPreset::Pomodoro
+            .account(true, &TimerEndpoint::ALL)
+            .render("pomodoro");
+        let config: Config = toml::from_str(&document).expect("parse the generated config");
         let account = &config.accounts["pomodoro"];
 
         assert_eq!(config.accounts.len(), 1);
@@ -414,7 +467,37 @@ mod tests {
         // One cycle per line, in the order and the shape the sample
         // configuration documents.
         assert!(document.contains("  { name = \"Work\", duration = 1500 },\n"));
-        assert_eq!(document.lines().count(), 10);
+        assert_eq!(document.lines().count(), 11);
+    }
+
+    #[test]
+    fn the_endpoints_decide_the_tcp_table() {
+        let tcp = |endpoints: &[TimerEndpoint]| {
+            let document = TimerPreset::Pomodoro
+                .account(true, endpoints)
+                .render("pomodoro");
+            let mut config: Config = toml::from_str(&document).expect("parse the account");
+            config
+                .accounts
+                .remove("pomodoro")
+                .expect("the generated account")
+                .tcp
+        };
+
+        // Both endpoints, which is what the prompt ticks by default:
+        // the socket needs no table, TCP takes the port and leaves the
+        // host to its loopback default.
+        let both = tcp(&TimerEndpoint::ALL).expect("a tcp table");
+        assert_eq!(both.port, TCP_PORT);
+        assert_eq!(both.host, "127.0.0.1");
+        assert!(!both.default);
+
+        // The socket alone opens no port at all.
+        assert!(tcp(&[TimerEndpoint::Socket]).is_none());
+
+        // TCP alone cannot take the socket away, since the server binds
+        // it regardless, so it claims the default instead.
+        assert!(tcp(&[TimerEndpoint::Tcp]).expect("a tcp table").default);
     }
 
     #[test]
@@ -436,13 +519,15 @@ mod tests {
         assert_eq!(existing.names, ["work"]);
         assert!(existing.has_default);
 
-        let document = render("pomodoro", !existing.has_default, TimerPreset::Pomodoro);
+        let document = TimerPreset::Pomodoro
+            .account(!existing.has_default, &TimerEndpoint::ALL)
+            .render("pomodoro");
         let mut file = OpenOptions::new().append(true).open(&path).expect("open");
         write!(file, "\n{document}").expect("append the generated account");
         drop(file);
 
         let content = fs::read_to_string(&path).expect("read back");
-        let config: ComodoroConfig = toml::from_str(&content).expect("parse the appended config");
+        let config: Config = toml::from_str(&content).expect("parse the appended config");
 
         assert_eq!(config.accounts.len(), 2);
         assert_eq!(config.accounts["work"].cycles.len(), 1);

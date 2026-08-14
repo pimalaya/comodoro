@@ -35,7 +35,7 @@ fn a_string_command_runs_through_a_shell() {
     // The redirection is the point: it only works if a shell parses the
     // line rather than the kernel executing it as a program name.
     let mut hook = hook(&format!(r#"command = "echo hooked >> {}""#, path.display()));
-    hook.execute().unwrap();
+    hook.execute();
 
     assert_eq!(fs::read_to_string(&path).unwrap().trim(), "hooked");
     let _ = fs::remove_file(path);
@@ -49,28 +49,27 @@ fn an_array_command_executes_with_no_shell() {
     // A shell would read the `>` as a redirection. Executed directly,
     // it is one more character in the file name.
     let mut hook = hook(&format!(r#"command = ["touch", "{}"]"#, path.display()));
-    hook.execute().unwrap();
+    hook.execute();
 
     assert!(path.exists(), "{}", path.display());
     let _ = fs::remove_file(path);
 }
 
+// A hook is a reaction, never a step of the timer, so the two ways one
+// can fail are logged and returned from as if nothing happened. The
+// assertion is the absence of a panic: there is no error left to catch,
+// and a hook taking the timer down with it is the thing these two
+// forbid.
+
 #[cfg(unix)]
 #[test]
-fn a_command_exiting_non_zero_is_not_an_error() {
-    let mut hook = hook(r#"command = ["false"]"#);
-
-    // A hook is a reaction, not a step of the timer: a failing one is
-    // logged and the timer carries on.
-    assert!(hook.execute().is_ok());
+fn a_command_exiting_non_zero_is_inert() {
+    hook(r#"command = ["false"]"#).execute();
 }
 
 #[test]
-fn a_missing_program_is_an_error() {
-    let mut hook = hook(r#"command = ["comodoro-hook-does-not-exist"]"#);
-
-    let err = hook.execute().unwrap_err().to_string();
-    assert_eq!(err, "Run hook command error");
+fn a_missing_program_is_inert() {
+    hook(r#"command = ["comodoro-hook-does-not-exist"]"#).execute();
 }
 
 #[test]

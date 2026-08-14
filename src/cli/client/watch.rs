@@ -5,7 +5,7 @@ use clap::Parser;
 use pimalaya_cli::printer::Printer;
 
 use crate::{
-    cli::{client::DisplayTimer, config::ComodoroAccountConfig, transport::ComodoroTransportArg},
+    cli::{account::Account, client::timer::DisplayTimer, transport::TransportArg},
     client::std::TimerClient,
 };
 
@@ -19,16 +19,12 @@ pub struct TimerWatchCommand {
     /// The transport used to reach the server.
     /// The transport used to reach the server.
     #[command(flatten)]
-    pub transport: ComodoroTransportArg,
+    pub transport: TransportArg,
 }
 
 impl TimerWatchCommand {
     /// Prints the timer state on every event the server pushes.
-    pub fn execute(
-        self,
-        printer: &mut impl Printer,
-        account: &ComodoroAccountConfig,
-    ) -> Result<()> {
+    pub fn execute(self, printer: &mut impl Printer, account: &Account) -> Result<()> {
         let address = account.address(self.transport.transport)?;
         let mut client = TimerClient::connect(&address)?;
         client.subscribe()?;

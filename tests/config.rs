@@ -1,23 +1,22 @@
-//! Coverage of the account configuration, and of the transport it
-//! resolves a command to.
+//! Coverage of the account configuration, from the TOML shapes
+//! config.sample.toml documents to the addresses they resolve a command
+//! to once folded into an account.
 
 use comodoro::{
-    cli::{
-        config::{ComodoroAccountConfig, ComodoroConfig},
-        transport::ComodoroTransport,
-    },
+    cli::{account::Account, config::Config, transport::Transport},
     transport::TimerAddress,
 };
 use pimalaya_config::toml::TomlConfig;
 
-/// Deserializes `toml` and takes its only account.
-fn account(toml: &str) -> ComodoroAccountConfig {
-    let mut config: ComodoroConfig = toml::from_str(toml).expect("deserialize config");
+/// Deserializes `toml`, takes its only account and resolves it the way
+/// the dispatch layer does.
+fn account(toml: &str) -> Account {
+    let mut config: Config = toml::from_str(toml).expect("deserialize config");
     let (_, account) = config
         .take_account(Some("example"))
         .expect("take account")
         .expect("account found");
-    account
+    account.into()
 }
 
 #[test]
@@ -39,7 +38,7 @@ fn a_v1_account_file_loads_unchanged() {
         TimerAddress::UnixSocket("/tmp/comodoro.sock".into())
     );
     assert_eq!(
-        account.address(Some(ComodoroTransport::Tcp)).unwrap(),
+        account.address(Some(Transport::Tcp)).unwrap(),
         TimerAddress::Tcp {
             host: "127.0.0.1".into(),
             port: 9999
@@ -98,7 +97,7 @@ fn an_account_without_tcp_binds_the_socket_alone() {
     assert!(matches!(addresses[0], TimerAddress::UnixSocket(_)));
 
     let err = account
-        .address(Some(ComodoroTransport::Tcp))
+        .address(Some(Transport::Tcp))
         .unwrap_err()
         .to_string();
     assert_eq!(err, "Missing TCP configuration");
@@ -127,7 +126,7 @@ fn a_server_binds_every_configured_transport() {
     );
 
     assert_eq!(
-        account.addresses(&[ComodoroTransport::Tcp]).unwrap(),
+        account.addresses(&[Transport::Tcp]).unwrap(),
         [TimerAddress::Tcp {
             host: "127.0.0.1".into(),
             port: 9999

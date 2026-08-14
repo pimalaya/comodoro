@@ -21,7 +21,7 @@ default = ["client", "server", "cli", "notify"]
 client = ["dep:anyhow"]
 server = ["dep:anyhow"]
 cli = ["client", "server", "dep:clap", "dep:convert_case", "dep:pimalaya-cli", "dep:pimalaya-config"]
-notify = ["cli", "dep:notify-rust", "notify-rust/d"]
+notify = ["dep:notify-rust", "notify-rust/d"]
 vendored = ["notify-rust?/d_vendored"]
 
 [[bin]]

@@ -102,7 +102,7 @@ nix run
 
 ## Configuration
 
-Run `comodoro` with no command on a machine that has no configuration: it offers to generate a first account from one of the documented presets, and either saves it, appends it to the configuration already there, or prints it for you to place. `comodoro configure` runs the same wizard on demand, and any command needing an account offers it too. Declining shows the help. Everything beyond those presets is written by hand. A configuration is loaded from the first valid path among:
+Run `comodoro` with no command on a machine that has no configuration: it offers to generate a first account, asking for a cycle preset and for the endpoints to serve the timer over, then either saves it, appends it to the configuration already there, or prints it for you to place. `comodoro configure` runs the same wizard on demand, and any command needing an account offers it too, then carries on. Everything beyond those presets is written by hand. A configuration is loaded from the first valid path among:
 
 - `$XDG_CONFIG_HOME/comodoro/config.toml`
 - `$HOME/.config/comodoro/config.toml`
