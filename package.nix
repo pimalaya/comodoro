@@ -2,108 +2,98 @@
 # This file aims to be a replacement for the nixpkgs derivation.
 
 {
-  lib,
-  dbus,
-  rustPlatform,
-  fetchFromGitHub,
-  stdenv,
-  buildPackages,
-  pkg-config,
-  apple-sdk,
-  installShellFiles,
-  installShellCompletions ? stdenv.buildPlatform.canExecute stdenv.hostPlatform,
-  installManPages ? stdenv.buildPlatform.canExecute stdenv.hostPlatform,
-  buildNoDefaultFeatures ? false,
   buildFeatures ? [ ],
+  buildNoDefaultFeatures ? false,
+  buildPackages,
+  dbus,
+  fetchFromGitHub,
+  installManPages ? stdenv.buildPlatform.canExecute stdenv.hostPlatform,
+  installShellCompletions ? stdenv.buildPlatform.canExecute stdenv.hostPlatform,
+  installShellFiles,
+  lib,
+  pkg-config,
+  rustPlatform,
+  stdenv,
 }:
 
 let
-  version = "2.0.0";
-  hash = "";
-  cargoHash = "";
-
-  hasNotifyFeature = !buildNoDefaultFeatures || builtins.elem "notify" buildFeatures;
-
-  inherit (stdenv.hostPlatform)
-    isLinux
-    isWindows
-    isx86_64
-    isAarch64
-    ;
-
-  # statically link dbus via cargo (vendored)
-  dbusFromCargo = hasNotifyFeature && isWindows && isx86_64;
-  # statically link dbus via nixpkgs
-  dbusFromNix = hasNotifyFeature && !(isWindows && isx86_64);
-
-  # needed to build dbus on aarch64-linux
-  dbus' = dbus.overrideAttrs (old: {
-    env = (old.env or { }) // {
-      NIX_CFLAGS_COMPILE =
-        (old.env.NIX_CFLAGS_COMPILE or "")
-        + lib.optionalString (isLinux && isAarch64) " -mno-outline-atomics";
-    };
-  });
+  notify = !buildNoDefaultFeatures || builtins.elem "notify" buildFeatures;
+  dbus' =
+    # undefined reference in _dbus_atomic_* functions
+    if stdenv.hostPlatform.isLinux && stdenv.hostPlatform.isAarch64 then
+      dbus.overrideAttrs (old: {
+        env = (old.env or { }) // {
+          NIX_CFLAGS_COMPILE = (old.env.NIX_CFLAGS_COMPILE or "") + " -mno-outline-atomics";
+        };
+      })
+    else
+      dbus;
 
 in
-rustPlatform.buildRustPackage {
-  inherit cargoHash version buildNoDefaultFeatures;
+rustPlatform.buildRustPackage (finalAttrs: {
+  __structuredAttrs = true;
+
+  inherit buildNoDefaultFeatures;
 
   pname = "comodoro";
+  version = "2.0.0";
+  cargoHash = "";
 
   src = fetchFromGitHub {
-    inherit hash;
     owner = "pimalaya";
-    repo = "comodoro";
-    rev = "v${version}";
+    repo = finalAttrs.pname;
+    tag = "v${finalAttrs.version}";
+    hash = "";
   };
 
-  env = lib.optionalAttrs (isLinux && isAarch64) {
-    NIX_CFLAGS_COMPILE = "-mno-outline-atomics";
-  };
+  nativeBuildInputs = [
+    pkg-config
+    installShellFiles
+  ];
 
-  nativeBuildInputs =
-    [ ]
-    ++ lib.optional hasNotifyFeature pkg-config
-    ++ lib.optional (installManPages || installShellCompletions) installShellFiles;
+  # On Windows, D-Bus is provided by vendors
+  buildInputs = lib.optional (notify && !stdenv.hostPlatform.isWindows) dbus';
 
-  buildInputs =
-    [ ] ++ lib.optional stdenv.hostPlatform.isDarwin apple-sdk ++ lib.optional dbusFromNix dbus';
-
-  buildFeatures = buildFeatures ++ lib.optional dbusFromCargo "vendored";
-
-  useFetchCargoVendor = true;
-  doCheck = false;
+  buildFeatures =
+    buildFeatures
+    # On Windows, D-Bus is provided by vendors
+    ++ lib.optional (notify && stdenv.hostPlatform.isWindows) "vendored";
 
   postInstall =
     let
-      emulator = stdenv.hostPlatform.emulator buildPackages;
-      exe = stdenv.hostPlatform.extensions.executable;
+      exe =
+        if stdenv.buildPlatform.canExecute stdenv.hostPlatform then
+          "$out/bin/${finalAttrs.pname}"
+        else
+          lib.getExe buildPackages.${finalAttrs.pname};
     in
-    lib.optionalString (lib.hasInfix "wine" emulator) ''
-      export WINEPREFIX="''${WINEPREFIX:-$(mktemp -d)}"
-      mkdir -p $WINEPREFIX
     ''
-    + ''
       mkdir -p $out/share/{completions,man}
-      ${emulator} "$out"/bin/comodoro${exe} manuals "$out"/share/man
-      ${emulator} "$out"/bin/comodoro${exe} completions -d "$out"/share/completions bash elvish fish powershell zsh
+      ${exe} manuals "$out"/share/man
+      ${exe} completions -d "$out"/share/completions bash elvish fish powershell zsh
     ''
     + lib.optionalString installManPages ''
       installManPage "$out"/share/man/*
     ''
     + lib.optionalString installShellCompletions ''
-      installShellCompletion --bash "$out"/share/completions/comodoro.bash
-      installShellCompletion --fish "$out"/share/completions/comodoro.fish
-      installShellCompletion --zsh "$out"/share/completions/_comodoro
+      installShellCompletion --cmd ${finalAttrs.pname} \
+        --bash "$out"/share/completions/${finalAttrs.pname}.bash \
+        --fish "$out"/share/completions/${finalAttrs.pname}.fish \
+        --zsh "$out"/share/completions/_${finalAttrs.pname}
     '';
 
-  meta = rec {
+  # Disable impure integration tests: they bind sockets and spawn processes
+  cargoTestFlags = [ "--bins" ];
+
+  meta = {
     description = "CLI to manage timers";
-    mainProgram = "comodoro";
-    homepage = "https://github.com/pimalaya/comodoro";
-    changelog = "${homepage}/blob/v${version}/CHANGELOG.md";
-    license = lib.licenses.agpl3Plus;
+    mainProgram = finalAttrs.pname;
+    homepage = "https://github.com/pimalaya/${finalAttrs.pname}";
+    changelog = "https://github.com/pimalaya/${finalAttrs.pname}/releases/${finalAttrs.src.tag}";
+    license = with lib.licenses; [
+      asl20
+      mit
+    ];
     maintainers = with lib.maintainers; [ soywod ];
   };
-}
+})
