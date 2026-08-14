@@ -94,6 +94,9 @@ socket.default = true
 # Reactions bound to timer events by name: `on-{cycle}-{event}` where the cycle
 # is the kebab-case cycle name and the event one of begin, running, set, pause,
 # resume, end. The timer itself fires `on-timer-start` and `on-timer-stop`.
+#
+# A hook that cannot run, exits non-zero or reaches no notification daemon is
+# logged and left there: nothing a hook does can stop the timer.
 
 # A command given as a string runs through the platform shell, so pipes,
 # redirections and globs work.

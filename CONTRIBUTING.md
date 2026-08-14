@@ -15,16 +15,17 @@ Everything below documents only what differs from the Pimalaya standards.
 
 Comodoro is self-contained. Unlike the rest of the Pimalaya binaries it drives no io- library: the timer state machine, the wire protocol and the blocking client and server all live in this repository. A protocol or timer fix therefore lands here, not upstream.
 
-Only three shared crates are consumed, all from crates.io. The clap arguments, printer, logger and error reporting come from [pimalaya/cli](https://github.com/pimalaya/cli), the TOML loader and the command serde adapter from [pimalaya/config](https://github.com/pimalaya/config), and desktop notifications from [notify-rust](https://crates.io/crates/notify-rust). The `[patch.crates-io]` table is empty. To build against a local checkout of a Pimalaya crate, add a `<crate>.path = "../<repo>"` entry there.
+Only three shared crates are consumed. The clap arguments, prompts, printer, logger and error reporting come from [pimalaya/cli](https://github.com/pimalaya/cli), the TOML loader and the command serde adapter from [pimalaya/config](https://github.com/pimalaya/config), and desktop notifications from [notify-rust](https://crates.io/crates/notify-rust). The `[patch.crates-io]` table currently points pimalaya-cli at its git repository, since the `--help` footer macro is newer than its latest release: publishing waits on that release, and on the patch going away with it. To build against a local checkout of a Pimalaya crate, add a `<crate>.path = "../<repo>"` entry there.
 
 ## Feature matrix
 
-The features stack rather than branch: `cli` implies `client` and `server`, and `notify` implies `cli`. The contract layer (src/timer.rs, src/jsonrpc20.rs, src/protocol.rs) is always compiled and is the only no_std layer, so a default-features-off build has to keep compiling under `#![no_std]`. Build the reduced sets when touching the gates:
+The features stack rather than branch: `cli` implies `client` and `server`, and `notify` only pulls the notification backend the hooks use, so it says nothing on its own. The contract layer (src/timer.rs, src/jsonrpc20.rs, src/protocol.rs) is always compiled and is the only no_std layer, so a default-features-off build has to keep compiling under `#![no_std]`. Build the reduced sets when touching the gates:
 
 ```sh
 cargo build --no-default-features
 cargo build --no-default-features --features client
 cargo build --no-default-features --features cli
+cargo build --no-default-features --features notify
 ```
 
 The `notify` feature is the only one pulling a system dependency (D-Bus, through notify-rust). Release builds for platforms without a system D-Bus use `vendored`, which forwards to notify-rust.

@@ -46,7 +46,8 @@ use crate::{
 ///
 /// [`serve`]: TimerServer::serve
 pub struct TimerServer {
-    /// The timer configuration.
+    /// What the timer it owns runs: its cycles, and how many loops of
+    /// them.
     pub schedule: TimerSchedule,
     /// The addresses to bind, one listener each.
     pub addresses: Vec<TimerAddress>,

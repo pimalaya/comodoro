@@ -142,7 +142,7 @@ Two consecutive `timer.running` notifications therefore never carry the same dur
 
 ### Scenario: The tick completes the last configured loop
 
-A `cycles-count` bounds how many full loops the timer runs. The tick reaching that bound sends `timer.ended` for the cycle that ran out, then `timer.stopped`, and leaves the timer in the state a fresh one is in, exactly as `timer.stop` does.
+The schedule's `loops` bounds how many full loops the timer runs, and is spelled `cycles-count` in an account file. The tick reaching that bound sends `timer.ended` for the cycle that ran out, then `timer.stopped`, and leaves the timer in the state a fresh one is in, exactly as `timer.stop` does.
 
 ## Requirement: Notifications reach only subscribed connections
 

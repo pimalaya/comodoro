@@ -85,9 +85,10 @@
 //!
 //! Runnable programs live in the examples folder. The tests cover the
 //! state machine, the envelope against the specification's own
-//! examples, the account configuration, and full client-server
-//! exchanges over both transports. The development history and living
-//! design notes live in the cairn/ folder.
+//! examples, the account configuration and the hooks it binds, the
+//! account the wizard generates, and full client-server exchanges over
+//! both transports. The development history and living design notes
+//! live in the cairn/ folder.
 //!
 //! [JSON-RPC 2.0]: https://www.jsonrpc.org/specification
 

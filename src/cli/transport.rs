@@ -1,10 +1,10 @@
 //! Selection of the transport a command talks over.
 //!
-//! [`Transport`] names one of the transports an account
-//! configures, and [`TransportArg`] is the positional argument
-//! the client commands carry to pick one. Both name a configuration
-//! table rather than an address: resolving one into an address is the
-//! account's job, in [`crate::cli::config`].
+//! [`Transport`] names one of the transports an account configures, and
+//! [`TransportArg`] is the positional argument the client commands
+//! carry to pick one. Both name a configuration table rather than an
+//! address: turning one into an address is the account's job, in
+//! [`crate::cli::account`].
 
 use clap::{Parser, ValueEnum};
 

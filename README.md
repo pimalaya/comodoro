@@ -114,7 +114,7 @@ An account only needs its `cycles`, the ordered steps the timer runs through. Ev
 
 Add a `tcp` table to also reach the timer over the network. A server binds every transport its account configures, and a command talks over the one flagged `default`, falling back to the socket. That listener is unauthenticated, so whoever reaches the port drives the timer, and it stays on loopback unless you mean otherwise.
 
-Bind a `command` or a desktop `notify` block to any timer event to run something when a cycle begins, ticks, pauses, resumes or ends.
+Bind a `command` or a desktop `notify` block to any timer event to run something when a cycle begins, ticks, is set, pauses, resumes or ends, and when the timer itself starts or stops. A hook that fails is logged and never stops the timer.
 
 ## Usage
 
@@ -137,6 +137,7 @@ comodoro start
 comodoro get
 comodoro pause
 comodoro resume
+comodoro set 300
 comodoro stop
 ```
 
