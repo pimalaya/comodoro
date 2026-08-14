@@ -19,7 +19,8 @@
 let
   notify = !buildNoDefaultFeatures || builtins.elem "notify" buildFeatures;
   dbus' =
-    # undefined reference in _dbus_atomic_* functions
+    # dbus calls libgcc outline atomics that the static aarch64 link cannot
+    # resolve (__aarch64_ldset4_sync & co), so inline them instead.
     if stdenv.hostPlatform.isLinux && stdenv.hostPlatform.isAarch64 then
       dbus.overrideAttrs (old: {
         env = (old.env or { }) // {
@@ -45,6 +46,12 @@ rustPlatform.buildRustPackage (finalAttrs: {
     tag = "v${finalAttrs.version}";
     hash = "";
   };
+
+  # pkg-config hands the linker libdbus but no rpath, leaving a binary that
+  # cannot find it: not in postInstall, which runs it, nor once installed.
+  env.NIX_LDFLAGS = lib.optionalString (notify && !stdenv.hostPlatform.isWindows) (
+    "-rpath " + lib.getLib dbus' + "/lib"
+  );
 
   nativeBuildInputs = [
     pkg-config
@@ -83,7 +90,10 @@ rustPlatform.buildRustPackage (finalAttrs: {
     '';
 
   # Disable impure integration tests: they bind sockets and spawn processes
-  cargoTestFlags = [ "--bins" ];
+  cargoTestFlags = [
+    "--bins"
+    "--lib"
+  ];
 
   meta = {
     description = "CLI to manage timers";
