@@ -72,6 +72,7 @@ fn a_missing_program_is_inert() {
     hook(r#"command = ["comodoro-hook-does-not-exist"]"#).execute();
 }
 
+#[cfg(feature = "notify")]
 #[test]
 fn a_notification_carries_its_summary_and_body() {
     // Sending is left alone on purpose: it needs a notification daemon,
@@ -84,6 +85,15 @@ fn a_notification_carries_its_summary_and_body() {
 
     assert_eq!(notification.summary, "Comodoro");
     assert_eq!(notification.body, "Work started!");
+}
+
+#[cfg(not(feature = "notify"))]
+#[test]
+fn a_notification_is_refused_when_no_backend_is_built_in() {
+    let toml = r#"notify = { summary = "Comodoro", body = "Work started!" }"#;
+    let err = toml::from_str::<TimerHook>(toml).expect_err("deserialize notify hook");
+
+    assert!(err.to_string().contains("notify"), "{err}");
 }
 
 #[test]
