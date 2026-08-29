@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Added the plural aliases `completions`, `manuals` and `json-schemas`, hidden from `--help`.
+
+### Fixed
+
+- Fixed `completion` writing files to the working directory instead of printing the script to the standard output, which broke every packaging helper capturing stdout.
+
+  `manual` and `json-schema` now share its shape: a positional list selecting what to generate, printed to stdout, and an optional `--dir` deciding where it lands instead of the directory they used to take as a positional argument. `comodoro manual ./man` becomes `comodoro manual --dir ./man`, and the three accept command names (`comodoro`, `comodoro-get`) to generate a single item.
+
 ## [2.0.0] - 2026-08-14
 
 ### Added

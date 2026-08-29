@@ -1,4 +1,4 @@
-//! JSON Schema registry for the `json-schema <DIR>` meta command.
+//! JSON Schema registry for the `json-schema` meta command.
 //!
 //! For every command emitting structured `--json` output, this module
 //! maps a CLI-invocation key (the command path joined with hyphens and
@@ -23,7 +23,7 @@ use serde_json::Value;
 
 use crate::{cli::configure::GeneratedConfig, timer::Timer};
 
-/// Builds the command-to-schema map consumed by `json-schema <DIR>`.
+/// Builds the command-to-schema map consumed by `json-schema`.
 ///
 /// Each value is the JSON Schema of the concrete Rust type the command
 /// hands to `printer.out(...)`, which is the same value serialized

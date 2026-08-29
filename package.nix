@@ -58,12 +58,12 @@ rustPlatform.buildRustPackage (finalAttrs: {
     installShellFiles
   ];
 
-  # On Windows, D-Bus is provided by vendors
+  # dbus is provided by vendors on windows
   buildInputs = lib.optional (notify && !stdenv.hostPlatform.isWindows) dbus';
 
   buildFeatures =
     buildFeatures
-    # On Windows, D-Bus is provided by vendors
+    # dbus is provided by vendors on windows
     ++ lib.optional (notify && stdenv.hostPlatform.isWindows) "vendored";
 
   postInstall =
@@ -77,8 +77,8 @@ rustPlatform.buildRustPackage (finalAttrs: {
     ''
       mkdir -p $out/share/{completions,man,schemas}
       ${exe} completion -d "$out"/share/completions bash elvish fish powershell zsh
-      ${exe} manual "$out"/share/man
-      ${exe} json-schema "$out"/share/schemas
+      ${exe} manual -d "$out"/share/man
+      ${exe} json-schema -d "$out"/share/schemas
     ''
     + lib.optionalString installManPages ''
       installManPage "$out"/share/man/*
@@ -90,7 +90,7 @@ rustPlatform.buildRustPackage (finalAttrs: {
         --zsh "$out"/share/completions/_${finalAttrs.pname}
     '';
 
-  # Disable impure integration tests: they bind sockets and spawn processes
+  # disable impure integration tests: they bind sockets and spawn processes
   cargoTestFlags = [
     "--bins"
     "--lib"

@@ -115,13 +115,13 @@ pub enum Command {
     /// Set the remaining duration of the current cycle.
     Set(TimerSetCommand),
     /// Generate the shell completion scripts.
-    #[command(arg_required_else_help = true, alias = "cpl")]
+    #[command(aliases = ["completions", "cpl"])]
     Completion(CompletionCommand),
     /// Generate the man pages.
-    #[command(arg_required_else_help = true, alias = "mans")]
+    #[command(aliases = ["manuals", "mans"])]
     Manual(ManualCommand),
     /// Generate the JSON Schemas of the command outputs.
-    #[command(arg_required_else_help = true)]
+    #[command(alias = "json-schemas")]
     JsonSchema(JsonSchemaCommand),
 }
 

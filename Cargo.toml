@@ -69,7 +69,7 @@ toml = { version = "1.1", default-features = false, features = ["parse", "serde"
 [dependencies]
 anyhow = { version = "1", default-features = false, features = ["std"], optional = true }
 clap = { version = "4.4", default-features = false, features = ["derive", "env", "error-context", "help", "std", "usage", "wrap_help"], optional = true }
-convert_case = { version = "0.11", default-features = false, optional = true }
+convert_case = { version = "0.12", default-features = false, optional = true }
 log = { version = "0.4", default-features = false }
 pimalaya-cli = { version = "0.2", default-features = false, features = ["prompt", "terminal"], optional = true }
 pimalaya-config = { version = "0.1", default-features = false, features = ["toml", "secret"], optional = true }
