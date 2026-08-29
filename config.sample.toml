@@ -10,10 +10,9 @@
 # can be passed at once, separated by `:`; the first one is the base and the
 # rest are deep-merged on top of it.
 #
-# `comodoro configure` generates an account from one of the presets below;
-# everything else in this file is written by hand. One server owns a timer and
-# any number of clients drive it, so the same account has to be readable by
-# both sides.
+# `comodoro configure` generates an account from one of the presets below, and
+# everything else here is written by hand. One server owns a timer and any
+# number of clients drive it, so the same account is read by both sides.
 # ================================================================================
 
 [accounts.example]
@@ -62,11 +61,10 @@ precision = "minute"
 #
 # Every field below has a default, so this table adjusts an address rather than
 # switching a transport on: which one a server binds is what `comodoro server
-# start [TRANSPORTS]` decides, and which one a client talks over is what
-# `default` below decides.
+# start [TRANSPORTS]` decides.
 
 # Path the server binds and the clients connect to. Defaults to comodoro.sock
-# inside $XDG_RUNTIME_DIR, or inside the platform temporary directory when that
+# inside $XDG_RUNTIME_DIR, or the platform temporary directory when that
 # variable is unset. Give each account its own path to run several timers.
 #socket.path = "/run/user/1000/comodoro.sock"
 
@@ -80,8 +78,8 @@ socket.default = true
 #
 # Defaulted like the socket, so `comodoro server start tcp` opens a port on an
 # account that says nothing about TCP. The listener is unauthenticated: whoever
-# reaches the port drives the timer, so keep it on loopback unless you mean to
-# expose it, and start it only when you want it.
+# reaches the port drives the timer, so keep it on loopback and start it only
+# when you want it.
 
 # Host and port the server binds and the clients connect to.
 #tcp.host = "127.0.0.1"

@@ -1,4 +1,6 @@
-//! Command starting the timer.
+//! # Start command
+//!
+//! Starts the timer the server owns, from its first cycle.
 
 use anyhow::Result;
 use clap::Parser;
@@ -11,10 +13,10 @@ use crate::{
 
 /// Start the timer.
 ///
-/// This command sends a start request to the server.
+/// Sends a start request to the server, which runs the account cycles
+/// from the first one.
 #[derive(Debug, Parser)]
 pub struct TimerStartCommand {
-    /// The transport used to reach the server.
     /// The transport used to reach the server.
     #[command(flatten)]
     pub transport: TransportArg,

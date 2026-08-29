@@ -1,8 +1,10 @@
+//! # Client and server example
+//!
 //! Runs a server and a client over a real local socket.
 //!
 //! Starts a server on a throwaway socket, subscribes a client to it,
-//! drives the timer, and prints both the results the client gets back
-//! and the notifications the server pushes on its own.
+//! drives the timer, and prints both the results the client gets back and
+//! the notifications the server pushes on its own.
 
 use std::{env, fs, thread, time::Duration};
 
@@ -32,8 +34,8 @@ fn main() {
     .expect("serve timer");
 
     // NOTE: the server binds before serve() returns, so a client can
-    // connect straight away. This thread only drains the hook channel,
-    // which the CLI uses to fire hooks.
+    // connect straight away. This thread only drains the channel the CLI
+    // fires its hooks from.
     thread::spawn(move || while events.recv().is_ok() {});
 
     let mut client = TimerClient::connect(&address).expect("connect to timer");

@@ -1,4 +1,6 @@
-//! Command resuming the timer.
+//! # Resume command
+//!
+//! Resumes the paused timer the server owns.
 
 use anyhow::Result;
 use clap::Parser;
@@ -11,10 +13,10 @@ use crate::{
 
 /// Resume the timer.
 ///
-/// This command sends a resume request to the server.
+/// Sends a resume request to the server, which picks the paused cycle up
+/// where it was left.
 #[derive(Debug, Parser)]
 pub struct TimerResumeCommand {
-    /// The transport used to reach the server.
     /// The transport used to reach the server.
     #[command(flatten)]
     pub transport: TransportArg,

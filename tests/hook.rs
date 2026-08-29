@@ -1,3 +1,5 @@
+//! # Hook tests
+//!
 //! End-to-end coverage of the reactions bound to timer events: the TOML
 //! shapes config.sample.toml documents, and what running one actually
 //! does to the machine.
@@ -28,12 +30,12 @@ fn path(name: &str) -> PathBuf {
     path
 }
 
+/// The redirection is the point: it only works if a shell parses the line
+/// rather than the kernel executing it as a program name.
 #[test]
 fn a_string_command_runs_through_a_shell() {
     let path = path("shell");
 
-    // The redirection is the point: it only works if a shell parses the
-    // line rather than the kernel executing it as a program name.
     let mut hook = hook(&format!(r#"command = "echo hooked >> {}""#, path.display()));
     hook.execute();
 
@@ -41,13 +43,13 @@ fn a_string_command_runs_through_a_shell() {
     let _ = fs::remove_file(path);
 }
 
+/// A shell would read the `>` as a redirection. Executed directly, it is
+/// one more character in the file name.
 #[cfg(unix)]
 #[test]
 fn an_array_command_executes_with_no_shell() {
     let path = path("no shell > redirection");
 
-    // A shell would read the `>` as a redirection. Executed directly,
-    // it is one more character in the file name.
     let mut hook = hook(&format!(r#"command = ["touch", "{}"]"#, path.display()));
     hook.execute();
 
@@ -55,28 +57,27 @@ fn an_array_command_executes_with_no_shell() {
     let _ = fs::remove_file(path);
 }
 
-// A hook is a reaction, never a step of the timer, so the two ways one
-// can fail are logged and returned from as if nothing happened. The
-// assertion is the absence of a panic: there is no error left to catch,
-// and a hook taking the timer down with it is the thing these two
-// forbid.
-
+/// A hook is a reaction, never a step of the timer, so a failure is
+/// logged and returned from as if nothing happened. The assertion is the
+/// absence of a panic: there is no error left to catch.
 #[cfg(unix)]
 #[test]
 fn a_command_exiting_non_zero_is_inert() {
     hook(r#"command = ["false"]"#).execute();
 }
 
+/// Inert for the same reason a non-zero exit is: a hook never takes the
+/// timer down with it.
 #[test]
 fn a_missing_program_is_inert() {
     hook(r#"command = ["comodoro-hook-does-not-exist"]"#).execute();
 }
 
+/// Sending is left alone on purpose: it needs a notification daemon,
+/// which a test machine has no business requiring.
 #[cfg(feature = "notify")]
 #[test]
 fn a_notification_carries_its_summary_and_body() {
-    // Sending is left alone on purpose: it needs a notification daemon,
-    // which a test machine has no business requiring.
     let hook = hook(r#"notify = { summary = "Comodoro", body = "Work started!" }"#);
 
     let TimerHook::Notify(notification) = hook else {

@@ -1,4 +1,6 @@
-//! Command printing the timer on every change.
+//! # Watch command
+//!
+//! Prints the timer on every change the server pushes.
 
 use anyhow::Result;
 use clap::Parser;
@@ -11,12 +13,11 @@ use crate::{
 
 /// Watch the timer.
 ///
-/// This command subscribes to the server and prints the timer state
-/// every time it changes, until interrupted. Suited to a status bar,
-/// which no longer has to poll.
+/// Subscribes to the server and prints the timer every time it changes,
+/// until interrupted. Suited to a status bar, which no longer has to
+/// poll.
 #[derive(Debug, Parser)]
 pub struct TimerWatchCommand {
-    /// The transport used to reach the server.
     /// The transport used to reach the server.
     #[command(flatten)]
     pub transport: TransportArg,
@@ -39,8 +40,8 @@ impl TimerWatchCommand {
             let timer = client.get()?;
 
             // NOTE: a cycle transition emits several events in the same
-            // tick, and they all render the same line. Comparing the
-            // timer keeps the output one line per visible change.
+            // tick, all rendering the same line, so comparing the timer
+            // keeps the output at one line per visible change.
             if timer == last {
                 continue;
             }

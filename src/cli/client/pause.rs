@@ -1,4 +1,6 @@
-//! Command pausing the timer.
+//! # Pause command
+//!
+//! Pauses the timer the server owns, keeping the elapsed time.
 
 use anyhow::Result;
 use clap::Parser;
@@ -11,10 +13,9 @@ use crate::{
 
 /// Pause the timer.
 ///
-/// This command sends a pause request to the server.
+/// Sends a pause request to the server, which keeps the elapsed time.
 #[derive(Debug, Parser)]
 pub struct TimerPauseCommand {
-    /// The transport used to reach the server.
     /// The transport used to reach the server.
     #[command(flatten)]
     pub transport: TransportArg,

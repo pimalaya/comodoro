@@ -1,4 +1,6 @@
-//! Command reading the timer.
+//! # Get command
+//!
+//! Reads the timer the server owns, without touching it.
 
 use anyhow::Result;
 use clap::Parser;
@@ -11,11 +13,10 @@ use crate::{
 
 /// Get the timer.
 ///
-/// This command sends a get request to the server and displays the
-/// current timer state.
+/// Sends a get request to the server and prints the timer it reports,
+/// at the precision the account configures.
 #[derive(Debug, Parser)]
 pub struct TimerGetCommand {
-    /// The transport used to reach the server.
     /// The transport used to reach the server.
     #[command(flatten)]
     pub transport: TransportArg,

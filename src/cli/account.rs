@@ -1,16 +1,17 @@
-//! Merged runtime account, the view every command consumes.
+//! # Account
 //!
-//! [`Account`] is what the configuration becomes once it is resolved:
-//! the addresses the client and the server meet on, the timer the
-//! server runs, the precision the client renders at, and the hooks
-//! bound to the events. Everything a command needs, and nothing that
-//! only the document cares about, so `default` is gone: which account a
-//! command picks is settled before an account exists.
+//! The merged runtime account, the view every command consumes.
 //!
-//! It is built by folding the global [`Config`] then the selected
-//! `[accounts.<name>]`, which today reduces to the account alone, since
-//! the document carries no global section yet. Defaults are applied
-//! here rather than at consumption time, since every one of them
+//! [`Account`] is what the configuration becomes once resolved: the
+//! addresses the two sides meet on, the timer the server runs, the
+//! precision the client renders at, and the hooks bound to the events.
+//!
+//! `default` is gone, which account a command picks being settled before
+//! an account exists. The rest is built by folding the global [`Config`]
+//! then the selected `[accounts.<name>]`, which today reduces to the
+//! account alone, the document carrying no global section yet.
+//!
+//! Defaults are applied here rather than at consumption time, since each
 //! resolves against the platform (the socket path) or against a single
 //! documented value (the precision) rather than against another layer.
 //!
@@ -29,7 +30,7 @@ use crate::{
 /// One account, resolved for the commands to run against.
 #[derive(Debug)]
 pub struct Account {
-    /// What the server runs: the cycles, and how many loops of them.
+    /// What the server runs: the cycles, and how many loops.
     pub schedule: TimerSchedule,
     /// How precisely a client renders the remaining duration.
     pub precision: TimerPrecision,
@@ -44,11 +45,11 @@ pub struct Account {
 }
 
 impl Account {
-    /// The address of the given transport, or of the default one when
-    /// the command names none.
+    /// The address of the given transport, or of the default one when the
+    /// command names none.
     ///
-    /// Every transport has an address, since every field describing one
-    /// has a default. Naming a transport picks which address a command
+    /// Every transport has an address, every field describing one having
+    /// a default, so naming a transport picks which address a command
     /// talks over, never whether that transport exists.
     pub fn address(&self, transport: Option<Transport>) -> TimerAddress {
         match transport.unwrap_or(self.default_transport) {
@@ -59,9 +60,9 @@ impl Account {
 
     /// The addresses a server binds, one per transport it was given.
     ///
-    /// A server given none binds the default transport alone, so no
-    /// socket appears under an account meant for TCP, and no port opens
-    /// under one meant for the socket. Binding both is asking for both.
+    /// Given none it binds the default transport alone, so no socket
+    /// appears under an account meant for TCP and no port opens under one
+    /// meant for the socket. Binding both is asking for both.
     pub fn addresses(&self, transports: &[Transport]) -> Vec<TimerAddress> {
         if transports.is_empty() {
             return vec![self.address(None)];

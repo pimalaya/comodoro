@@ -1,26 +1,26 @@
-//! Command generating a timer account.
+//! # Configure command
 //!
-//! The wizard generates, it never edits: it asks for a cycle preset and
-//! for the endpoints to serve the timer over, names the account after
-//! the preset, then hands the resulting `[accounts.<name>]` table back
-//! as a file to create, a block to append, or a document on stdout.
-//! Everything it does not cover, meaning custom cycles, a socket path
-//! or a TCP endpoint other than the default one, the display precision
-//! and the hooks, is written by hand against the documented sample.
+//! The wizard generating a timer account. It generates and never edits:
+//! it asks for a cycle preset, names the account after it, then hands the
+//! `[accounts.<name>]` table back as a file to create, a block to append,
+//! or a document on stdout.
+//!
+//! Everything it does not cover, custom cycles, a socket path or a TCP
+//! endpoint other than the default, the display precision and the hooks,
+//! is written by hand against the documented sample.
 //!
 //! It runs from `comodoro configure`, and from the offer a bare
 //! `comodoro` or a command needing an account raises when it finds no
-//! configuration file. That offer is the only place the wizard
-//! introduces itself, with a welcome naming the file that is missing:
-//! the command asked for by name goes straight to the prompts.
+//! configuration file. That offer is the only place the wizard introduces
+//! itself, the command asked for by name going straight to the prompts.
 //!
-//! Appending is a plain text append rather than a re-serialization of
-//! the whole file, so comments, ordering and hand-written formatting
-//! come out untouched. Two rules guard it: the account name must be
-//! free, since two `[accounts.<name>]` tables make the whole document
-//! fail to parse, and the generated account claims the default only
-//! when no other account does, since two defaults resolve to whichever
-//! one the account map hands over first.
+//! Appending is a plain text append rather than a re-serialization, so
+//! comments, ordering and hand-written formatting come out untouched.
+//!
+//! Two rules guard it: the account name must be free, since two
+//! `[accounts.<name>]` tables make the document fail to parse, and the
+//! generated account claims the default only when no other does, two
+//! defaults resolving to whichever the account map hands over first.
 
 use core::fmt;
 
@@ -52,29 +52,25 @@ use crate::{
 
 /// Configure a timer account.
 ///
-/// This command asks for one of the documented cycle presets and for
-/// the endpoints to serve the timer over, then saves the resulting
+/// Asks for one of the documented cycle presets, then saves the resulting
 /// account to the configuration file, appends it to the one already
-/// there, or prints it for you to place by hand. Anything the presets
-/// do not cover is written by hand.
+/// there, or prints it for you to place by hand.
+///
+/// Anything the presets do not cover, custom cycles, addresses, display
+/// precision and hooks, is written by hand against the documented sample.
 #[derive(Debug, Parser)]
 pub struct ConfigureCommand;
 
 impl ConfigureCommand {
-    /// Asks the two questions, then saves, appends or prints the
-    /// account.
+    /// Asks for the preset, then saves, appends or prints the account.
     ///
-    /// No welcome: whoever typed the command knows what it does. The
-    /// banner belongs to the offer a missing
-    /// configuration raises, which is where the wizard meets someone
-    /// who did not ask for it. The account name is not asked either,
-    /// since it is only the TOML table key, and renaming it is one edit
-    /// in the file the wizard just wrote.
+    /// No welcome: whoever typed the command knows what it does, the
+    /// banner belonging to the offer a missing configuration raises. The
+    /// name is not asked either, being only the TOML table key.
     ///
-    /// A redirected stdout (`comodoro configure > config.toml`) and the
-    /// JSON output both stay non-interactive: the document goes to
-    /// stdout and no file is touched. The prompts render on stderr, so
-    /// they stay out of the redirected document.
+    /// A redirected stdout and the JSON output both stay
+    /// non-interactive: the document goes to stdout and no file is
+    /// touched. The prompts render on stderr, out of that document.
     pub fn execute(self, printer: &mut impl Printer, config_paths: &[PathBuf]) -> Result<()> {
         if !stdin().is_terminal() {
             bail!(
@@ -116,16 +112,14 @@ impl ConfigureCommand {
     }
 }
 
-/// The cycle presets the wizard offers, the three documented in the
-/// sample configuration.
+/// The cycle presets the wizard offers, the three the sample documents.
 ///
-/// A timer that follows none of them is written by hand: prompting for
-/// an arbitrary list of named durations would be a worse text editor
-/// than the one the user already has.
+/// A timer following none of them is written by hand: prompting for an
+/// arbitrary list of named durations would be a worse text editor than
+/// the one the user already has.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum TimerPreset {
-    /// Three 25 minute rounds of work, 5 minutes of rest between them,
-    /// then a 30 minute rest.
+    /// Three 25 minute rounds of work, 5 of rest between, then 30 of rest.
     Pomodoro,
     /// 52 minutes of work, 17 minutes of rest.
     FiftyTwoSeventeen,
@@ -143,9 +137,9 @@ impl TimerPreset {
 
     /// The account this preset generates.
     ///
-    /// Nothing but the cycles: every transport field has a default, so
-    /// an account that adjusts none of them writes none of them, and
-    /// which transport a server binds is what `server start` decides.
+    /// Nothing but the cycles: every transport field has a default, so an
+    /// account adjusting none of them writes none of them, and which
+    /// transport a server binds is what `server start` decides.
     fn account(self, default: bool) -> AccountConfig {
         AccountConfig {
             default,
@@ -198,21 +192,21 @@ impl fmt::Display for TimerPreset {
     }
 }
 
-/// What a configuration file already on disk constrains in the
-/// generated account: the names it takes, and whether one of its
-/// accounts already claims the default.
+/// What a configuration file already on disk constrains in the generated
+/// account: the names it takes, and whether one already claims the
+/// default.
 struct ExistingConfig {
     names: Vec<String>,
     has_default: bool,
 }
 
 impl ExistingConfig {
-    /// Reads the configuration at the given path, or `None` when no
-    /// file is there.
+    /// Reads the configuration at the given path, `None` when no file is
+    /// there.
     ///
     /// A file that fails to parse is an error rather than a `None`:
-    /// appending to a broken document would bury the actual problem
-    /// under a second one.
+    /// appending to a broken document would bury the actual problem under
+    /// a second one.
     fn read(path: &Path) -> Result<Option<Self>> {
         if !path.exists() {
             return Ok(None);
@@ -248,13 +242,12 @@ impl fmt::Display for GeneratedConfig {
     }
 }
 
-/// Frames Comodoro, names the configuration file that is missing, and
-/// points at the sample for everything the wizard does not cover.
+/// Frames Comodoro, names the missing configuration file, and points at
+/// the sample for everything the wizard does not cover.
 ///
 /// Printed before the offer a bare `comodoro` or a command needing an
-/// account raises when it finds no configuration, so the wizard
-/// introduces itself to someone who did not ask for it. `configure`
-/// skips it, since it was asked for by name.
+/// account raises, so the wizard introduces itself to someone who did not
+/// ask for it. `configure` skips it, having been asked for by name.
 ///
 /// On stderr, so a redirected stdout holds the document alone.
 pub(crate) fn print_welcome(path: &Path) {
@@ -282,10 +275,9 @@ pub(crate) fn print_welcome(path: &Path) {
 /// The name the preset proposes, suffixed until the configuration does
 /// not already hold it.
 ///
-/// Not prompted: the name is only the TOML table key, and whoever wants
-/// another one renames it in the file. It still has to be free, since a
-/// second `[accounts.<name>]` table makes the whole document fail to
-/// parse, taking the accounts that used to work down with it.
+/// It has to be free, since a second `[accounts.<name>]` table makes the
+/// whole document fail to parse, taking the accounts that used to work
+/// down with it. Not prompted: renaming the table key is one edit.
 fn account_name(preset: TimerPreset, existing: Option<&ExistingConfig>) -> String {
     let taken = existing
         .map(|config| config.names.as_slice())
@@ -348,11 +340,10 @@ fn append_or_print(printer: &mut impl Printer, path: &Path, config: GeneratedCon
         .open(path)
         .with_context(|| format!("Open the config file {}", path.display()))?;
 
-    // NOTE: appending text keeps every comment and every hand-written
-    // line of the file as they are, which parsing and re-serializing
-    // the whole document would not. The leading newline separates the
-    // two tables, and terminates the last line when the file ends
-    // without one.
+    // NOTE: appending text keeps every comment and hand-written line as
+    // they are, which re-serializing the document would not. The leading
+    // newline separates the tables, and terminates the last line when the
+    // file ends without one.
     write!(file, "\n{config}")
         .with_context(|| format!("Append to the config file {}", path.display()))?;
 
@@ -364,8 +355,8 @@ fn append_or_print(printer: &mut impl Printer, path: &Path, config: GeneratedCon
 /// Tells where the account landed, under which name, and what to run
 /// next.
 ///
-/// The name matters here because it was never asked for: an account
-/// that did not claim the default is only reachable through `-a`.
+/// The name matters here because it was never asked for: an account that
+/// did not claim the default is only reachable through `-a`.
 fn print_saved(path: &Path, config: &GeneratedConfig) {
     let name = &config.name;
 
@@ -398,6 +389,9 @@ mod tests {
         env::temp_dir().join(format!("comodoro-configure-{id}.toml"))
     }
 
+    /// Every transport field has a default, so the generated account holds
+    /// its cycles and nothing else: no address is frozen into the file,
+    /// and `server start` still reaches either transport.
     #[test]
     fn a_generated_account_parses_back() {
         let document = TimerPreset::Pomodoro.account(true).render("pomodoro");
@@ -408,9 +402,6 @@ mod tests {
         assert_eq!(account.cycles, TimerPreset::Pomodoro.cycles());
         assert!(account.default);
 
-        // Every transport field has a default, so the generated account
-        // holds its cycles and nothing else: no address is frozen into
-        // the file, and `server start` still reaches either transport.
         assert!(!document.contains("socket"));
         assert!(!document.contains("tcp"));
         assert!(!document.contains("precision"));
@@ -418,18 +409,16 @@ mod tests {
         assert_eq!(account.socket, SocketConfig::default());
         assert_eq!(account.tcp, TcpConfig::default());
 
-        // One cycle per line, in the order and the shape the sample
-        // configuration documents.
         assert!(document.contains("  { name = \"Work\", duration = 1500 },\n"));
         assert_eq!(document.lines().count(), 10);
     }
 
+    /// The existing file ends without a trailing newline, the shape an
+    /// appended block has to survive without merging into the last line.
     #[test]
     fn an_appended_account_keeps_the_existing_one() {
         let path = config_path();
 
-        // No trailing newline, the shape an appended block has to
-        // survive without merging into the last line.
         fs::write(
             &path,
             "# my timers\n[accounts.work]\ndefault = true\ncycles = [{ name = \"Work\", duration = 3120 }]",
@@ -460,7 +449,6 @@ mod tests {
             TimerPreset::Pomodoro.cycles()
         );
 
-        // Exactly one default, and the comment is still there.
         let defaults = config
             .accounts
             .values()

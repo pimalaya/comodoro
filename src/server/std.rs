@@ -1,15 +1,16 @@
-//! Blocking timer server speaking JSON-RPC 2.0 over its transports.
+//! # Blocking server
 //!
+//! Blocking timer server speaking JSON-RPC 2.0 over its transports.
 //! Written against the standard library, hence the module name: an
 //! asynchronous server would be a sibling rather than a replacement.
 //!
-//! One thread accepts connections per bound address, one thread ticks
-//! the timer every second, and every connection gets a reader thread and
-//! a writer thread. The split matters: a subscribed connection blocks
-//! forever on its next request, so notifications could not be delivered
-//! from the thread that reads them. Every line leaving the server
-//! therefore goes through one channel per connection, which also
-//! serializes writes without locking the socket.
+//! One thread accepts connections per bound address, one ticks the timer
+//! every second, and every connection gets a reader thread and a writer
+//! thread. A subscribed connection blocks forever on its next request,
+//! so notifications cannot leave the thread that reads them.
+//!
+//! Every line leaving the server therefore goes through one channel per
+//! connection, which also serializes writes without locking the socket.
 
 use alloc::{string::String, vec::Vec};
 
@@ -39,15 +40,12 @@ use crate::{
 /// Blocking timer server.
 ///
 /// Owns the [`Timer`] behind a mutex, answers requests on every bound
-/// address,
-/// and pushes every [`TimerEvent`] both to the subscribed connections
-/// and to the receiver [`serve`] returns, which is what the CLI drives
-/// its hooks from.
+/// address, and pushes every [`TimerEvent`] to the subscribed connections
+/// and to the receiver [`serve`] returns, which the CLI fires hooks from.
 ///
 /// [`serve`]: TimerServer::serve
 pub struct TimerServer {
-    /// What the timer it owns runs: its cycles, and how many loops of
-    /// them.
+    /// What the timer it owns runs: its cycles, and how many loops.
     pub schedule: TimerSchedule,
     /// The addresses to bind, one listener each.
     pub addresses: Vec<TimerAddress>,
@@ -57,10 +55,8 @@ impl TimerServer {
     /// Binds every address and spawns the accept and tick threads.
     ///
     /// Returns the receiver carrying every event the timer emits, in
-    /// the order it emitted them.
-    ///
-    /// Binding happens before any thread is spawned, so a server that
-    /// cannot bind one of its addresses starts none of them.
+    /// emission order. Binding happens before any thread is spawned, so a
+    /// server that cannot bind one address starts none of them.
     pub fn serve(self) -> Result<Receiver<TimerEvent>> {
         let listeners = self
             .addresses
@@ -117,10 +113,9 @@ impl TimerServer {
 
 /// Fan-out of the events a timer emits.
 ///
-/// Holds the sender feeding the caller of [`TimerServer::serve`] plus
-/// the line sender of every subscribed connection. A subscriber whose
-/// channel is closed has gone away and is dropped on the next emit, so
-/// nothing has to reap them.
+/// Holds the sender feeding the caller of [`TimerServer::serve`] plus the
+/// line sender of every subscribed connection. A subscriber whose channel
+/// is closed is dropped on the next emit, so nothing has to reap them.
 #[derive(Clone)]
 struct TimerBroadcast {
     events: Sender<TimerEvent>,
@@ -139,7 +134,7 @@ impl TimerBroadcast {
     }
 
     /// Registers connection `id` as a subscriber, replacing any earlier
-    /// subscription it held so subscribing twice is idempotent.
+    /// subscription so subscribing twice is idempotent.
     fn subscribe(&self, id: usize, lines: Sender<String>) {
         let mut subscribers = lock(&self.subscribers);
         subscribers.retain(|(other, _)| *other != id);
@@ -232,8 +227,7 @@ fn serve_connection(
     Ok(())
 }
 
-/// Answers one received line, or nothing when it held only
-/// notifications.
+/// Answers one received line, or nothing when it held notifications only.
 fn handle_line(
     line: &str,
     id: usize,
@@ -325,11 +319,11 @@ fn dispatch(
     TimerResponse::Events(events)
 }
 
-/// Returns the current time as whole seconds since the Unix epoch.
+/// The current time as whole seconds since the Unix epoch.
 ///
-/// A clock set before the epoch is not a recoverable condition for a
-/// timer, so it saturates at zero rather than threading an error
-/// through every call site.
+/// A clock set before the epoch is not recoverable for a timer, so it
+/// saturates at zero rather than threading an error through every call
+/// site.
 fn now() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -340,8 +334,8 @@ fn now() -> u64 {
 /// Locks `mutex`, recovering the guard when a holder panicked.
 ///
 /// Every value guarded here is a plain struct, so a panic mid-update
-/// can leave it stale but never torn. Recovering keeps one bad request
-/// from taking the whole daemon down with it.
+/// leaves it stale but never torn. Recovering keeps one bad request from
+/// taking the whole daemon down with it.
 fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
     mutex.lock().unwrap_or_else(|err| {
         warn!("recovering from a poisoned lock");
@@ -349,6 +343,6 @@ fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
     })
 }
 
-/// Source of the identifiers distinguishing connections in the logs and
-/// in the subscriber registry.
+/// Source of the identifiers telling connections apart in the logs and in
+/// the subscriber registry.
 static NEXT_CONNECTION_ID: AtomicUsize = AtomicUsize::new(0);

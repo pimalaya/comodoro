@@ -1,9 +1,10 @@
-//! Rendering of a timer for the terminal.
+//! # Timer rendering
 //!
-//! [`DisplayTimer`] is what the two commands showing a timer, `get` and
-//! `watch`, print. It pairs the timer the server reported with the
-//! account that asked for it, since how coarsely a duration reads is an
-//! account setting.
+//! What the two commands showing a timer, `get` and `watch`, print.
+//!
+//! [`DisplayTimer`] pairs the timer the server reported with the account
+//! that asked for it, since how coarsely a duration reads is an account
+//! setting.
 
 use core::fmt;
 
@@ -25,9 +26,9 @@ pub struct DisplayTimer<'a> {
 impl fmt::Display for DisplayTimer<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.fmt_state(f)?;
-        // NOTE: the newline is what makes the line-buffered stdout
-        // flush, without which `watch` would print nothing until it
-        // exits. It also separates consecutive outputs.
+
+        // NOTE: the newline is what flushes the line-buffered stdout,
+        // without which `watch` would print nothing until it exits.
         writeln!(f)
     }
 }

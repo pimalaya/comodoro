@@ -1,21 +1,22 @@
-//! Command-line interface of Comodoro.
+//! # CLI
 //!
-//! [`Cli`] is the clap entry point parsed by main, and [`Command`] is
-//! the flat command grammar it dispatches to. Every command taking an
-//! account resolves it from the TOML configuration first, then hands it
-//! to the client or the server.
+//! Command-line interface of Comodoro. [`Cli`] is the clap entry point
+//! parsed by main, and [`Command`] the flat grammar it dispatches to.
 //!
-//! Nothing works without a configuration, so the two invocations that
-//! can find none, a bare `comodoro` and a command needing an account,
-//! both offer to generate one rather than failing on it.
+//! Every command taking an account resolves it from the TOML
+//! configuration first, then hands it to the client or the server.
 //!
-//! Everything the CLI needs lives under this module, so the `cli`
-//! feature gates one subtree rather than a scattering of items:
-//! [`config`] holds the TOML document, [`account`] the resolved view a
-//! command runs against, [`configure`] the wizard writing a document,
-//! [`transport`] the selection of the one a command talks over,
-//! [`hook`] the reactions bound to timer events, [`json_schema`] the
-//! schemas of what the commands print, and [`client`] and [`server`]
+//! Nothing works without a configuration, so the two invocations that can
+//! find none, a bare `comodoro` and a command needing an account, both
+//! offer to generate one rather than failing on it.
+//!
+//! Everything the CLI needs lives here, so the `cli` feature gates one
+//! subtree: [`config`] holds the TOML document, [`account`] the resolved
+//! view a command runs against, [`configure`] the wizard writing a
+//! document, [`transport`] the selection of the one a command talks over.
+//!
+//! [`hook`] holds the reactions bound to timer events, [`json_schema`]
+//! the schemas of what the commands print, and [`client`] and [`server`]
 //! one module per command.
 
 pub mod account;
@@ -70,9 +71,9 @@ use crate::cli::{
 pub struct Cli {
     /// The command to run.
     ///
-    /// Omitted, a bare `comodoro` offers to generate a configuration
-    /// when it finds none, since running the binary with no argument is
-    /// what a newcomer does first, and shows this help otherwise.
+    /// Omitted, a bare `comodoro` offers to generate a configuration when
+    /// it finds none, since running the binary with no argument is what a
+    /// newcomer does first, and shows this help otherwise.
     #[command(subcommand)]
     pub cmd: Option<Command>,
     /// The configuration file(s) to read the account from.
@@ -128,13 +129,13 @@ pub enum Command {
 impl Cli {
     /// Runs the parsed command, or meets a bare invocation.
     ///
-    /// With no command there is nothing to run, so this is where a
-    /// newcomer lands: a missing configuration raises the offer, and an
-    /// existing one gets the help, which is also what a script or a
-    /// JSON caller gets since neither can answer a prompt. A file that
-    /// exists but fails to parse counts as a configuration, so the
-    /// offer never proposes to write over a broken one: the parse error
-    /// surfaces when a real command reads it.
+    /// With no command there is nothing to run, so a missing
+    /// configuration raises the offer and an existing one gets the help,
+    /// which is also what a script or a JSON caller gets.
+    ///
+    /// A file that exists but fails to parse counts as a configuration,
+    /// so the offer never proposes to write over a broken one: the parse
+    /// error surfaces when a real command reads it.
     pub fn execute(self, printer: &mut impl Printer) -> Result<()> {
         let config_paths = self.config.paths.as_ref();
         let account_name = self.account.name.as_deref();
@@ -224,24 +225,22 @@ impl Command {
 pub struct ConfigPathsArg {
     /// Override the default configuration file path.
     ///
-    /// The given paths are shell-expanded then canonicalized (if
-    /// applicable). Other paths are merged with the first one, which
-    /// allows you to separate your public config from your private
-    /// one(s). Multiple paths can also be given at once, delimited by
-    /// `:` like `$PATH` in a POSIX shell.
+    /// The given paths are shell-expanded then canonicalized when
+    /// applicable. Several can be given at once, delimited by `:` like
+    /// `$PATH`: the first one is the base and the rest are merged on top,
+    /// which keeps a public configuration apart from the private ones.
     #[arg(long = "config", short = 'c', global = true, env = "COMODORO_CONFIG")]
     #[arg(name = "config_paths", value_name = "PATH", value_parser = path_parser, value_delimiter = ':')]
     pub paths: Vec<PathBuf>,
 }
 
-/// Welcomes, then offers to generate a first configuration. Returns
+/// Welcomes, offers to generate a first configuration, and returns
 /// whether the wizard ran.
 ///
 /// Raised from the two places nothing can happen without a
-/// configuration: a bare invocation, and a command that needs an
-/// account. It is a hook rather than a gate, so declining it decides
-/// nothing: what happens next is the caller's business, and for a
-/// command that is simply carrying on.
+/// configuration: a bare invocation, and a command needing an account. It
+/// is a hook rather than a gate, so what a declined offer leads to is the
+/// caller's business, and for a command that is carrying on.
 fn offer_configuration(
     printer: &mut impl Printer,
     config_paths: &[PathBuf],
@@ -258,16 +257,13 @@ fn offer_configuration(
     Ok(true)
 }
 
-/// Loads the configuration, takes the account the command runs against,
-/// the one `-a` names or the one marked as default, and resolves it into
-/// the [`Account`] the command consumes.
+/// Resolves the account the command runs against, the one `-a` names or
+/// the one marked as default, into the [`Account`] it consumes.
 ///
-/// A missing configuration is met with the wizard rather than with an
-/// error: the welcome frames what Comodoro is and offers to generate an
-/// account, then the command carries on either way. Accepting is what
-/// gives it a chance to work; declining leaves it to fail on the
-/// configuration it still has not got. The two other failures name what
-/// is missing and how to pick an account.
+/// A missing configuration is met with the wizard rather than an error:
+/// the command carries on either way, and declining leaves it to fail on
+/// the configuration it still has not got. The two other failures name
+/// what is missing and how to pick an account.
 fn take_account(
     printer: &mut impl Printer,
     config_paths: &[PathBuf],

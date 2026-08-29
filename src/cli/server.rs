@@ -1,7 +1,7 @@
-//! Commands managing the timer servers.
+//! # Server commands
 //!
-//! One module per command, each acting on the server that owns the
-//! timer rather than on the timer itself.
+//! Commands managing the timer servers, one module each, acting on the
+//! server that owns the timer rather than on the timer itself.
 
 pub mod start;
 
@@ -14,8 +14,7 @@ use crate::cli::{account::Account, server::start::TimerServerStartCommand};
 
 /// Manage servers.
 ///
-/// A server controls a timer, and receives requests from clients to
-/// manipulate it.
+/// A server owns a timer and answers the client requests driving it.
 #[derive(Debug, Subcommand)]
 pub enum TimerServerCommand {
     /// Start the server.

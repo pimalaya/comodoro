@@ -1,17 +1,17 @@
-//! The transports carrying the timer protocol.
+//! # Transport
 //!
-//! The protocol is JSON-RPC 2.0 framed as NDJSON, which the
-//! specification deliberately leaves transport-agnostic, so a connection
-//! is just a byte stream. Two of them are supported: a Unix domain
+//! The byte streams carrying the timer protocol. JSON-RPC 2.0 leaves the
+//! transport alone, so a connection is just a byte stream: a Unix domain
 //! socket, which gets filesystem permissions for free and opens no port,
-//! and TCP, for the cases a local socket cannot serve.
+//! or TCP, for the cases a local socket cannot serve.
 //!
 //! [`TimerAddress`] says where a server listens, [`TimerListener`]
 //! accepts connections there, and [`TimerStream`] is one connection,
-//! whichever transport carries it. Windows has supported `AF_UNIX`
-//! stream sockets since build 1803, reached here through the uds_windows
-//! shim, so the same path-based addressing works on every supported
-//! platform.
+//! whichever transport carries it.
+//!
+//! Windows has supported `AF_UNIX` stream sockets since build 1803,
+//! reached here through the uds_windows shim, so the same path-based
+//! addressing works on every supported platform.
 
 use core::fmt;
 
@@ -33,9 +33,9 @@ use uds_windows::{UnixListener, UnixStream};
 
 /// The socket path used when the configuration names none.
 ///
-/// Resolves to `$XDG_RUNTIME_DIR/comodoro.sock` when the variable is
-/// set, which is the per-user directory the socket belongs in, and falls
-/// back to the platform temporary directory everywhere else.
+/// `$XDG_RUNTIME_DIR/comodoro.sock` when the variable is set, that being
+/// the per-user directory a socket belongs in, and the platform
+/// temporary directory everywhere else.
 pub fn default_socket_path() -> PathBuf {
     let dir = env::var_os("XDG_RUNTIME_DIR")
         .map(PathBuf::from)
@@ -71,7 +71,7 @@ impl fmt::Display for TimerAddress {
 /// One connection carrying the timer protocol.
 ///
 /// Both variants are plain blocking byte streams, and the protocol above
-/// them cannot tell which one it is talking over.
+/// them cannot tell which one it talks over.
 #[derive(Debug)]
 pub enum TimerStream {
     /// A connected Unix domain socket.
@@ -99,8 +99,7 @@ impl TimerStream {
         }
     }
 
-    /// Clones the connection, so one half can read while the other
-    /// writes.
+    /// Clones the connection, so one half reads while the other writes.
     pub fn try_clone(&self) -> Result<Self> {
         match self {
             Self::UnixSocket(stream) => Ok(Self::UnixSocket(
@@ -148,13 +147,11 @@ pub enum TimerListener {
 }
 
 impl TimerListener {
-    /// Binds `address`, clearing a stale socket left by a crashed
-    /// server.
+    /// Binds `address`, clearing a stale socket left by a crashed server.
     ///
-    /// A socket file outlives the process that created it, so its mere
-    /// presence proves nothing. Connecting to it does: a refused
-    /// connection means nobody is listening and the file can go, while a
-    /// successful one means a live server owns the address.
+    /// A socket file outlives its process, so its presence proves
+    /// nothing. Connecting does: a refused connection means the file can
+    /// go, a successful one that a live server owns the address.
     pub fn bind(address: &TimerAddress) -> Result<Self> {
         debug!("listen at {address}");
 

@@ -1,5 +1,6 @@
-//! Blocking timer client speaking JSON-RPC 2.0 over one connection.
+//! # Blocking client
 //!
+//! Blocking timer client speaking JSON-RPC 2.0 over one connection.
 //! Written against the standard library, hence the module name: an
 //! asynchronous client would be a sibling rather than a replacement.
 
@@ -22,12 +23,9 @@ use crate::{
 
 /// Blocking client driving one timer server over one connection.
 ///
-/// Requests are numbered from one, and the client reads lines until it
-/// finds the response carrying the identifier it just sent. Once
-/// subscribed, notifications arrive interleaved with those responses,
-/// so any notification met while waiting for a response is buffered
-/// rather than dropped. That is what lets a subscribed connection keep
-/// issuing requests without losing a single event.
+/// Requests are numbered from one, and the client reads lines until the
+/// response carrying the identifier it sent. A notification met while
+/// waiting is buffered, so a subscriber never loses one to a request.
 pub struct TimerClient {
     reader: BufReader<TimerStream>,
     writer: TimerStream,
@@ -79,8 +77,8 @@ impl TimerClient {
 
     /// Overrides the remaining duration of the current cycle.
     ///
-    /// The server clamps the request to the configured length of that
-    /// cycle, so the returned event is what to read the result from.
+    /// The server clamps the request to that cycle's configured length,
+    /// so the returned event is what to read the result from.
     pub fn set(&mut self, duration: usize) -> Result<Vec<TimerEvent>> {
         self.events(TimerRequest::Set { duration })
     }
@@ -169,8 +167,8 @@ impl TimerClient {
 
     /// Queues `line` when it holds a timer notification.
     ///
-    /// Anything else is dropped, so a server pushing a notification this
-    /// client does not know about is not an error.
+    /// Anything else is dropped, so a notification this client does not
+    /// know about is not an error.
     fn buffer_notification(&mut self, line: &str) {
         let Ok(notification) = serde_json::from_str::<Jsonrpc20Request>(line) else {
             trace!("skip unparsable line: {line}");

@@ -1,3 +1,5 @@
+//! # Client and server tests
+//!
 //! End-to-end coverage of clients talking to a server over real
 //! connections, exercising the JSON-RPC surface rather than the
 //! internals.
@@ -122,6 +124,9 @@ fn pause_then_resume_round_trips_the_state() {
     let _ = fs::remove_file(path);
 }
 
+/// The server ticks every second, and a tick recomputes the cycle from
+/// the elapsed time, so reading a set duration across one is the whole
+/// point of the last assertion.
 #[test]
 fn set_overrides_the_remaining_duration() {
     let (mut client, path) = serve();
@@ -133,9 +138,6 @@ fn set_overrides_the_remaining_duration() {
     assert!(matches!(events[0], TimerEvent::Set(_)));
     assert_eq!(client.get().unwrap().cycle.duration, 60);
 
-    // The server ticks every second, and the tick used to recompute the
-    // cycle from the elapsed time and discard what was set. Reading
-    // across one is the whole point of this assertion.
     thread::sleep(Duration::from_millis(1500));
     let duration = client.get().unwrap().cycle.duration;
     assert!((57..=59).contains(&duration), "{duration}");
@@ -191,6 +193,8 @@ fn a_subscriber_receives_the_events_another_client_emits() {
     let _ = fs::remove_file(path);
 }
 
+/// The connection still answers requests after unsubscribing, and the
+/// events these emit no longer come back as notifications.
 #[test]
 fn unsubscribing_stops_the_notifications_but_not_the_requests() {
     let (mut client, path) = serve();
@@ -202,8 +206,6 @@ fn unsubscribing_stops_the_notifications_but_not_the_requests() {
 
     client.unsubscribe().unwrap();
 
-    // The connection still answers requests after unsubscribing, and
-    // the events these emit no longer come back as notifications.
     let events = client.stop().unwrap();
     assert_eq!(events.len(), 2);
     assert_eq!(client.get().unwrap().state, TimerState::Stopped);
@@ -225,6 +227,8 @@ fn a_second_server_refuses_a_socket_in_use() {
     let _ = fs::remove_file(path);
 }
 
+/// The events a TCP client emits reach a subscriber connected over the
+/// socket, and both connections read the same timer.
 #[test]
 fn both_transports_serve_the_same_timer() {
     let id = NEXT_SOCKET.fetch_add(1, Ordering::Relaxed);
@@ -255,8 +259,6 @@ fn both_transports_serve_the_same_timer() {
     watcher.subscribe().expect("subscribe over the socket");
     driver.start().expect("start over TCP");
 
-    // The events a TCP client emits reach a subscriber connected over
-    // the socket, and both connections read the same timer.
     assert_eq!(watcher.next_event().unwrap(), Some(TimerEvent::Started));
     assert_eq!(watcher.get().unwrap(), driver.get().unwrap());
 

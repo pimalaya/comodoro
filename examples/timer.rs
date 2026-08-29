@@ -1,7 +1,9 @@
-//! Runs the pure timer state machine with no I/O at all.
+//! # Pure timer example
 //!
-//! Time is a parameter, so the whole lifecycle of a timer can be
-//! replayed instantly by handing it the timestamps it would have seen.
+//! Runs the timer state machine with no I/O at all. Time is a parameter,
+//! so a whole lifecycle replays instantly from the timestamps the timer
+//! would have seen.
+//!
 //! This is the layer that compiles under no_std, and the reason the
 //! interesting behaviour is testable without a socket or a clock.
 

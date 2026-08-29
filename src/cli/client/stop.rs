@@ -1,4 +1,6 @@
-//! Command stopping the timer.
+//! # Stop command
+//!
+//! Stops the timer the server owns, and resets it.
 
 use anyhow::Result;
 use clap::Parser;
@@ -11,10 +13,10 @@ use crate::{
 
 /// Stop the timer.
 ///
-/// This command sends a stop request to the server.
+/// Sends a stop request to the server, which resets the timer to its
+/// first cycle. Stops a paused timer as well as a running one.
 #[derive(Debug, Parser)]
 pub struct TimerStopCommand {
-    /// The transport used to reach the server.
     /// The transport used to reach the server.
     #[command(flatten)]
     pub transport: TransportArg,

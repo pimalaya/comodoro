@@ -1,3 +1,5 @@
+//! # Account configuration tests
+//!
 //! Coverage of the account configuration, from the TOML shapes
 //! config.sample.toml documents to the addresses they resolve a command
 //! to once folded into an account.
@@ -50,10 +52,10 @@ fn a_v1_account_file_loads_unchanged() {
     );
 }
 
+/// Every transport field has a default, so an account holding only its
+/// cycles reaches both transports, and the socket wins the tie.
 #[test]
 fn an_account_naming_no_transport_takes_every_default() {
-    // Every transport field has a default, so an account holding only
-    // its cycles reaches both, and the socket wins the tie.
     let account = account(
         r#"
         [accounts.example]
@@ -105,6 +107,9 @@ fn tcp_takes_the_default_only_when_the_socket_leaves_it() {
     assert!(matches!(tied.address(None), TimerAddress::UnixSocket(_)));
 }
 
+/// Given no transport a server binds the default one alone, so no port
+/// opens under an account nobody asked to expose. Given some, it binds
+/// those, whatever the account marks default.
 #[test]
 fn a_server_binds_the_transports_it_is_given() {
     let account = account(
@@ -122,11 +127,7 @@ fn a_server_binds_the_transports_it_is_given() {
     };
     let socket = TimerAddress::UnixSocket("/tmp/comodoro.sock".into());
 
-    // Given none, a server binds the default transport alone, so no
-    // port opens under an account nobody asked to expose.
     assert_eq!(account.addresses(&[]), vec![socket.clone()]);
-
-    // Given some, it binds those, whatever the account marks default.
     assert_eq!(account.addresses(&[Transport::Tcp]), vec![tcp.clone()]);
     assert_eq!(
         account.addresses(&[Transport::UnixSocket, Transport::Tcp]),

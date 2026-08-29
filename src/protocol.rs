@@ -1,25 +1,23 @@
-//! The Comodoro method surface, expressed in JSON-RPC 2.0.
+//! # Protocol
 //!
-//! This module is the contract between a Comodoro server and any
-//! client, in this repository or not. It names the methods a server
-//! answers, the notifications it pushes to subscribers, and the shape
-//! of every parameter and result. The envelope carrying them lives in
-//! [`crate::jsonrpc20`], and the framing is NDJSON, one compact JSON
-//! value per line.
+//! The Comodoro method surface expressed in JSON-RPC 2.0: the contract
+//! between a server and any client, in this repository or not.
+//!
+//! It names the methods a server answers, the notifications it pushes to
+//! subscribers, and the shape of every parameter and result. The
+//! envelope lives in [`crate::jsonrpc20`], the framing is NDJSON.
 //!
 //! Requests are named after the imperative that performs them
 //! (`timer.start`), notifications after the past tense of what just
 //! happened (`timer.started`), so the two directions never collide.
 //!
-//! A notification identifies its event by its method name, and carries
-//! only the cycle the event concerns, since repeating the kind in the
-//! parameters would be redundant. A result cannot do that, having no
-//! method name of its own, so the events inside a result carry their
-//! own `event` discriminator.
+//! A notification identifies its event by its method name and carries
+//! only the cycle it concerns. A result has no method name of its own,
+//! so the events inside one carry their own `event` discriminator.
 //!
 //! Codes -32000 to -32099 are reserved by the specification for
-//! server-defined errors. Comodoro defines none today: every failure
-//! it can report is one of the standard codes.
+//! server-defined errors. Comodoro defines none today: every failure it
+//! can report is one of the standard codes.
 
 use alloc::vec::Vec;
 
@@ -46,9 +44,8 @@ pub enum TimerRequest {
     Stop,
     /// Overrides the remaining duration of the current cycle.
     ///
-    /// Clamped to the configured length of that cycle, and ignored
-    /// entirely on a stopped timer. The resulting event carries the
-    /// effective duration.
+    /// Clamped to the configured length of that cycle and ignored on a
+    /// stopped timer, so the resulting event carries what took effect.
     Set {
         /// The new remaining duration, in seconds.
         duration: usize,
@@ -162,8 +159,8 @@ impl TimerResponse {
 
     /// Decodes the `result` member of the answer to `request`.
     ///
-    /// The shape depends on the method that was called, since JSON-RPC
-    /// results carry no discriminator of their own.
+    /// The shape depends on the method called, since JSON-RPC results
+    /// carry no discriminator of their own.
     pub fn from_value(request: &TimerRequest, value: Value) -> Result<Self, serde_json::Error> {
         match request {
             TimerRequest::Get => serde_json::from_value(value).map(Self::Timer),
@@ -262,8 +259,8 @@ impl TimerEvent {
 
     /// Reads an event back from a notification a server pushed.
     ///
-    /// Returns `None` when the method is not a timer notification, so a
-    /// client can ignore what it does not understand rather than fail.
+    /// `None` when the method is not a timer notification, so a client
+    /// ignores what it does not understand rather than failing.
     pub fn from_notification(request: &Jsonrpc20Request) -> Option<Self> {
         let cycle = || -> Option<TimerCycle> {
             let params = request.params.clone()?;
@@ -351,12 +348,11 @@ mod tests {
         }
     }
 
+    /// A JSON object built through serde_json::Value comes out in
+    /// alphabetical order, its maps being BTreeMaps. Member order carries
+    /// no meaning in JSON, so this shape is stable, not canonical.
     #[test]
     fn notification_wire_shape_is_stable() {
-        // NOTE: members of a JSON object built through serde_json::Value
-        // come out in alphabetical order, since Value maps are backed by
-        // a BTreeMap. Object member order carries no meaning in JSON, so
-        // this is stable rather than canonical.
         let began = TimerEvent::Began(TimerCycle::new("Work", 1500)).into_notification();
         assert_eq!(
             serde_json::to_string(&began).unwrap(),

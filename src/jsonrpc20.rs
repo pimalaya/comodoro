@@ -1,13 +1,13 @@
-//! The JSON-RPC 2.0 envelope, as defined by the [specification].
+//! # JSON-RPC 2.0
 //!
-//! This module carries the transport-agnostic half of the protocol:
-//! the request, response and error shapes, and nothing about how bytes
-//! move. The specification deliberately leaves framing to the
-//! application, and Comodoro frames with NDJSON, one compact JSON
-//! value per line. Compact JSON contains no raw newline, so a line
-//! break is an unambiguous separator.
+//! The envelope defined by the [specification]: the request, response
+//! and error shapes, and nothing about how bytes move.
 //!
-//! The Comodoro method surface built on top of these types lives in
+//! The specification leaves framing to the application, and Comodoro
+//! frames with NDJSON, one compact JSON value per line. Compact JSON
+//! contains no raw newline, so a line break is an unambiguous separator.
+//!
+//! The Comodoro method surface built on these types lives in
 //! [`crate::protocol`].
 //!
 //! [specification]: https://www.jsonrpc.org/specification
@@ -29,12 +29,10 @@ use serde_json::Value;
 /// The only protocol version this module speaks.
 pub const JSONRPC20_VERSION: &str = "2.0";
 
-/// The `jsonrpc` member, which the specification pins to the exact
-/// string `2.0`.
+/// The `jsonrpc` member, pinned by the specification to the string `2.0`.
 ///
-/// Modelled as a type rather than a plain string so a peer speaking
-/// another version is rejected at deserialization instead of halfway
-/// through dispatch.
+/// A type rather than a plain string, so a peer speaking another version
+/// is rejected at deserialization instead of halfway through dispatch.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct Jsonrpc20Version;
 
@@ -60,9 +58,8 @@ impl<'de> Deserialize<'de> for Jsonrpc20Version {
 /// The identifier correlating a request with its response.
 ///
 /// The specification allows a string or a number, and discourages
-/// fractional numbers. A request carrying no identifier at all is a
-/// notification, which is modelled by the absence of
-/// [`Jsonrpc20Request::id`] rather than by a variant here.
+/// fractional ones. A request carrying no identifier is a notification,
+/// modelled by the absence of [`Jsonrpc20Request::id`], not by a variant.
 #[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
 #[serde(untagged)]
 pub enum Jsonrpc20Id {
@@ -89,10 +86,9 @@ impl From<i64> for Jsonrpc20Id {
 
 /// A call from a client to a server.
 ///
-/// The request is a notification when [`Self::id`] is absent, which
-/// tells the server to run the method and send nothing back. Comodoro
-/// uses notifications in the server-to-client direction only, to push
-/// timer events to subscribers.
+/// The request is a notification when [`Self::id`] is absent, telling the
+/// server to run the method and send nothing back. Comodoro notifies in
+/// the server-to-client direction only, to push events to subscribers.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Jsonrpc20Request {
     /// The protocol version tag.
@@ -136,13 +132,10 @@ impl Jsonrpc20Request {
 
 /// The outcome of a call, either a result or an error but never both.
 ///
-/// Flattened into [`Jsonrpc20Response`], so the variant name becomes
-/// the `result` or `error` member. A response carrying both is
-/// unrepresentable here, so this side of the specification's
-/// exclusivity rule is enforced by the type. Reading is deliberately
-/// lenient in the other direction: a malformed response carrying both
-/// members parses as its `result`, since failing to parse a peer's
-/// answer helps nobody.
+/// Flattened into [`Jsonrpc20Response`], so the variant name becomes the
+/// `result` or `error` member and the exclusivity rule is enforced by the
+/// type. Reading stays lenient: a response carrying both parses as its
+/// `result`, since refusing a peer's answer helps nobody.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Jsonrpc20Outcome {
@@ -190,8 +183,7 @@ impl Jsonrpc20Response {
 /// The reason a call failed.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Jsonrpc20Error {
-    /// The error code, one of the reserved codes below or a
-    /// server-defined one.
+    /// The error code, one of the reserved codes below or a custom one.
     pub code: i64,
     /// A single sentence describing the failure.
     pub message: String,
@@ -275,9 +267,9 @@ pub enum Jsonrpc20Incoming {
 
 /// One response or a batch of them, mirroring [`Jsonrpc20Incoming`].
 ///
-/// A batch made only of notifications produces no response at all,
-/// which the specification requires and which callers signal by
-/// sending nothing rather than by an empty batch.
+/// A batch made only of notifications produces no response at all, which
+/// the specification requires and which callers signal by sending nothing
+/// rather than by an empty batch.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(untagged)]
 pub enum Jsonrpc20Outgoing {

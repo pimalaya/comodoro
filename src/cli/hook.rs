@@ -1,17 +1,19 @@
-//! Reactions run when the timer emits an event.
+//! # Hook
 //!
-//! A hook is bound to an event by its name in the account
-//! configuration, and runs either a shell command or a desktop
-//! notification. Both reactions perform their I/O directly, since
-//! neither the process nor the notification backend has anything to
-//! resume.
+//! The reactions run when the timer emits an event, bound to it by name
+//! in the account configuration.
 //!
-//! Both are also read straight into the type performing them, through
-//! the pimalaya-config serde adapters: a shell line or an argument list
-//! becomes a [`Command`], a summary and a body become a
-//! [`Notification`]. A build without the `notify` feature has no
-//! notification backend, so an account carrying one is refused as it
-//! loads, naming the cargo feature to rebuild with.
+//! A hook runs a shell command or a desktop notification, and performs
+//! its I/O directly, neither the process nor the notification backend
+//! having anything to resume.
+//!
+//! Both are read straight into the type performing them, through the
+//! pimalaya-config serde adapters: a shell line or an argument list
+//! becomes a [`Command`], a summary and a body a [`Notification`].
+//!
+//! A build without the `notify` feature has no notification backend, so
+//! an account carrying one is refused as it loads, naming the cargo
+//! feature to rebuild with.
 
 use alloc::{format, string::String};
 
@@ -59,22 +61,19 @@ impl TimerEvent {
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum TimerHook {
-    /// Runs a command, given either as a shell line or as a program
-    /// followed by its arguments.
+    /// Runs a command, a shell line or a program with its arguments.
     Command(#[serde(with = "pimalaya_config::command")] Command),
     /// Sends a desktop notification, given as a summary and a body.
     Notify(#[serde(with = "pimalaya_config::notify")] Notification),
 }
 
 impl TimerHook {
-    /// Runs the reaction and waits for it to complete, logging whatever
-    /// goes wrong.
+    /// Runs the reaction and waits for it, logging whatever goes wrong.
     ///
-    /// A hook reacts to the timer, it is never a step of it, so it
-    /// reports nothing back: a command that cannot be run, one that
-    /// exits non-zero, and a notification that reaches no daemon are
-    /// all logged and left there. Returning no error is what makes it
-    /// impossible for a hook to stop the timer.
+    /// A hook reacts to the timer and is never a step of it: a command
+    /// that cannot be run, one exiting non-zero and a notification
+    /// reaching no daemon are all logged and left there. Returning no
+    /// error is what keeps a hook from stopping the timer.
     pub fn execute(&mut self) {
         match self {
             Self::Command(cmd) => {

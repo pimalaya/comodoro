@@ -5,9 +5,9 @@
 //! # Comodoro
 //!
 //! A shared timer: one server owns it, any number of clients drive it
-//! and watch it. The whole timer logic is a pure state machine that
-//! performs no I/O and reads no clock, so the interesting behaviour can
-//! be tested without a socket and without waiting for time to pass.
+//! and watch it. The timer logic is a pure state machine performing no
+//! I/O and reading no clock, so the interesting behaviour is testable
+//! without a socket and without waiting for time to pass.
 //!
 //! ## Layers
 //!
@@ -15,38 +15,38 @@
 //! pays only for what it uses.
 //!
 //! The core is always compiled and is the only no_std layer. [`timer`]
-//! holds the state machine, [`jsonrpc20`] the JSON-RPC 2.0 envelope,
-//! and [`protocol`] the Comodoro method surface expressed in it. These
-//! three modules are the contract, and they contain no I/O at all.
+//! holds the state machine, [`jsonrpc20`] the JSON-RPC 2.0 envelope and
+//! [`protocol`] the Comodoro method surface expressed in it. These three
+//! modules are the contract, and contain no I/O at all.
 //!
 //! The blocking layer arrives with the `client` and `server` features.
 //! [`transport`] resolves, opens and accepts connections,
 //! [`client::std`] drives a server over one of them, and [`server::std`]
 //! owns the timer, answers requests and pushes notifications.
 //!
-//! Both sit in a module named after the runtime they are written
-//! against, so an asynchronous port lands beside them as `client::tokio`
-//! and `server::tokio` rather than replacing them. Inside such a module
-//! the standard library is reached through `::std`, since the module
-//! name shadows it.
+//! Both sit in a module named after the runtime they target, so an
+//! asynchronous port lands beside them as `client::tokio` and
+//! `server::tokio` rather than replacing them. Inside them the standard
+//! library is reached through `::std`, the module name shadowing it.
 //!
-//! The CLI arrives with the `cli` feature, and lives entirely under
-//! [`cli`]: the command grammar, [`cli::config`] for the TOML
-//! configuration and [`cli::configure`] for generating one,
-//! [`cli::account`] for the resolved view every command runs against,
-//! [`cli::hook`] for the reactions run when the timer emits an event,
-//! [`cli::json_schema`] for the schemas of what the commands print, and
-//! one module per command under [`cli::client`] and [`cli::server`].
-//! One feature therefore gates one subtree.
+//! The CLI arrives with the `cli` feature and lives entirely under
+//! [`cli`], so one feature gates one subtree rather than a scattering of
+//! items.
+//!
+//! [`cli`] holds the command grammar, [`cli::config`] the TOML document,
+//! [`cli::configure`] the wizard writing one, [`cli::account`] the view a
+//! command runs against, [`cli::hook`] the event reactions, and
+//! [`cli::json_schema`] the schemas of the printed output.
+//!
+//! One module per command sits under [`cli::client`] and
+//! [`cli::server`].
 //!
 //! ## Protocol
 //!
 //! Client and server speak [JSON-RPC 2.0] framed as NDJSON, one compact
 //! JSON value per line, over a Unix domain socket or over TCP. The
-//! specification defines the payload and says nothing about transport,
-//! which is exactly the boundary this crate wanted: [`protocol`] is
-//! implementable by anyone in any language, without reading a line of
-//! Rust.
+//! specification defines the payload alone, so [`protocol`] is
+//! implementable in any language, without reading a line of Rust.
 //!
 //! Requests flow client to server and are named after the imperative
 //! that performs them.
@@ -64,12 +64,13 @@
 //!
 //! Notifications flow the other way, are named after the past tense of
 //! what just happened, and reach only the connections that asked for
-//! them with `timer.subscribe`. A connection receives `timer.started`,
-//! `timer.began`, `timer.running`, `timer.durationSet`, `timer.paused`,
-//! `timer.resumed`, `timer.ended` and `timer.stopped` as the timer
-//! changes, each carrying the cycle it concerns except the two
-//! timer-wide ones. Naming the two directions differently is what keeps
-//! a request method and a notification method from ever colliding.
+//! them with `timer.subscribe`. Naming the two directions differently is
+//! what keeps a request and a notification method from ever colliding.
+//!
+//! A subscriber receives `timer.started`, `timer.began`,
+//! `timer.running`, `timer.durationSet`, `timer.paused`,
+//! `timer.resumed`, `timer.ended` and `timer.stopped`, each carrying the
+//! cycle it concerns except the two timer-wide ones.
 //!
 //! Failures come back as the standard codes, and only those.
 //!
@@ -85,11 +86,12 @@
 //! ## Where to look next
 //!
 //! Runnable programs live in the examples folder. The tests cover the
-//! state machine, the envelope against the specification's own
-//! examples, the account configuration and the hooks it binds, the
-//! account the wizard generates, and full client-server exchanges over
-//! both transports. The development history and living design notes
-//! live in the cairn/ folder.
+//! state machine, the envelope against the specification's own examples,
+//! the account configuration and its hooks, the account the wizard
+//! generates, and full exchanges over both transports.
+//!
+//! The development history and living design notes live in the cairn/
+//! folder.
 //!
 //! [JSON-RPC 2.0]: https://www.jsonrpc.org/specification
 

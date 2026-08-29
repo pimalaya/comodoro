@@ -1,4 +1,6 @@
-//! Command overriding the remaining duration of the current cycle.
+//! # Set command
+//!
+//! Overrides the remaining duration of the cycle the timer is running.
 
 // NOTE: the clap derive expands to `format!` when parsing the duration
 // value, which no_std does not put in scope.
@@ -15,8 +17,9 @@ use crate::{
 
 /// Set the remaining duration of the current cycle.
 ///
-/// This command overrides how long is left in the cycle the timer is
-/// currently running, without changing the configured cycles.
+/// Overrides how long is left in the cycle the timer is running, without
+/// touching the configured cycles. The server clamps the request to that
+/// cycle's length, and a stopped timer ignores it.
 #[derive(Debug, Parser)]
 pub struct TimerSetCommand {
     /// The new remaining duration, in seconds.
@@ -25,7 +28,6 @@ pub struct TimerSetCommand {
     // NOTE: the transport comes last here, unlike in the other client
     // commands: clap refuses an optional positional standing before a
     // required one.
-    /// The transport used to reach the server.
     /// The transport used to reach the server.
     #[command(flatten)]
     pub transport: TransportArg,

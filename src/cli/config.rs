@@ -1,15 +1,15 @@
-//! TOML configuration of the Comodoro CLI.
+//! # Configuration
 //!
-//! [`Config`] is the whole document, a table of named accounts. Each
-//! [`AccountConfig`] describes the transports the client and the server
-//! meet on, the timer cycles, and the hooks bound to timer events. Only
-//! the cycles are required: everything else has a default. See
-//! config.sample.toml for the annotated field reference.
+//! The TOML configuration of the Comodoro CLI. [`Config`] is the whole
+//! document, a table of named accounts.
 //!
-//! What lives here is the document and nothing else: its shape, the way
-//! it is read, and the way an account is written back to it. What a
-//! command runs against is [`Account`], the resolved view built from
-//! these types.
+//! Each [`AccountConfig`] describes the transports the two sides meet on,
+//! the timer cycles, and the hooks bound to timer events. Only the cycles
+//! are required, and config.sample.toml is the annotated reference.
+//!
+//! What lives here is the document alone: its shape, the way it is read,
+//! and the way an account is written back to it. What a command runs
+//! against is [`Account`], the resolved view built from these types.
 //!
 //! [`Account`]: crate::cli::account::Account
 
@@ -30,8 +30,8 @@ use crate::{
     transport::{TimerAddress, default_socket_path},
 };
 
-/// The annotated field reference, pointed at whenever a configuration
-/// is missing or a field needs a human rather than a prompt.
+/// The annotated field reference, pointed at whenever a configuration is
+/// missing or a field needs a human rather than a prompt.
 pub const CONFIG_SAMPLE_URL: &str = concat!(
     env!("CARGO_PKG_REPOSITORY"),
     "/blob/master/config.sample.toml"
@@ -75,9 +75,8 @@ pub struct AccountConfig {
     /// Where the client and the server meet over a local socket.
     ///
     /// Every field has a default, so an account describes a socket
-    /// without holding a `socket` table at all. What the table adjusts
-    /// is the address, never whether the transport exists: which one a
-    /// server binds is what `server start` decides.
+    /// without holding a `socket` table at all: the table adjusts the
+    /// address, never whether the transport exists.
     ///
     /// Also spelled `unix-socket`, the name Comodoro 1.x used, so a 1.x
     /// account file loads unchanged.
@@ -91,8 +90,7 @@ pub struct AccountConfig {
     pub tcp: TcpConfig,
     /// The ordered cycles the timer runs through.
     pub cycles: Vec<TimerCycle>,
-    /// How many full loops the timer runs before stopping, unbounded
-    /// when absent.
+    /// How many full loops the timer runs, unbounded when absent.
     pub cycles_count: Option<usize>,
     /// How precisely the remaining duration is displayed.
     #[serde(default)]
@@ -103,24 +101,21 @@ pub struct AccountConfig {
 }
 
 impl AccountConfig {
-    /// Renders the account as the annotated sample writes one: one
-    /// cycle per line, `name` before `duration`, and only the fields
-    /// that are set.
+    /// Renders the account as the annotated sample writes one: one cycle
+    /// per line, `name` before `duration`, and only the fields that are
+    /// set.
     ///
-    /// Hand-rendered rather than serialized, because the shared
-    /// serializer renders a whole array on one line. That suits the
-    /// short arrays the other Pimalaya wizards emit, and turns a
-    /// six-cycle pomodoro into a two-hundred-column line, in a document
-    /// whose whole point is to be edited by hand afterwards.
+    /// Hand-rendered rather than serialized, the shared serializer
+    /// rendering a whole array on one line: that turns a six-cycle
+    /// pomodoro into a two-hundred-column line in a hand-edited document.
     ///
-    /// This is the direction [`Account`] cannot take: a resolved
-    /// account has lost the difference between a field left out and a
-    /// field written to today's default, so rendering one would freeze
-    /// a runtime socket path into the file.
+    /// The direction [`Account`] cannot take: a resolved account has lost
+    /// the difference between a field left out and one written to today's
+    /// default, so rendering one would freeze a socket path into the file.
     ///
-    /// Nothing here needs escaping, since the caller is the wizard: the
-    /// cycles come from its presets and the name from theirs, which are
-    /// bare TOML keys by construction.
+    /// Nothing needs escaping, the caller being the wizard: the cycles
+    /// come from its presets and the name from theirs, bare TOML keys by
+    /// construction.
     ///
     /// [`Account`]: crate::cli::account::Account
     pub fn render(&self, name: &str) -> String {
@@ -145,8 +140,8 @@ impl AccountConfig {
         }
 
         // NOTE: every transport field has a default, so what is written
-        // is what departs from one. An account taking them all holds
-        // its cycles and nothing else.
+        // is what departs from one. An account taking them all holds its
+        // cycles and nothing else.
         if self.socket.path != default_socket_path() {
             document.push_str(&format!(
                 "socket.path = \"{}\"\n",
@@ -183,8 +178,8 @@ pub struct SocketConfig {
     pub default: bool,
     /// The socket path to bind and connect to.
     ///
-    /// Defaults to comodoro.sock inside `$XDG_RUNTIME_DIR`, or inside
-    /// the platform temporary directory when that variable is unset.
+    /// Defaults to comodoro.sock inside `$XDG_RUNTIME_DIR`, or inside the
+    /// platform temporary directory when that variable is unset.
     #[serde(default = "default_socket_path")]
     pub path: PathBuf,
 }
@@ -208,8 +203,8 @@ impl Default for SocketConfig {
 /// Where a client and a server meet over TCP.
 ///
 /// The listener it describes is unauthenticated, so whoever reaches the
-/// port drives the timer. Hence the loopback host, which is the one
-/// default an account should have to overrule deliberately.
+/// port drives the timer. Hence the loopback host, the one default an
+/// account should have to overrule deliberately.
 #[derive(Debug, Eq, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct TcpConfig {
@@ -246,8 +241,8 @@ impl Default for TcpConfig {
 
 /// The host a `tcp` table falls back to.
 ///
-/// The listener is unauthenticated, so an account that names no host
-/// stays where only this machine can reach it.
+/// The listener is unauthenticated, so an account naming no host stays
+/// where only this machine can reach it.
 pub const LOCALHOST: &str = "127.0.0.1";
 
 /// The port a `tcp` table falls back to.

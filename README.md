@@ -106,7 +106,9 @@ Run `comodoro` with no command: it offers to generate a first account, which `co
 
 A configuration is loaded from the first valid path among `$XDG_CONFIG_HOME/comodoro/config.toml`, `$HOME/.config/comodoro/config.toml` and `$HOME/.comodororc`. Override it with `-c <PATH>` or `COMODORO_CONFIG=<PATH>`, `:`-separated to deep-merge several files on top of the first.
 
-An account only needs its `cycles`. Everything else defaults: a socket under `$XDG_RUNTIME_DIR`, TCP on loopback port 9999, an endless loop, a precision of one minute. Which transport a server binds is what `comodoro server start [TRANSPORTS]` says, and which one a client talks over is what `socket.default` or `tcp.default` says. The TCP listener is unauthenticated, so keep it on loopback unless you mean otherwise.
+An account only needs its `cycles`. Everything else defaults: a socket under `$XDG_RUNTIME_DIR`, TCP on loopback port 9999, an endless loop, a precision of one minute.
+
+Which transport a server binds is what `comodoro server start [TRANSPORTS]` says, and which one a client talks over is what `socket.default` or `tcp.default` says. The TCP listener is unauthenticated, so keep it on loopback unless you mean otherwise.
 
 ## Usage
 

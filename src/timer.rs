@@ -1,10 +1,11 @@
-//! Pure timer state machine.
+//! # Timer
 //!
-//! The [`Timer`] struct is I/O-free: it never reads the clock itself.
-//! Methods that need the current time accept `now: u64` (Unix epoch
-//! seconds) as a parameter, so the caller decides where time comes
-//! from. This is the whole of Comodoro's logic, and it knows nothing
-//! about sockets, JSON-RPC or configuration.
+//! The pure timer state machine. [`Timer`] never reads the clock: the
+//! methods needing the current time take `now: u64`, Unix epoch seconds,
+//! so the caller decides where time comes from.
+//!
+//! This is the whole of Comodoro's logic, and it knows nothing about
+//! sockets, JSON-RPC or configuration.
 
 use alloc::{
     string::{String, ToString},
@@ -17,9 +18,7 @@ use serde::{Deserialize, Serialize};
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub enum TimerLoop {
-    /// The timer loops indefinitely and never stops by itself.
-    ///
-    /// The only way to stop such a timer is via [`Timer::stop`].
+    /// The timer loops indefinitely, stopping only through [`Timer::stop`].
     #[default]
     Infinite,
     /// The timer stops automatically after the given number of loops.
@@ -36,8 +35,7 @@ impl From<usize> for TimerLoop {
     }
 }
 
-/// A single step in the timer lifecycle, identified by a name and a
-/// duration in seconds.
+/// A single step in the timer lifecycle: a name and a duration in seconds.
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub struct TimerCycle {
@@ -45,9 +43,8 @@ pub struct TimerCycle {
     pub name: String,
     /// Remaining seconds in this cycle.
     ///
-    /// From the *configuration* perspective this is the total cycle
-    /// duration; from the *running timer* perspective it is the time
-    /// remaining before the cycle ends.
+    /// From the configuration perspective this is the total cycle
+    /// duration, from the running timer perspective the time left.
     pub duration: usize,
 }
 
@@ -77,8 +74,8 @@ pub enum TimerState {
 /// An event emitted by a timer during its lifecycle.
 ///
 /// Serialized adjacently, as `{"event": "began", "cycle": {…}}`, so an
-/// event stays self-describing wherever it travels without a method
-/// name next to it. See [`crate::protocol`] for the wire mapping.
+/// event stays self-describing without a method name next to it. See
+/// [`crate::protocol`] for the wire mapping.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(tag = "event", content = "cycle", rename_all = "camelCase")]
 pub enum TimerEvent {
@@ -112,8 +109,7 @@ pub enum TimerEvent {
 pub struct TimerSchedule {
     /// The ordered list of timer cycles.
     pub cycles: Vec<TimerCycle>,
-    /// How many full loops through the cycles the timer runs before
-    /// stopping.
+    /// How many full loops the timer runs before stopping.
     pub loops: TimerLoop,
 }
 
@@ -125,16 +121,12 @@ impl TimerSchedule {
             .expect("timer schedule must have at least one cycle")
     }
 
-    /// The cycles with their durations accumulated, so each one carries
-    /// the elapsed time at which it ends and the last one carries the
-    /// duration of a full loop.
+    /// The cycles with their durations accumulated, so each carries the
+    /// elapsed time at which it ends and the last a full loop.
     ///
-    /// This is the view the timer reads the current cycle from: an
-    /// elapsed time names a cycle by falling before its end and after
-    /// the end of the one preceding it.
-    ///
-    /// Empty when the cycles are, and when they all last no time, since
-    /// no elapsed time can name a cycle in either case.
+    /// An elapsed time names a cycle by falling before its end and after
+    /// the previous one's. Empty when the cycles all last no time, since
+    /// no elapsed time can name a cycle then.
     fn cumulated_cycles(&self) -> Vec<TimerCycle> {
         let cycles: Vec<_> = self
             .cycles
@@ -156,10 +148,9 @@ impl TimerSchedule {
 
 /// An I/O-free timer state machine.
 ///
-/// All methods that depend on the current time accept `now: u64`
-/// (seconds since the Unix epoch) rather than reading the clock
-/// internally, which is what keeps the timer testable without a clock
-/// and usable under no_std.
+/// Methods depending on the current time take `now: u64`, seconds since
+/// the Unix epoch, rather than reading the clock, which keeps the timer
+/// testable without a clock and usable under no_std.
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct Timer {
@@ -169,11 +160,10 @@ pub struct Timer {
     pub state: TimerState,
     /// The current cycle (with remaining duration).
     pub cycle: TimerCycle,
-    /// Unix epoch seconds at which the timer was last started or
-    /// resumed. `None` when the timer is stopped or paused.
+    /// Unix epoch seconds of the last start or resume, `None` when the
+    /// timer is stopped or paused.
     pub started_at: Option<u64>,
-    /// Accumulated elapsed seconds from previous runs (before the
-    /// last pause or stop).
+    /// Accumulated elapsed seconds from before the last pause or stop.
     pub elapsed: usize,
 }
 
@@ -193,8 +183,8 @@ impl Timer {
         }
     }
 
-    /// Returns the total elapsed seconds since the timer last started
-    /// or resumed, plus any previously accumulated elapsed time.
+    /// The seconds elapsed since the last start or resume, plus the
+    /// accumulated ones.
     pub fn elapsed(&self, now: u64) -> usize {
         let running = self
             .started_at
@@ -203,23 +193,15 @@ impl Timer {
         running + self.elapsed
     }
 
-    /// Advances the timer by one tick and returns any events that
-    /// fired.
+    /// Advances the timer by one tick and returns the events that fired.
     ///
-    /// Reports the cycle it just computed, never the one it replaced. A
-    /// tick staying inside its cycle emits [`TimerEvent::Running`], a
-    /// tick crossing into another emits [`TimerEvent::Ended`] then
-    /// [`TimerEvent::Began`] instead, and a tick changing nothing emits
-    /// nothing, which is what a tick landing less than a second after a
-    /// [`Self::set`] does.
+    /// Reports the cycle just computed: [`TimerEvent::Running`] inside a
+    /// cycle, [`TimerEvent::Ended`] then [`TimerEvent::Began`] across a
+    /// boundary, [`TimerEvent::Stopped`] and a reset on the last loop.
     ///
-    /// The tick completing the last configured loop emits
-    /// [`TimerEvent::Ended`] then [`TimerEvent::Stopped`], and resets
-    /// the timer, exactly as [`Self::stop`] would.
-    ///
-    /// Has no effect when the timer is paused or stopped, nor when its
-    /// cycles add up to no time, since no elapsed time can name a cycle
-    /// in that configuration.
+    /// Emits nothing on a paused or stopped timer, on a tick changing
+    /// nothing, and on cycles adding up to no time, since no elapsed time
+    /// can name a cycle in that configuration.
     pub fn update(&mut self, now: u64) -> impl IntoIterator<Item = TimerEvent> {
         let mut events = Vec::with_capacity(3);
 
@@ -257,10 +239,9 @@ impl Timer {
                 })
                 .unwrap_or(last_cycle);
 
-            // NOTE: a boundary shows as a different name, or as remaining
-            // time going back up, which is what a cycle repeating its
-            // predecessor's name looks like, and what a single looping
-            // cycle looks like every time it comes round.
+            // NOTE: a boundary also shows as remaining time going back
+            // up, which is what a cycle repeating its predecessor's name
+            // and a single looping cycle both look like.
             let began_cycle =
                 self.cycle.name != next_cycle.name || next_cycle.duration > self.cycle.duration;
 
@@ -298,21 +279,15 @@ impl Timer {
     }
 
     /// Sets the remaining duration of the current cycle to
-    /// `duration_secs`.
+    /// `duration_secs`, clamped to that cycle's configured length.
     ///
-    /// The current cycle is derived from the elapsed time rather than
-    /// stored, so this moves the elapsed time to the point that leaves
-    /// `duration_secs` remaining, and every later tick recomputes the
-    /// value it was given.
+    /// The cycle is derived from the elapsed time rather than stored, so
+    /// this moves the elapsed time to the point leaving `duration_secs`
+    /// remaining. A longer one would rename the cycle under the caller,
+    /// hence the clamp, whose effective value the returned event carries.
     ///
-    /// A cycle cannot hold more than its configured length, since a
-    /// longer remaining duration would place the timeline inside the
-    /// previous cycle and rename the cycle under the caller. The
-    /// request is clamped to that length, and the returned event
-    /// carries the effective value.
-    ///
-    /// Has no effect if the timer is stopped, since [`Self::start`]
-    /// resets the elapsed time anyway.
+    /// Has no effect on a stopped timer, whose elapsed time
+    /// [`Self::start`] resets anyway.
     pub fn set(&mut self, now: u64, duration_secs: usize) -> impl IntoIterator<Item = TimerEvent> {
         if matches!(self.state, TimerState::Stopped) {
             return None;
@@ -372,9 +347,9 @@ impl Timer {
 
     /// Stops the timer and resets it to the initial state.
     ///
-    /// Acts on a paused timer as well as on a running one, since a
-    /// paused timer that cannot be stopped can only be left behind.
-    /// Has no effect if the timer is already stopped.
+    /// Acts on a paused timer as well as on a running one, since a paused
+    /// timer that cannot be stopped can only be left behind. Has no
+    /// effect if the timer is already stopped.
     pub fn stop(&mut self) -> impl IntoIterator<Item = TimerEvent> {
         let mut events = Vec::with_capacity(2);
 
@@ -387,8 +362,7 @@ impl Timer {
         events
     }
 
-    /// Returns the timer to the state a fresh one is in, keeping no
-    /// elapsed time and no progress through the cycles.
+    /// Returns the timer to the state a fresh one is in.
     fn reset(&mut self) {
         self.state = TimerState::Stopped;
         self.cycle = self.schedule.first_cycle();
@@ -471,6 +445,9 @@ mod tests {
         assert_eq!(timer.cycle, TimerCycle::new("a", 3));
     }
 
+    /// Each tick reports what it just computed, so the durations go down
+    /// without repeating, and the tick ending a cycle says so rather than
+    /// announcing the cycle it is leaving.
     #[test]
     fn running_timer_events() {
         let mut timer = testing_timer();
@@ -481,9 +458,6 @@ mod tests {
         events.extend(timer.update(3));
         events.extend(timer.update(4));
 
-        // Each tick reports what it just computed, so the durations go
-        // down without repeating, and the tick ending a cycle says so
-        // rather than announcing the cycle it is leaving.
         assert_eq!(
             events,
             vec![
@@ -565,6 +539,8 @@ mod tests {
         );
     }
 
+    /// The cycle is derived from the elapsed time, so a tick recomputes
+    /// the duration a set moved the timeline to rather than dropping it.
     #[test]
     fn a_set_duration_survives_the_next_ticks() {
         let mut timer = testing_timer();
@@ -572,8 +548,6 @@ mod tests {
         timer.set(0, 2);
         assert_eq!(timer.cycle, TimerCycle::new("a", 2));
 
-        // The cycle is derived from the elapsed time, so the tick that
-        // used to discard the set duration now recomputes it.
         timer.update(0);
         assert_eq!(timer.cycle, TimerCycle::new("a", 2));
 
@@ -584,14 +558,14 @@ mod tests {
         assert_eq!(timer.cycle, TimerCycle::new("b", 2));
     }
 
+    /// The tick lands in the same second as the set, so it recomputes the
+    /// duration the set already announced.
     #[test]
     fn a_tick_changing_nothing_says_nothing() {
         let mut timer = testing_timer();
 
         timer.set(0, 2);
 
-        // The tick lands in the same second as the set, so it recomputes
-        // the duration the set already announced.
         assert_eq!(timer.update(0).into_iter().count(), 0);
         assert_eq!(timer.cycle, TimerCycle::new("a", 2));
 
@@ -599,14 +573,14 @@ mod tests {
         assert_eq!(events, vec![TimerEvent::Running(TimerCycle::new("a", 1))]);
     }
 
+    /// Cycle "a" lasts 3, so asking for 10 restarts it instead of
+    /// rewinding into the cycle before it, and the event says so.
     #[test]
     fn a_set_duration_is_clamped_to_the_cycle_length() {
         let mut timer = testing_timer();
         timer.update(2);
         assert_eq!(timer.cycle, TimerCycle::new("a", 1));
 
-        // Cycle "a" lasts 3, so asking for 10 restarts it instead of
-        // rewinding into the cycle before it, and the event says so.
         let events: Vec<_> = timer.set(2, 10).into_iter().collect();
 
         assert_eq!(events, vec![TimerEvent::Set(TimerCycle::new("a", 3))]);
@@ -634,6 +608,8 @@ mod tests {
         );
     }
 
+    /// Resuming ten seconds later resumes what was set, rather than
+    /// counting the pause as elapsed time.
     #[test]
     fn a_set_duration_holds_across_a_pause() {
         let mut timer = testing_timer();
@@ -643,8 +619,6 @@ mod tests {
         assert_eq!(timer.cycle, TimerCycle::new("a", 2));
         assert_eq!(timer.started_at, None);
 
-        // Resuming ten seconds later resumes what was set, rather than
-        // counting the pause as elapsed time.
         timer.resume(11);
         timer.update(11);
         assert_eq!(timer.cycle, TimerCycle::new("a", 2));
@@ -663,6 +637,8 @@ mod tests {
         assert_eq!(timer, stopped);
     }
 
+    /// The sixth second completes the second loop of a three second
+    /// configuration, which is the one moment a bounded timer exists for.
     #[test]
     fn a_completed_timer_says_so_and_resets() {
         let mut timer = Timer::new(TimerSchedule {
@@ -673,8 +649,6 @@ mod tests {
         timer.start(0);
         timer.update(5);
 
-        // The sixth second completes the second loop of a three second
-        // configuration, and the timer used to fall silent there.
         let events: Vec<_> = timer.update(6).into_iter().collect();
 
         assert_eq!(
@@ -690,6 +664,8 @@ mod tests {
         assert_eq!(timer.started_at, None);
     }
 
+    /// The cycle coming round carries the name of the one that just
+    /// ended, so comparing names alone cannot see the boundary.
     #[test]
     fn a_single_looping_cycle_announces_every_round() {
         let mut timer = Timer::new(TimerSchedule {
@@ -700,8 +676,6 @@ mod tests {
         timer.start(0);
         timer.update(1);
 
-        // Comparing names alone missed this boundary, since the cycle
-        // coming round carries the name of the one that just ended.
         let events: Vec<_> = timer.update(2).into_iter().collect();
 
         assert_eq!(
@@ -762,6 +736,8 @@ mod tests {
         assert_eq!(timer.stop().into_iter().count(), 0);
     }
 
+    /// No elapsed time can name a cycle here, so the tick and the set
+    /// both bail out rather than divide by the zero-length loop.
     #[test]
     fn cycles_lasting_no_time_are_inert() {
         let mut timer = Timer::new(TimerSchedule {
@@ -771,8 +747,6 @@ mod tests {
 
         timer.start(0);
 
-        // No elapsed time can name a cycle here, so the tick and the set
-        // both bail out rather than divide by the zero-length loop.
         assert_eq!(timer.update(10).into_iter().count(), 0);
         assert_eq!(timer.set(10, 1).into_iter().count(), 0);
     }

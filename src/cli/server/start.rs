@@ -1,4 +1,6 @@
-//! Command starting the timer server.
+//! # Server start command
+//!
+//! Binds the account transports and runs the timer until interrupted.
 
 use alloc::vec::Vec;
 
@@ -13,22 +15,22 @@ use crate::{
 
 /// Start the server.
 ///
-/// This command binds the account transports and runs the timer until
-/// interrupted, firing the configured hook on every event.
+/// Binds the given transports and runs the timer in the foreground until
+/// interrupted, firing the configured hook on every event it emits.
 #[derive(Debug, Parser)]
 pub struct TimerServerStartCommand {
     /// The transports the server accepts requests on.
     ///
-    /// Defaults to the one the account marks as default, which is the
-    /// local socket unless `tcp.default` says otherwise. Name both to
-    /// serve the same timer over both at once.
+    /// Defaults to the one the account marks as default, the local socket
+    /// unless `tcp.default` says otherwise. Name both to serve the same
+    /// timer over both at once.
     #[arg(name = "transports", value_name = "TRANSPORTS")]
     pub transports: Vec<Transport>,
 }
 
 impl TimerServerStartCommand {
-    /// Binds the transports, then runs the hook bound to every event
-    /// the timer emits, until the server is killed.
+    /// Binds the transports, then runs the hook bound to every event the
+    /// timer emits, until the server is killed.
     pub fn execute(self, account: &mut Account) -> Result<()> {
         let addresses = account.addresses(&self.transports);
         let events = TimerServer {
