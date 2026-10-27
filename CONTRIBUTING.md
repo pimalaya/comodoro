@@ -15,7 +15,7 @@ Everything below documents only what differs from the Pimalaya standards.
 
 Comodoro is self-contained. Unlike the rest of the Pimalaya binaries it drives no io- library: the timer state machine, the wire protocol and the blocking client and server all live in this repository. A protocol or timer fix therefore lands here, not upstream.
 
-Only three shared crates are consumed. The clap arguments, prompts, printer, logger and error reporting come from [pimalaya/cli](https://github.com/pimalaya/cli), the TOML loader and the command serde adapter from [pimalaya/config](https://github.com/pimalaya/config), and desktop notifications from [notify-rust](https://crates.io/crates/notify-rust). The `[patch.crates-io]` table currently points pimalaya-cli at its git repository, since the `--help` footer macro is newer than its latest release: publishing waits on that release, and on the patch going away with it. To build against a local checkout of a Pimalaya crate, add a `<crate>.path = "../<repo>"` entry there.
+Only three shared crates are consumed. The clap arguments, prompts, printer, logger and error reporting come from [pimalaya/cli](https://github.com/pimalaya/cli), the TOML loader and the command serde adapter from [pimalaya/config](https://github.com/pimalaya/config), and desktop notifications from [notify-rust](https://crates.io/crates/notify-rust). The `[patch.crates-io]` table currently points pimalaya-cli at its git repository, since the machine output contract (`JsonSchemaRegistry`, the `ErrorReport` schema) is newer than its latest release: publishing waits on that release, and on the patch going away with it. To build against a local checkout of a Pimalaya crate, add a `<crate>.path = "../<repo>"` entry there.
 
 ## Feature matrix
 

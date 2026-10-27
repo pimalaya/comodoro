@@ -63,7 +63,7 @@ Every address is bound before the first connection is accepted, so a server that
 
 ## Requirement: The timer is one object, and it says what it runs
 
-A timer carries its `schedule`, its `state`, its current `cycle`, the `started_at` it was last started or resumed at, and the `elapsed` seconds accumulated before the last pause or stop.
+A timer carries its `schedule`, its `state`, its current `cycle`, the `startedAt` it was last started or resumed at, and the `elapsed` seconds accumulated before the last pause or stop.
 
 ```json
 {
@@ -73,14 +73,14 @@ A timer carries its `schedule`, its `state`, its current `cycle`, the `started_a
   },
   "state": "Running",
   "cycle": { "name": "Work", "duration": 1493 },
-  "started_at": 1786711298,
+  "startedAt": 1786711298,
   "elapsed": 0
 }
 ```
 
-The schedule is what the timer was given and never changes: its `cycles` in the order they run, each with its configured duration, and its `loops`, either `"Infinite"` or `{"Fixed": n}` full loops through those cycles. The `cycle` is where the timer is now, and its `duration` is the time remaining rather than the configured one, so it is the field a status bar reads. `state` is `Running`, `Paused` or `Stopped`, and `started_at` is null unless the state is `Running`.
+The schedule is what the timer was given and never changes: its `cycles` in the order they run, each with its configured duration, and its `loops`, either `"Infinite"` or `{"Fixed": n}` full loops through those cycles. The `cycle` is where the timer is now, and its `duration` is the time remaining rather than the configured one, so it is the field a status bar reads. `state` is `Running`, `Paused` or `Stopped`, and `startedAt` is null unless the state is `Running`.
 
-The remaining duration is derived from `started_at` and `elapsed` rather than stored, which is why nothing in the object counts down loops or cycles: an elapsed time names both.
+The remaining duration is derived from `startedAt` and `elapsed` rather than stored, which is why nothing in the object counts down loops or cycles: an elapsed time names both.
 
 A method that cannot apply to the current state answers with an empty `events` array rather than with an error. Starting a running timer, pausing a paused one and stopping a stopped one all report nothing happened, since the caller asked for a state the timer is already in.
 
@@ -167,3 +167,9 @@ A top-level array of requests is executed in order, and answered with an array h
 ## Requirement: Error codes -32000 to -32099 are reserved and unused
 
 The specification reserves that range for server-defined errors. Comodoro defines none: every failure it can report today is one of the standard codes.
+
+## Requirement: JSON keys are camelCase
+
+Every JSON object Comodoro emits, the `--json` payloads and the JSON-RPC results and notifications alike, SHALL spell its keys in camelCase, so each key stays reachable by dot access in jq and JavaScript and so the payload matches the camelCase the method and event names already use. A field carrying a provider spelling verbatim SHALL keep its explicit `#[serde(rename)]`, since names like `@odata.nextLink` and `nextPageToken` are the provider's rather than derivable ones.
+
+Configuration types SHALL stay kebab-case: they are read from TOML, and what the loader reads is not what the printer emits. `TimerPrecision` keeps its kebab-case spelling, renaming variant names that travel as values rather than as keys.

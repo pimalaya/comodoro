@@ -13,20 +13,21 @@
 //!
 //! [`JsonSchemaCommand`]: pimalaya_cli::clap::commands::JsonSchemaCommand
 
-use alloc::string::{String, ToString};
+use alloc::string::ToString;
 
 use std::collections::BTreeMap;
 
+use pimalaya_cli::{clap::commands::JsonSchemaRegistry, error::ErrorReport};
 use schemars::schema_for;
-use serde_json::Value;
 
 use crate::{cli::configure::GeneratedConfig, timer::Timer};
 
-/// Builds the command-to-schema map consumed by `json-schema`.
+/// Builds the command-to-schema registry consumed by `json-schema`.
 ///
 /// Each value is the JSON Schema of the Rust type the command hands to
-/// `printer.out(...)`, which is what `--json` serializes.
-pub fn generate() -> BTreeMap<String, Value> {
+/// `printer.out(...)`, which is what `--json` serializes, and
+/// `comodoro-error` the failure object every command prints instead.
+pub fn registry() -> JsonSchemaRegistry {
     let mut schemas = BTreeMap::new();
 
     macro_rules! insert {
@@ -43,6 +44,21 @@ pub fn generate() -> BTreeMap<String, Value> {
     insert!("comodoro-get", Timer);
     insert!("comodoro-watch", Timer);
     insert!("comodoro-configure", GeneratedConfig);
+    insert!("comodoro-error", ErrorReport);
 
-    schemas
+    JsonSchemaRegistry {
+        bin: "comodoro",
+        version: env!("CARGO_PKG_VERSION"),
+        schemas,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use alloc::vec::Vec;
+
+    #[test]
+    fn every_payload_is_an_object() {
+        assert_eq!(super::registry().non_object_roots(), Vec::<&str>::new());
+    }
 }

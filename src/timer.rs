@@ -153,6 +153,7 @@ impl TimerSchedule {
 /// testable without a clock and usable under no_std.
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Timer {
     /// What the timer runs: its cycles, and how many loops of them.
     pub schedule: TimerSchedule,

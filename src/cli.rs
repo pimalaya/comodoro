@@ -215,7 +215,7 @@ impl Command {
 
             Self::Completion(cmd) => cmd.execute(printer, Cli::command()),
             Self::Manual(cmd) => cmd.execute(printer, Cli::command()),
-            Self::JsonSchema(cmd) => cmd.execute(printer, json_schema::generate()),
+            Self::JsonSchema(cmd) => cmd.execute(printer, json_schema::registry()),
         }
     }
 }
