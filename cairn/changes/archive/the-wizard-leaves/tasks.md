@@ -13,5 +13,5 @@ change: the-wizard-leaves
 - [x] src/main.rs header: no longer describes the wizard
 - [x] README, config.sample.toml header
 - [x] CHANGELOG: one Removed entry, BREAKING
-- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` (default and all features), `cargo test --all-features`; `json-schema -d` diff showing only `comodoro-configure` gone
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` (default and all features), `cargo test --all-features`; `json-schema -d` diff showing only `comodoro-configure` gone (checked through the registry test and printed schemas, no `-d` diff run)
 - [x] Fold the delta (spec/config.md created, spec/json-output.md), log, land, archive

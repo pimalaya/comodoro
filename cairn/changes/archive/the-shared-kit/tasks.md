@@ -17,6 +17,6 @@ change: the-shared-kit
 - [x] tests/config.rs on the new resolution
 - [x] README and config.sample.toml header: `-c` repeated, layered defaults, no `COMODORO_CONFIG`
 - [x] CHANGELOG: Changed (BREAKING `-c`), Added (welcome), Fixed (several defaults refused)
-- [x] `cargo fmt --check`, clippy (default, all features), `cargo test --all-features`; `json-schema -d` structurally identical but for `comodoro-error`
+- [x] `cargo fmt --check`, clippy (default, all features), `cargo test --all-features`; `json-schema -d` structurally identical but for `comodoro-error` (checked through the registry test and printed schemas, no `-d` diff run)
 - [x] Manual run under `script` with an empty `HOME`: bare `comodoro` and `comodoro get` print the welcome and exit 1
 - [x] Fold the delta into spec/config.md and spec/output.md, log, land, archive

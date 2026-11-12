@@ -13,5 +13,5 @@ change: the-outputs-become-data
 - [x] src/cli/json_schema.rs: the five control keys; the module doc no longer says the controls carry no schema
 - [x] Cargo.toml: humantime with `default-features = false`, in the `cli` feature
 - [x] CHANGELOG: Changed entries, BREAKING (`startedAt` an RFC 3339 instant under `--json`; the controls print the timer)
-- [x] `cargo fmt --check`, clippy (default, all features), `cargo test --all-features`; `json-schema -d` diff showing the five new keys and `startedAt` a string
+- [x] `cargo fmt --check`, clippy (default, all features), `cargo test --all-features`; `json-schema -d` diff showing the five new keys and `startedAt` a string (checked through the registry test and printed schemas, no `-d` diff run)
 - [x] Fold the delta (spec/json-output.md renamed spec/output.md), log, land, archive

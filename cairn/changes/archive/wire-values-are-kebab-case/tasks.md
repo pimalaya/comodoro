@@ -11,5 +11,5 @@ change: wire-values-are-kebab-case
 - [x] src/client/std.rs: the version error in place of "Deserialize timer response error"
 - [x] examples/ and the rest of tests/timer.rs unchanged and passing
 - [x] CHANGELOG: Changed entry, BREAKING, for the wire and `--json` alike
-- [x] `cargo fmt --check`, clippy (default, all features, `--no-default-features`), `cargo test --all-features`; `json-schema -d` diff showing only the two value spellings
+- [x] `cargo fmt --check`, clippy (default, all features, `--no-default-features`), `cargo test --all-features`; `json-schema -d` diff showing only the two value spellings (checked through the registry test and printed schemas, no `-d` diff run)
 - [x] Fold the delta into spec/protocol.md, log, land, archive

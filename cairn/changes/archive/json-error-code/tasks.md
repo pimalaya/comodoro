@@ -12,5 +12,5 @@ change: json-error-code
 - [x] src/cli/json_schema.rs: `comodoro-error` typed by the code vocabulary
 - [x] Check whether pimalaya-cli 0.4 prints `code: null` or omits it for an uncoded failure, and spell the requirement accordingly
 - [x] CHANGELOG: Added entry
-- [x] `cargo fmt --check`, clippy (default, all features, `--no-default-features --features client`), `cargo test --all-features`; `json-schema -d` diff showing only `comodoro-error`
+- [x] `cargo fmt --check`, clippy (default, all features, `--no-default-features --features client`), `cargo test --all-features`; `json-schema -d` diff showing only `comodoro-error` (checked through the registry test and printed schemas, no `-d` diff run)
 - [x] Fold the delta into spec/output.md, log, land, archive

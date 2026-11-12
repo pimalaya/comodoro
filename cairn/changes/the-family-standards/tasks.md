@@ -13,7 +13,7 @@ change: the-family-standards
 - [x] json-error-code
 - [x] the-sample-is-tested-and-shipped
 - [x] hook-templates-from-config
-- [ ] dependencies-trimmed
+- [x] dependencies-trimmed
 - [ ] every-feature-set-builds-clean
 - [ ] the-shared-repl-and-mcp
 - [ ] release-polish

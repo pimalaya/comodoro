@@ -1,7 +1,7 @@
 ---
 cairn: change
 id: dependencies-trimmed
-status: active
+status: landed
 created: 2026-11-12
 ---
 
