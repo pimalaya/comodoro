@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Breaking:** changed `start`, `pause`, `resume`, `stop` and `set` to print the timer after their change, as `get` does, instead of a confirmation sentence: the one-line status as text, and the timer object under `--json`, each described in `json-schema` (`comodoro-start` and the others).
+- **Breaking:** changed `startedAt` under `--json` to an RFC 3339 instant in UTC (`2026-11-12T09:00:00Z`) instead of epoch seconds. The JSON-RPC protocol keeps epoch seconds.
 - **Breaking:** changed the timer's values to kebab-case, both in the `--json` output and in the JSON-RPC protocol: `state` reads `running`, `paused` or `stopped` instead of `Running`, `Paused` or `Stopped`, and the schedule's `loops` is the number of loops or `null` when unbounded instead of `"Infinite"` or `{"Fixed": n}`. A client meeting a server of the previous version fails saying it may run another Comodoro version: restart the server, and any `watch` still running, after upgrading.
 - **Breaking:** renamed the timer's `started_at` key to `startedAt`, both in the `--json` output of `get` and `watch` and in the JSON-RPC protocol (the `timer.get` result), so every JSON key Comodoro emits is camelCase. Third-party clients reading the field need the new spelling, and schemas pinned from `json-schema` need regenerating.
 - Changed piped `--json` output to print one value per line, flushed, so `watch --json` streams newline-delimited JSON instead of values glued together and held in the buffer; each schema of `json-schema` now carries an `$id` naming the contract version (`v2`), and `comodoro-error` describes the JSON failure object (pimalaya-cli `55b6693`).

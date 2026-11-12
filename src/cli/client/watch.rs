@@ -7,7 +7,7 @@ use clap::Parser;
 use pimalaya_cli::printer::Printer;
 
 use crate::{
-    cli::{account::Account, client::timer::DisplayTimer, transport::TransportArg},
+    cli::{account::Account, client::timer::TimerOutput, transport::TransportArg},
     client::std::TimerClient,
 };
 
@@ -31,10 +31,7 @@ impl TimerWatchCommand {
         client.subscribe()?;
 
         let mut last = client.get()?;
-        printer.out(DisplayTimer {
-            account,
-            timer: last.clone(),
-        })?;
+        printer.out(TimerOutput::new(last.clone(), account.precision.clone()))?;
 
         while client.next_event()?.is_some() {
             let timer = client.get()?;
@@ -47,7 +44,7 @@ impl TimerWatchCommand {
             }
 
             last = timer.clone();
-            printer.out(DisplayTimer { account, timer })?;
+            printer.out(TimerOutput::new(timer, account.precision.clone()))?;
         }
 
         Ok(())

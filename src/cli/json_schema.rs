@@ -7,11 +7,11 @@
 //! `comodoro-`, mirroring how the man pages are named `comodoro-<cmd>.1`,
 //! and [`JsonSchemaCommand`] writes one `<key>.json` file per entry.
 //!
-//! The commands driving the timer report a confirmation rather than data,
-//! so they carry no schema: what they did travels as timer events on the
-//! wire, described in cairn/spec/protocol.md.
+//! Every client command prints the same [`TimerOutput`], the controls the
+//! timer after their change, so every key describes that one type.
 //!
 //! [`JsonSchemaCommand`]: pimalaya_cli::clap::commands::JsonSchemaCommand
+//! [`TimerOutput`]: crate::cli::client::timer::TimerOutput
 
 use alloc::string::ToString;
 
@@ -20,7 +20,7 @@ use std::collections::BTreeMap;
 use pimalaya_cli::{clap::commands::JsonSchemaRegistry, error::ErrorReport};
 use schemars::schema_for;
 
-use crate::timer::Timer;
+use crate::cli::client::timer::TimerOutput;
 
 /// Builds the command-to-schema registry consumed by `json-schema`.
 ///
@@ -39,10 +39,13 @@ pub fn registry() -> JsonSchemaRegistry {
         };
     }
 
-    // NOTE: `get` prints the timer once and `watch` prints the same timer
-    // on every change, so both describe the same payload.
-    insert!("comodoro-get", Timer);
-    insert!("comodoro-watch", Timer);
+    insert!("comodoro-get", TimerOutput);
+    insert!("comodoro-watch", TimerOutput);
+    insert!("comodoro-start", TimerOutput);
+    insert!("comodoro-pause", TimerOutput);
+    insert!("comodoro-resume", TimerOutput);
+    insert!("comodoro-stop", TimerOutput);
+    insert!("comodoro-set", TimerOutput);
     insert!("comodoro-error", ErrorReport);
 
     JsonSchemaRegistry {

@@ -7,7 +7,7 @@ use clap::Parser;
 use pimalaya_cli::printer::Printer;
 
 use crate::{
-    cli::{account::Account, client::timer::DisplayTimer, transport::TransportArg},
+    cli::{account::Account, client::timer::TimerOutput, transport::TransportArg},
     client::std::TimerClient,
 };
 
@@ -27,6 +27,6 @@ impl TimerGetCommand {
     pub fn execute(self, printer: &mut impl Printer, account: &Account) -> Result<()> {
         let address = account.address(self.transport.transport);
         let timer = TimerClient::connect(&address)?.get()?;
-        printer.out(DisplayTimer { account, timer })
+        printer.out(TimerOutput::new(timer, account.precision.clone()))
     }
 }

@@ -20,7 +20,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 default = ["client", "server", "cli", "notify"]
 client = ["dep:anyhow"]
 server = ["dep:anyhow"]
-cli = ["client", "server", "schemars", "dep:clap", "dep:convert_case", "dep:pimalaya-cli", "dep:pimalaya-config"]
+cli = ["client", "server", "schemars", "dep:clap", "dep:convert_case", "dep:humantime", "dep:pimalaya-cli", "dep:pimalaya-config"]
 schemars = ["dep:schemars"]
 notify = ["pimalaya-config?/notify"]
 vendored = ["pimalaya-config?/vendored"]
@@ -38,6 +38,11 @@ required-features = ["client", "server"]
 [[test]]
 name = "config"
 path = "tests/config.rs"
+required-features = ["cli"]
+
+[[test]]
+name = "output"
+path = "tests/output.rs"
 required-features = ["cli"]
 
 [[test]]
@@ -70,6 +75,7 @@ toml = { version = "1.1", default-features = false, features = ["parse", "serde"
 anyhow = { version = "1", default-features = false, features = ["std"], optional = true }
 clap = { version = "4.4", default-features = false, features = ["derive", "env", "error-context", "help", "std", "usage", "wrap_help"], optional = true }
 convert_case = { version = "0.12", default-features = false, optional = true }
+humantime = { version = "2.2", default-features = false, optional = true }
 log = { version = "0.4", default-features = false }
 pimalaya-cli = { version = "0.2", default-features = false, features = ["terminal"], optional = true }
 pimalaya-config = { version = "0.1", default-features = false, features = ["toml", "secret"], optional = true }

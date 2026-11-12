@@ -4,10 +4,10 @@
 
 use anyhow::Result;
 use clap::Parser;
-use pimalaya_cli::printer::{Message, Printer};
+use pimalaya_cli::printer::Printer;
 
 use crate::{
-    cli::{account::Account, transport::TransportArg},
+    cli::{account::Account, client::timer::TimerOutput, transport::TransportArg},
     client::std::TimerClient,
 };
 
@@ -25,7 +25,10 @@ impl TimerPauseCommand {
     /// Pauses the timer the server owns.
     pub fn execute(self, printer: &mut impl Printer, account: &Account) -> Result<()> {
         let address = account.address(self.transport.transport);
-        TimerClient::connect(&address)?.pause()?;
-        printer.out(Message::new("Timer successfully paused"))
+        let mut client = TimerClient::connect(&address)?;
+        client.pause()?;
+
+        let timer = client.get()?;
+        printer.out(TimerOutput::new(timer, account.precision.clone()))
     }
 }
