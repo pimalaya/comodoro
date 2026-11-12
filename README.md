@@ -28,7 +28,9 @@ One server owns a timer, any number of clients drive it and watch it. This proje
 - **Standard protocol**: plain [JSON-RPC 2.0](https://www.jsonrpc.org/specification), drivable from any language.
 - **Pomodoro-style cycles**: any named durations, looping forever or a fixed number of times.
 - **Per-event hooks**: a shell command, a desktop notification or both on any timer event, given the cycle name and its remaining time as variables.
-- **Status-bar friendly**: second, minute or hour precision, plus `--json` for scripts.
+- **Status-bar friendly**: second, minute or hour precision, plus `--json` for scripts, its schema given by `comodoro json-schema`.
+- **Session**: `comodoro repl` answers commands over stdin, one per line.
+- **MCP server**: an agent reads the timer through `comodoro mcp`, and drives it with `--allow-write`.
 
 > [!TIP]
 > Comodoro is written in [Rust](https://www.rust-lang.org/) and uses [cargo features](https://doc.rust-lang.org/cargo/reference/features.html) to gate its layers. The default feature set is declared in [Cargo.toml](./Cargo.toml).
@@ -135,6 +137,12 @@ Feed a status bar without polling, which prints the timer once and then on every
 comodoro watch
 ```
 
+Every command prints the timer, the controls as it is after their change. With `--json` it prints the timer object instead, `watch --json` one object per line as each change happens:
+
+```sh
+comodoro watch --json | jq -r --unbuffered '"\(.cycle.name) \(.cycle.duration)s"'
+```
+
 Every command takes an optional transport, `socket` or `tcp`, and falls back to the one the configuration marks as default. The server takes the list of transports to bind, and binds the default one when given none:
 
 ```sh
@@ -151,6 +159,37 @@ comodoro server start --log-level debug 2>/tmp/comodoro.log
 ```
 
 Use `--log-file <PATH>` to append them to a file directly. When `--log-level` is omitted the `RUST_LOG` environment variable is consulted, and `RUST_BACKTRACE=1` adds the full error backtrace.
+
+### REPL
+
+`comodoro repl` holds one account and answers commands, one per line, until `exit` or EOF. Each line connects to the server on its own:
+
+```
+$ comodoro repl
+comodoro> start
+comodoro> set 300
+comodoro> get
+comodoro> exit
+```
+
+Non-interactively, a program spawns `comodoro repl --json` and talks to it over stdio: it writes one command per line on stdin and reads one JSON value per line on stdout, failures included. `watch` and `server start` run until interrupted, so they are refused inside a session.
+
+### MCP
+
+`comodoro mcp` also talks over stdio, but speaks the [Model Context Protocol](https://modelcontextprotocol.io) so an agent can read the timer with the `get` tool. The controls (`start`, `pause`, `resume`, `set` and `stop`) need `--allow-write`. The timer still belongs to a `comodoro server start` process.
+
+MCP clients start the servers declared in their configuration, most of them under an `mcpServers` object:
+
+```json
+{
+  "mcpServers": {
+    "comodoro": {
+      "command": "comodoro",
+      "args": ["mcp", "--allow-write"]
+    }
+  }
+}
+```
 
 ## License
 

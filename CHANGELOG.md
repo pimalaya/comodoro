@@ -7,33 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Comodoro joins the standard the Pimalaya CLIs share. MIGRATION.md lists what to act on when upgrading from 2.x.
+
 ### Added
 
+- Added the first-run welcome: run in a terminal with no configuration, `comodoro` and every command needing an account print the commands creating one from config.sample.toml, copied from share/doc/comodoro/ beside the binary when it ships there and downloaded otherwise, then exit 1. Scripts and `--json` callers keep getting the error.
+- Added config.sample.toml to the Nix package and the release archives as share/doc/comodoro/config.sample.toml, which install.sh copies too.
 - Added `comodoro repl`, a session running the CLI's commands over one account, one per stdin line, on the REPL Himalaya and Ortie share; `watch` and `server start` are refused in it, since they run until interrupted.
 - Added `comodoro mcp`, a Model Context Protocol server over stdio exposing `get` to an agent, and with `--allow-write` the timer controls, each answering the timer as `structuredContent`.
 - Added hook variables, after GUIDELINES cli-008: a cycle hook fills `cycleName` and `cycleDuration` (the remaining seconds), expanded in its notification (`$cycleName`, `${cycleName}`, `${cycleName:-default}`) and handed to its command as environment variables of the same names. A hook can now run a command and show a notification both, the command first.
-- Added config.sample.toml to the Nix package and the release archives as share/doc/comodoro/config.sample.toml, which install.sh copies too, so the first-run welcome copies it instead of downloading it.
 - Added a stable `code` to the `--json` failure object of the client commands: `server-unreachable`, `server-closed`, `server-error` and `server-mismatch`, described by `comodoro-error`.
-- Added the first-run welcome: run in a terminal with no configuration, `comodoro` and every command needing an account print the commands creating one from config.sample.toml, copied from share/doc/comodoro/ beside the binary when it ships there and downloaded otherwise, then exit 1. Scripts and `--json` callers keep getting the error.
 - Added the plural aliases `completions`, `manuals` and `json-schemas`, hidden from `--help`.
 
 ### Changed
 
+- **Breaking:** changed the timer's values to kebab-case, both in the `--json` output and in the JSON-RPC protocol: `state` reads `running`, `paused` or `stopped` instead of `Running`, `Paused` or `Stopped`, and the schedule's `loops` is the number of loops or `null` when unbounded instead of `"Infinite"` or `{"Fixed": n}`. A client meeting a server of the previous version fails saying it may run another Comodoro version: restart the server, and any `watch` still running, after upgrading.
+- **Breaking:** renamed the timer's `started_at` key to `startedAt`, both in the `--json` output and in the JSON-RPC protocol (the `timer.get` result), so every JSON key Comodoro emits is camelCase.
+- **Breaking:** changed `startedAt` under `--json` to an RFC 3339 instant in UTC (`2026-11-12T09:00:00Z`) instead of epoch seconds. The JSON-RPC protocol keeps epoch seconds.
+- **Breaking:** changed `start`, `pause`, `resume`, `stop` and `set` to print the timer after their change, as `get` does, instead of a confirmation sentence: the one-line status as text, and the timer object under `--json`, each described in `json-schema` (`comodoro-start` and the others).
+- **Breaking:** changed `-c` to take one path per flag, repeated to merge several files, and removed the `COMODORO_CONFIG` environment variable and the `:` delimiter, since `:` belongs to paths (`C:\` on Windows): use `-c "$VAR"`. Without `-c`, every existing default path now loads, each merged on top of the ones before, `$HOME/.comodororc` last.
 - **Breaking:** renamed the per-second cycle hook `on-<cycle>-running` to `on-<cycle>-tick`, the event being a bare verb as GUIDELINES cli-008 asks.
 - **Breaking:** changed account resolution to refuse a hook name no event of the account fires (such as a mistyped `on-wrok-end`, which used to load and stay silent), a hook with neither `command` nor `notify`, a notification naming a variable its hook does not fill, and an account with no cycle, which used to load and fail once the server started.
 - Changed config.sample.toml to one `[accounts.example]` table of dotted keys, each line ending in a tab-aligned comment, and the cycle presets to sections to uncomment, Pomodoro, 52/17 and 112/26: a copied sample holds no active `cycles` until one is uncommented. A test parses it with every section and option uncommented.
-- **Breaking:** changed `-c` to take one path per flag, repeated to merge several files, and removed the `COMODORO_CONFIG` environment variable and the `:` delimiter, since `:` belongs to paths (`C:\` on Windows): use `-c "$VAR"`. Without `-c`, every existing default path now loads, each merged on top of the ones before, `$HOME/.comodororc` last.
+- Changed piped `--json` output to print one value per line, flushed, so `watch --json` streams newline-delimited JSON instead of values glued together and held in the buffer; each schema of `json-schema` now carries an `$id` naming the contract version, the major version of Comodoro.
 - Changed the `srv` alias of `server` to a hidden one.
 - Moved to pimalaya-cli 0.4 and pimalaya-config 0.4 from crates.io, dropping the git pin.
-- **Breaking:** changed `start`, `pause`, `resume`, `stop` and `set` to print the timer after their change, as `get` does, instead of a confirmation sentence: the one-line status as text, and the timer object under `--json`, each described in `json-schema` (`comodoro-start` and the others).
-- **Breaking:** changed `startedAt` under `--json` to an RFC 3339 instant in UTC (`2026-11-12T09:00:00Z`) instead of epoch seconds. The JSON-RPC protocol keeps epoch seconds.
-- **Breaking:** changed the timer's values to kebab-case, both in the `--json` output and in the JSON-RPC protocol: `state` reads `running`, `paused` or `stopped` instead of `Running`, `Paused` or `Stopped`, and the schedule's `loops` is the number of loops or `null` when unbounded instead of `"Infinite"` or `{"Fixed": n}`. A client meeting a server of the previous version fails saying it may run another Comodoro version: restart the server, and any `watch` still running, after upgrading.
-- **Breaking:** renamed the timer's `started_at` key to `startedAt`, both in the `--json` output of `get` and `watch` and in the JSON-RPC protocol (the `timer.get` result), so every JSON key Comodoro emits is camelCase. Third-party clients reading the field need the new spelling, and schemas pinned from `json-schema` need regenerating.
-- Changed piped `--json` output to print one value per line, flushed, so `watch --json` streams newline-delimited JSON instead of values glued together and held in the buffer; each schema of `json-schema` now carries an `$id` naming the contract version (`v2`), and `comodoro-error` describes the JSON failure object (pimalaya-cli `55b6693`).
 
 ### Removed
 
-- **Breaking:** removed the setup wizard, the `configure` command and its `wizard` alias, with the `comodoro-configure` schema. A bare `comodoro` prints the help, and a command finding no configuration fails naming the path it looked at and pointing at config.sample.toml rather than offering the wizard: write the configuration by hand from the sample.
+- **Breaking:** removed the setup wizard, the `configure` command and its `wizard` alias, with the `comodoro-configure` schema. A bare `comodoro` prints the help, and a person without a configuration meets the first-run welcome instead of the wizard: write the configuration from the sample.
 
 ### Fixed
 

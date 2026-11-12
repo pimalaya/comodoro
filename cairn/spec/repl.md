@@ -33,4 +33,4 @@ A line setting a flag the session fixes when it starts, `-a`, `--account`, `-c`,
 
 ## Requirement: Help keeps JSON lines whole
 
-A line asking for help SHALL print clap's text on stdout in a text session, and on stderr when the session's `--json` or a `--json` word of the line is set, so stdout keeps one JSON value per line. Its usage line SHALL name the binary before the command, as `Usage: comodoro set [OPTIONS] <SECONDS>`.
+A line asking for help SHALL print clap's text on stdout in a text session, and on stderr when the session's `--json` or a `--json` word of the line is set, so stdout keeps one JSON value per line. Its usage line SHALL name the binary before the command, as `Usage: comodoro set [OPTIONS] <SECONDS> [TRANSPORT]`.

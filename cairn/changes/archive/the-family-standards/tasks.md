@@ -16,5 +16,5 @@ change: the-family-standards
 - [x] dependencies-trimmed
 - [x] every-feature-set-builds-clean
 - [x] the-shared-repl-and-mcp
-- [ ] release-polish
-- [ ] Log; land
+- [x] release-polish
+- [x] Log; land

@@ -33,10 +33,17 @@
 //! [`cli`], so one feature gates one subtree rather than a scattering of
 //! items.
 //!
-//! [`cli`] holds the command grammar, [`cli::config`] the TOML document,
-//! [`cli::account`] the view a command runs against, [`cli::hook`] the
-//! event reactions, and [`cli::json_schema`] the schemas of the printed
-//! output.
+//! [`cli`] holds the command grammar and the first-run welcome,
+//! [`cli::config`] the TOML document, [`cli::account`] the view a command
+//! runs against, [`cli::hook`] the event reactions, [`cli::json_schema`]
+//! the schemas of the printed output and [`cli::error`] the codes of the
+//! failures. [`cli::repl`] runs the commands over one account in a
+//! session, and [`cli::mcp`] serves them to an agent as Model Context
+//! Protocol tools, both on pimalaya-cli's shared core.
+//!
+//! The configuration belongs to the user: Comodoro never writes it, and
+//! an account starts from config.sample.toml, one of whose cycle presets
+//! the user uncomments.
 //!
 //! One module per command sits under [`cli::client`] and
 //! [`cli::server`].
@@ -87,8 +94,10 @@
 //!
 //! Runnable programs live in the examples folder. The tests cover the
 //! state machine, the envelope against the specification's own examples,
-//! the account configuration and its hooks, and full exchanges over both
-//! transports.
+//! the account configuration and its hooks, full exchanges over both
+//! transports, and the binary as a script, a session and an agent meet
+//! it: its outputs and failure codes, the first run, the REPL and the
+//! MCP server.
 //!
 //! The development history and living design notes live in the cairn/
 //! folder.

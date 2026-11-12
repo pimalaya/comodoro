@@ -1,7 +1,7 @@
 ---
 cairn: change
 id: the-family-standards
-status: active
+status: landed
 created: 2026-11-12
 ---
 
