@@ -69,16 +69,16 @@ A timer carries its `schedule`, its `state`, its current `cycle`, the `startedAt
 {
   "schedule": {
     "cycles": [{ "name": "Work", "duration": 1500 }, { "name": "Rest", "duration": 300 }],
-    "loops": "Infinite"
+    "loops": null
   },
-  "state": "Running",
+  "state": "running",
   "cycle": { "name": "Work", "duration": 1493 },
   "startedAt": 1786711298,
   "elapsed": 0
 }
 ```
 
-The schedule is what the timer was given and never changes: its `cycles` in the order they run, each with its configured duration, and its `loops`, either `"Infinite"` or `{"Fixed": n}` full loops through those cycles. The `cycle` is where the timer is now, and its `duration` is the time remaining rather than the configured one, so it is the field a status bar reads. `state` is `Running`, `Paused` or `Stopped`, and `startedAt` is null unless the state is `Running`.
+The schedule is what the timer was given and never changes: its `cycles` in the order they run, each with its configured duration, and its `loops`, the number of full loops through those cycles, `null` when unbounded. The `cycle` is where the timer is now, and its `duration` is the time remaining rather than the configured one, so it is the field a status bar reads. `state` is `running`, `paused` or `stopped`, and `startedAt` is null unless the state is `running`. `startedAt` is in seconds since the Unix epoch, the value a peer computes the remaining time from.
 
 The remaining duration is derived from `startedAt` and `elapsed` rather than stored, which is why nothing in the object counts down loops or cycles: an elapsed time names both.
 
@@ -173,3 +173,15 @@ The specification reserves that range for server-defined errors. Comodoro define
 Every JSON object Comodoro emits, the `--json` payloads and the JSON-RPC results and notifications alike, SHALL spell its keys in camelCase, so each key stays reachable by dot access in jq and JavaScript and so the payload matches the camelCase the method and event names already use. A field carrying a provider spelling verbatim SHALL keep its explicit `#[serde(rename)]`, since names like `@odata.nextLink` and `nextPageToken` are the provider's rather than derivable ones.
 
 Configuration types SHALL stay kebab-case: they are read from TOML, and what the loader reads is not what the printer emits. `TimerPrecision` keeps its kebab-case spelling, renaming variant names that travel as values rather than as keys.
+
+## Requirement: Values are kebab-case
+
+Every value Comodoro emits spelled from a variant name, on the wire and under `--json` alike, SHALL be kebab-case, and a count that may be unbounded SHALL be a number or `null`, never a tagged object.
+
+## Requirement: A peer speaking another version is named
+
+A client that cannot read a server's result SHALL fail with "Cannot read the timer server's answer, it may run another Comodoro version: restart it with this one", rather than with the parse error alone.
+
+### Scenario: A 2.x server still running after an upgrade
+
+A server answering `timer.get` with `"state": "Running"` makes `comodoro get` fail naming another Comodoro version and the restart.

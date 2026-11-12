@@ -1,7 +1,7 @@
 ---
 cairn: change
 id: wire-values-are-kebab-case
-status: active
+status: landed
 created: 2026-11-12
 ---
 

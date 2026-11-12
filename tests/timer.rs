@@ -293,3 +293,37 @@ fn a_second_server_refuses_a_port_in_use() {
         "{err}"
     );
 }
+
+#[cfg(unix)]
+#[test]
+fn a_server_of_another_version_is_named() {
+    use std::{
+        io::{BufRead, BufReader, Write},
+        os::unix::net::UnixListener,
+    };
+
+    let id = NEXT_SOCKET.fetch_add(1, Ordering::Relaxed);
+    let path = env::temp_dir().join(format!("comodoro-test-{}-{id}.sock", std::process::id()));
+    let _ = fs::remove_file(&path);
+    let listener = UnixListener::bind(&path).expect("bind fake server");
+
+    // NOTE: a 2.x server answers `timer.get` with PascalCase values.
+    thread::spawn(move || {
+        let (stream, _) = listener.accept().expect("accept");
+        let mut reader = BufReader::new(stream.try_clone().expect("clone"));
+        let mut writer = stream;
+        let mut line = String::new();
+        reader.read_line(&mut line).expect("read request");
+        let answer = r#"{"jsonrpc":"2.0","id":1,"result":{"schedule":{"cycles":[{"name":"Work","duration":1500}],"loops":"Infinite"},"state":"Stopped","cycle":{"name":"Work","duration":1500},"startedAt":null,"elapsed":0}}"#;
+        writeln!(writer, "{answer}").expect("write answer");
+    });
+
+    let mut client = TimerClient::connect(&TimerAddress::UnixSocket(path.clone())).unwrap();
+    let err = client.get().unwrap_err();
+    let _ = fs::remove_file(&path);
+
+    assert!(
+        format!("{err:#}").contains("it may run another Comodoro version"),
+        "{err:#}"
+    );
+}

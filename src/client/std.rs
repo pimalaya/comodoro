@@ -160,7 +160,9 @@ impl TimerClient {
             return match response.outcome {
                 Jsonrpc20Outcome::Error(err) => bail!("{err}"),
                 Jsonrpc20Outcome::Result(value) => TimerResponse::from_value(&request, value)
-                    .context("Deserialize timer response error"),
+                    .context(
+                        "Cannot read the timer server's answer, it may run another Comodoro version: restart it with this one",
+                    ),
             };
         }
     }

@@ -15,8 +15,12 @@ use alloc::{
 use serde::{Deserialize, Serialize};
 
 /// Controls how many full loops the timer runs before stopping.
+///
+/// Travels as the number of loops, `null` when unbounded.
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "schemars", schemars(with = "Option<usize>"))]
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(from = "Option<usize>", into = "Option<usize>")]
 pub enum TimerLoop {
     /// The timer loops indefinitely, stopping only through [`Timer::stop`].
     #[default]
@@ -31,6 +35,21 @@ impl From<usize> for TimerLoop {
             Self::Infinite
         } else {
             Self::Fixed(count)
+        }
+    }
+}
+
+impl From<Option<usize>> for TimerLoop {
+    fn from(count: Option<usize>) -> Self {
+        count.map(Self::from).unwrap_or_default()
+    }
+}
+
+impl From<TimerLoop> for Option<usize> {
+    fn from(loops: TimerLoop) -> Self {
+        match loops {
+            TimerLoop::Infinite => None,
+            TimerLoop::Fixed(count) => Some(count),
         }
     }
 }
@@ -61,6 +80,7 @@ impl TimerCycle {
 /// The current state of a timer.
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "kebab-case")]
 pub enum TimerState {
     /// The timer is running.
     Running,
@@ -750,5 +770,22 @@ mod tests {
 
         assert_eq!(timer.update(10).into_iter().count(), 0);
         assert_eq!(timer.set(10, 1).into_iter().count(), 0);
+    }
+
+    #[test]
+    fn states_travel_in_kebab_case() {
+        let states = [TimerState::Running, TimerState::Paused, TimerState::Stopped];
+        let json = serde_json::to_string(&states).unwrap();
+        assert_eq!(json, r#"["running","paused","stopped"]"#);
+    }
+
+    #[test]
+    fn loops_travel_as_a_number_or_null() {
+        let loops = [TimerLoop::Infinite, TimerLoop::Fixed(4)];
+        let json = serde_json::to_string(&loops).unwrap();
+        assert_eq!(json, "[null,4]");
+
+        let read: Vec<TimerLoop> = serde_json::from_str(&json).unwrap();
+        assert_eq!(read, loops);
     }
 }
