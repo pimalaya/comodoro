@@ -23,19 +23,7 @@ static NEXT_SOCKET: AtomicUsize = AtomicUsize::new(0);
 /// Starts a server on a socket unique to this test, and returns the
 /// configuration file pointing at it.
 fn serve() -> PathBuf {
-    let id = NEXT_SOCKET.fetch_add(1, Ordering::Relaxed);
-    let dir = env::temp_dir().join(format!("comodoro-output-{}-{id}", std::process::id()));
-    let _ = fs::remove_dir_all(&dir);
-    fs::create_dir_all(&dir).expect("create scratch dir");
-
-    let socket = dir.join("comodoro.sock");
-    let config = dir.join("config.toml");
-
-    let account = format!(
-        "[accounts.test]\ndefault = true\ncycles = [{{ name = \"Work\", duration = 1500 }}]\nsocket.path = {:?}\n",
-        socket.display().to_string(),
-    );
-    fs::write(&config, account).expect("write config");
+    let (config, socket) = config_at("output");
 
     let events = TimerServer {
         schedule: TimerSchedule {
@@ -106,4 +94,98 @@ fn get_prints_the_start_as_an_instant() {
     json(&config, &["start"]);
     let timer = json(&config, &["get"]);
     assert!(is_rfc3339_utc(&timer["startedAt"]), "{timer}");
+}
+
+/// A configuration in a scratch directory of its own, and the socket its
+/// account talks over.
+fn config_at(name: &str) -> (PathBuf, PathBuf) {
+    let id = NEXT_SOCKET.fetch_add(1, Ordering::Relaxed);
+    let dir = env::temp_dir().join(format!("comodoro-{name}-{}-{id}", std::process::id()));
+    let _ = fs::remove_dir_all(&dir);
+    fs::create_dir_all(&dir).expect("create scratch dir");
+
+    let socket = dir.join("comodoro.sock");
+    let config = dir.join("config.toml");
+
+    let account = format!(
+        "[accounts.test]\ndefault = true\ncycles = [{{ name = \"Work\", duration = 1500 }}]\nsocket.path = {:?}\n",
+        socket.display().to_string(),
+    );
+    fs::write(&config, account).expect("write config");
+
+    (config, socket)
+}
+
+/// A server answering its first request with `answer`, or closing the
+/// connection without a word when there is none.
+#[cfg(unix)]
+fn fake_server(socket: &PathBuf, answer: Option<&'static str>) {
+    use std::{
+        io::{BufRead, BufReader, Write},
+        os::unix::net::UnixListener,
+    };
+
+    let listener = UnixListener::bind(socket).expect("bind fake server");
+
+    thread::spawn(move || {
+        let (stream, _) = listener.accept().expect("accept");
+        let mut reader = BufReader::new(stream.try_clone().expect("clone"));
+        let mut writer = stream;
+        let mut line = String::new();
+        reader.read_line(&mut line).expect("read request");
+
+        if let Some(answer) = answer {
+            writeln!(writer, "{answer}").expect("write answer");
+        }
+    });
+}
+
+/// Runs the binary under `--json` expecting a failure, and returns the
+/// code of the failure object it prints.
+fn failure_code(config: &PathBuf, args: &[&str]) -> Value {
+    let output = Command::new(env!("CARGO_BIN_EXE_comodoro"))
+        .arg("-c")
+        .arg(config)
+        .arg("--json")
+        .args(args)
+        .output()
+        .expect("run comodoro");
+
+    assert_eq!(output.status.code(), Some(1));
+    let stdout = String::from_utf8(output.stdout).expect("utf-8 stdout");
+    let failure: Value =
+        serde_json::from_str(&stdout).unwrap_or_else(|err| panic!("{err}: {stdout}"));
+    failure["code"].clone()
+}
+
+#[test]
+fn no_server_running_is_coded_unreachable() {
+    let (config, _) = config_at("unreachable");
+    assert_eq!(failure_code(&config, &["get"]), "server-unreachable");
+}
+
+#[cfg(unix)]
+#[test]
+fn a_server_closing_before_its_answer_is_coded_closed() {
+    let (config, socket) = config_at("closed");
+    fake_server(&socket, None);
+    assert_eq!(failure_code(&config, &["get"]), "server-closed");
+}
+
+#[cfg(unix)]
+#[test]
+fn a_json_rpc_error_answer_is_coded_server_error() {
+    let (config, socket) = config_at("server-error");
+    let answer = r#"{"jsonrpc":"2.0","id":1,"error":{"code":-32601,"message":"Method not found"}}"#;
+    fake_server(&socket, Some(answer));
+    assert_eq!(failure_code(&config, &["get"]), "server-error");
+}
+
+#[cfg(unix)]
+#[test]
+fn a_server_of_another_version_is_coded_mismatch() {
+    let (config, socket) = config_at("mismatch");
+    let answer = r#"{"jsonrpc":"2.0","id":1,"result":{"schedule":{"cycles":[{"name":"Work","duration":1500}],"loops":"Infinite"},"state":"Stopped","cycle":{"name":"Work","duration":1500},"startedAt":null,"elapsed":0}}"#;
+    fake_server(&socket, Some(answer));
+    assert_eq!(failure_code(&config, &["get"]), "server-mismatch");
 }

@@ -10,7 +10,7 @@ change: the-family-standards
 - [x] wire-values-are-kebab-case
 - [x] the-outputs-become-data
 - [x] the-shared-kit
-- [ ] json-error-code
+- [x] json-error-code
 - [ ] the-sample-is-tested-and-shipped
 - [ ] hook-templates-from-config
 - [ ] dependencies-trimmed

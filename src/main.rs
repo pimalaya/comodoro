@@ -14,7 +14,7 @@
 use std::process;
 
 use clap::Parser;
-use comodoro::cli::{self, Cli};
+use comodoro::cli::{self, Cli, error::ErrorCode};
 use pimalaya_cli::{
     error::ErrorReport,
     log::Logger,
@@ -47,5 +47,5 @@ fn main() {
         process::exit(1);
     }
 
-    ErrorReport::eval(&mut printer, result)
+    ErrorReport::<ErrorCode>::eval_coded(&mut printer, result)
 }

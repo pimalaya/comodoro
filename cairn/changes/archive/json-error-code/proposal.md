@@ -1,7 +1,7 @@
 ---
 cairn: change
 id: json-error-code
-status: active
+status: landed
 created: 2026-11-12
 ---
 

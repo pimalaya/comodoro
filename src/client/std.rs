@@ -5,13 +5,14 @@
 //! asynchronous client would be a sibling rather than a replacement.
 
 use alloc::{string::String, vec::Vec};
+use core::{error, fmt};
 
 use std::{
     collections::VecDeque,
     io::{BufRead, BufReader, Write},
 };
 
-use anyhow::{Context, Result, bail};
+use anyhow::{Context, Result, anyhow};
 use log::{debug, trace};
 
 use crate::{
@@ -20,6 +21,38 @@ use crate::{
     timer::{Timer, TimerEvent},
     transport::{TimerAddress, TimerStream},
 };
+
+/// Why a call to a timer server failed, attached to the error a
+/// [`TimerClient`] method returns so a caller tells the causes apart
+/// with `downcast_ref`.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum TimerClientError {
+    /// No server answers at the address: none runs, or it listens
+    /// elsewhere.
+    Unreachable,
+    /// The server closed the connection before answering.
+    Closed,
+    /// The server answered with a JSON-RPC error.
+    Server,
+    /// The server's answer cannot be read, as from a server of another
+    /// Comodoro version.
+    Mismatch,
+}
+
+impl fmt::Display for TimerClientError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(match self {
+            Self::Unreachable => "Cannot reach the timer server",
+            Self::Closed => "Timer server closed the connection before answering",
+            Self::Server => "Timer server refused the request",
+            Self::Mismatch => {
+                "Cannot read the timer server's answer, it may run another Comodoro version: restart it with this one"
+            }
+        })
+    }
+}
+
+impl error::Error for TimerClientError {}
 
 /// Blocking client driving one timer server over one connection.
 ///
@@ -36,7 +69,7 @@ pub struct TimerClient {
 impl TimerClient {
     /// Connects to the server listening at the given address.
     pub fn connect(address: &TimerAddress) -> Result<Self> {
-        let stream = TimerStream::connect(address)?;
+        let stream = TimerStream::connect(address).context(TimerClientError::Unreachable)?;
         let reader = BufReader::new(stream.try_clone()?);
 
         Ok(Self {
@@ -51,7 +84,8 @@ impl TimerClient {
     pub fn get(&mut self) -> Result<Timer> {
         match self.send(TimerRequest::Get)? {
             TimerResponse::Timer(timer) => Ok(timer),
-            other => bail!("Invalid response {other:?}, expected a timer"),
+            other => Err(anyhow!("Invalid response {other:?}, expected a timer")
+                .context(TimerClientError::Mismatch)),
         }
     }
 
@@ -89,7 +123,10 @@ impl TimerClient {
     pub fn subscribe(&mut self) -> Result<()> {
         match self.send(TimerRequest::Subscribe)? {
             TimerResponse::Subscription(true) => Ok(()),
-            other => bail!("Invalid response {other:?}, expected a subscription"),
+            other => Err(
+                anyhow!("Invalid response {other:?}, expected a subscription")
+                    .context(TimerClientError::Mismatch),
+            ),
         }
     }
 
@@ -97,7 +134,10 @@ impl TimerClient {
     pub fn unsubscribe(&mut self) -> Result<()> {
         match self.send(TimerRequest::Unsubscribe)? {
             TimerResponse::Subscription(false) => Ok(()),
-            other => bail!("Invalid response {other:?}, expected a subscription"),
+            other => Err(
+                anyhow!("Invalid response {other:?}, expected a subscription")
+                    .context(TimerClientError::Mismatch),
+            ),
         }
     }
 
@@ -124,7 +164,8 @@ impl TimerClient {
     fn events(&mut self, request: TimerRequest) -> Result<Vec<TimerEvent>> {
         match self.send(request)? {
             TimerResponse::Events(events) => Ok(events),
-            other => bail!("Invalid response {other:?}, expected events"),
+            other => Err(anyhow!("Invalid response {other:?}, expected events")
+                .context(TimerClientError::Mismatch)),
         }
     }
 
@@ -139,12 +180,12 @@ impl TimerClient {
 
         self.writer
             .write_all(line.as_bytes())
-            .context("Write timer request error")?;
-        self.writer.flush().context("Flush timer request error")?;
+            .context(TimerClientError::Closed)?;
+        self.writer.flush().context(TimerClientError::Closed)?;
 
         loop {
             let Some(line) = self.read_line()? else {
-                bail!("Timer server closed the connection before answering");
+                return Err(TimerClientError::Closed.into());
             };
 
             let Ok(response) = serde_json::from_str::<Jsonrpc20Response>(&line) else {
@@ -158,11 +199,12 @@ impl TimerClient {
             }
 
             return match response.outcome {
-                Jsonrpc20Outcome::Error(err) => bail!("{err}"),
-                Jsonrpc20Outcome::Result(value) => TimerResponse::from_value(&request, value)
-                    .context(
-                        "Cannot read the timer server's answer, it may run another Comodoro version: restart it with this one",
-                    ),
+                Jsonrpc20Outcome::Error(err) => {
+                    Err(anyhow!("{err}").context(TimerClientError::Server))
+                }
+                Jsonrpc20Outcome::Result(value) => {
+                    TimerResponse::from_value(&request, value).context(TimerClientError::Mismatch)
+                }
             };
         }
     }
@@ -189,7 +231,7 @@ impl TimerClient {
         let n = self
             .reader
             .read_line(&mut line)
-            .context("Read timer response error")?;
+            .context(TimerClientError::Closed)?;
 
         if n == 0 {
             return Ok(None);

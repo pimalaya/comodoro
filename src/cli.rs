@@ -27,6 +27,7 @@
 pub mod account;
 pub mod client;
 pub mod config;
+pub mod error;
 pub mod hook;
 pub mod json_schema;
 pub mod server;
@@ -146,9 +147,10 @@ impl Command {
         }
     }
 
-    /// Runs the command against an account already resolved.
+    /// Runs the command against an account already resolved, a client
+    /// failure carrying its code.
     pub fn run(self, printer: &mut impl Printer, account: &mut Account) -> Result<()> {
-        match self {
+        let result = match self {
             Self::Server(cmd) => cmd.execute(account),
             Self::Start(cmd) => cmd.execute(printer, account),
             Self::Get(cmd) => cmd.execute(printer, account),
@@ -160,7 +162,9 @@ impl Command {
             Self::Completion(cmd) => cmd.execute(printer, Cli::command()),
             Self::Manual(cmd) => cmd.execute(printer, Cli::command()),
             Self::JsonSchema(cmd) => cmd.execute(printer, json_schema::registry()),
-        }
+        };
+
+        result.map_err(error::coded)
     }
 }
 

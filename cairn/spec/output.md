@@ -43,6 +43,21 @@ A cycle name a server sends SHALL reach the terminal through pimalaya-cli's `san
 
 Every command's text rendering SHALL end with a newline, so the shell prompt starts on a line of its own and a line-buffered pipe receives each `watch` line as it happens.
 
+## Requirement: A JSON error carries a stable code
+
+A failure a caller is expected to act on SHALL carry a stable code, printed under `--json` as a `code` string beside `error`, `sources` and `backtrace`. The code SHALL be found anywhere in the error chain, so added context does not hide it. A failure with no code SHALL print `code: null`. The plain output SHALL stay unchanged. Codes are kebab-case and never renamed; `error` stays free wording.
+
+| Code | Raised when |
+|---|---|
+| `server-unreachable` | nothing listens at the transport's address; `comodoro server start` starts a server |
+| `server-closed` | the server closed the connection before answering |
+| `server-error` | the server answered a JSON-RPC error |
+| `server-mismatch` | the server's answer cannot be read, as from a server of another Comodoro version; restarting it with this version fixes it |
+
+### Scenario: No server is running
+
+With an account whose socket nobody listens on, `comodoro get --json` prints the failure object with `"code": "server-unreachable"` and exits 1.
+
 ## Requirement: The JSON contract is described and versioned
 
 `json-schema` SHALL describe the payload of every command printing data, and the failure object every command prints instead under the key `comodoro-error`, checked by a test walking the command tree: only a bare `comodoro` (the help) and `server start` (printing nothing) are left out. Every generated schema SHALL carry an `$id` naming the contract version, the major version of Comodoro, reading `https://pimalaya.org/schemas/comodoro/v<major>/<key>.json`. Every registered payload SHALL be a JSON object, checked by a test. The keys are `comodoro-get`, `comodoro-watch`, `comodoro-start`, `comodoro-pause`, `comodoro-resume`, `comodoro-stop`, `comodoro-set` and `comodoro-error`.

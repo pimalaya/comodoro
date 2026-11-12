@@ -17,7 +17,7 @@
 
 use pimalaya_cli::{clap::commands::json_schema::JsonSchemaRegistry, error::ErrorReport};
 
-use crate::cli::client::timer::TimerOutput;
+use crate::cli::{client::timer::TimerOutput, error::ErrorCode};
 
 /// Builds the command-to-schema registry consumed by `json-schema`.
 ///
@@ -34,7 +34,7 @@ pub fn registry() -> JsonSchemaRegistry {
     registry.insert::<TimerOutput>("comodoro-resume");
     registry.insert::<TimerOutput>("comodoro-stop");
     registry.insert::<TimerOutput>("comodoro-set");
-    registry.insert::<ErrorReport>("comodoro-error");
+    registry.insert::<ErrorReport<ErrorCode>>("comodoro-error");
 
     registry
 }
