@@ -14,7 +14,7 @@ change: the-family-standards
 - [x] the-sample-is-tested-and-shipped
 - [x] hook-templates-from-config
 - [x] dependencies-trimmed
-- [ ] every-feature-set-builds-clean
+- [x] every-feature-set-builds-clean
 - [ ] the-shared-repl-and-mcp
 - [ ] release-polish
 - [ ] Log; land

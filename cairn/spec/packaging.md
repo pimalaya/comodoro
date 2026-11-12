@@ -26,3 +26,11 @@ Every dependency SHALL come from its registry at a released version. A git or pa
 ## Requirement: Feature layers
 
 The library SHALL build without the standard library with no feature, the timer and the protocol being free of I/O. `client` SHALL add the blocking client, `server` the server, `cli` the binary over both, and `notify`, on by default, the desktop notifications of the hooks.
+
+## Requirement: Every feature set builds clean
+
+`cargo clippy --all-targets -- -D warnings` SHALL pass with the default features; with `--all-features`; with `--no-default-features`; with `--no-default-features` and `client`, `server`, or both; and with `--no-default-features --features cli`, notifications left out. Code only some feature sets use SHALL be gated on the item with exactly those features, never allowed crate-wide. CI SHALL run every set, and the tests of a build without notifications.
+
+### Scenario: A client-only build
+
+`cargo clippy --all-targets --no-default-features --features client -- -D warnings` passes.

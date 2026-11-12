@@ -7,3 +7,38 @@ jobs:
   tests:
     uses: pimalaya/nix/.github/workflows/tests.yml@master
     secrets: inherit
+  features:
+    # The library layers build alone, so clippy runs over every feature
+    # set a consumer or a packager may pick, one cache for all.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: experimental-features = nix-command flakes
+      - uses: cachix/cachix-action@v17
+        with:
+          name: soywod
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          extraPullNames: nix-community
+      - uses: Swatinem/rust-cache@v2
+      - name: Run clippy over every feature set
+        run: |
+          set -e
+          sets=(
+            ""
+            "--all-features"
+            "--no-default-features"
+            "--no-default-features --features client"
+            "--no-default-features --features server"
+            "--no-default-features --features client,server"
+            "--no-default-features --features cli"
+          )
+          for set in "${sets[@]}"; do
+            echo "::group::clippy $set"
+            read -ra flags <<< "$set"
+            nix develop -c cargo clippy --locked --all-targets "${flags[@]}" -- -D warnings
+            echo "::endgroup::"
+          done
+      - name: Test a build without notifications
+        run: nix develop -c cargo test --locked --no-default-features --features cli
