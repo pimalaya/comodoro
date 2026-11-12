@@ -1,112 +1,26 @@
-# ================================================================================
-# `comodoro` configuration file.
-#
-# Loaded from every existing path among, each merged on top of the ones before:
-#   - $XDG_CONFIG_HOME/comodoro/config.toml
-#   - $HOME/.config/comodoro/config.toml
-#   - $HOME/.comodororc
-#
-# `comodoro -c <PATH>` replaces them, repeated once per file: the first one is
-# the base and the next ones are deep-merged on top of it.
-#
-# One server owns a timer and any number of clients drive it, so the same
-# account is read by both sides.
-# ================================================================================
-
 [accounts.example]
+default = true				# make this account the default one used
+precision = "minute"			# print the remaining minutes
+#precision = "second"			# print the remaining minutes and seconds
+#precision = "hour"			# print the remaining hours only
+#cycles-count = 4			# stop after that many loops, endless when absent
 
-# Use this account when `-a/--account` is not passed.
-default = true
+#socket.path = "/run/user/1000/comodoro.sock"	# comodoro.sock in $XDG_RUNTIME_DIR by default
+#tcp.host = "127.0.0.1"				# the TCP host, unauthenticated so keep it on loopback
+#tcp.port = 9999				# the TCP port
+#tcp.default = true				# talk over TCP when a command names no transport
 
-# Cycles the timer runs through, in order, each a name and a duration in
-# seconds. This is the only required field.
+#hooks.on-timer-start.command = "exit 127"		# a shell line, or a program and its arguments
+#hooks.on-work-end.notify.summary = "Work ended"	# a desktop notification on the event
+
+# Pomodoro
 #
-# Pomodoro style:
-cycles = [
-  { name = "Work", duration = 1500 },      # 25 min
-  { name = "Rest", duration = 300 },       #  5 min
-  { name = "Work", duration = 1500 },      # 25 min
-  { name = "Rest", duration = 300 },       #  5 min
-  { name = "Work", duration = 1500 },      # 25 min
-  { name = "Long rest", duration = 1800 }, # 30 min
-]
+#cycles = [{ name = "Work", duration = 1500 }, { name = "Rest", duration = 300 }, { name = "Work", duration = 1500 }, { name = "Rest", duration = 300 }, { name = "Work", duration = 1500 }, { name = "Long rest", duration = 1800 }]
 
-# 52/17 style:
-#cycles = [
-#  { name = "Work", duration = 3120 }, # 52 min
-#  { name = "Rest", duration = 1020 }, # 17 min
-#]
-
-# 112/26 style:
-#cycles = [
-#  { name = "Work", duration = 6720 }, # 112 min
-#  { name = "Rest", duration = 1560 }, #  26 min
-#]
-
-# Stop the timer after that many full loops. Loops forever when absent.
-#cycles-count = 5
-
-# Precision the remaining duration is displayed at: `second`, `minute` or
-# `hour`.
-precision = "minute"
-
-# --------------------------------------------------------------------------------
-# Local socket transport
-# --------------------------------------------------------------------------------
+# 52/17
 #
-# The transport that needs no port, guarded by filesystem permissions. Also
-# spelled `unix-socket` for accounts written against Comodoro 1.x.
+#cycles = [{ name = "Work", duration = 3120 }, { name = "Rest", duration = 1020 }]
+
+# 112/26
 #
-# Every field below has a default, so this table adjusts an address rather than
-# switching a transport on: which one a server binds is what `comodoro server
-# start [TRANSPORTS]` decides.
-
-# Path the server binds and the clients connect to. Defaults to comodoro.sock
-# inside $XDG_RUNTIME_DIR, or the platform temporary directory when that
-# variable is unset. Give each account its own path to run several timers.
-#socket.path = "/run/user/1000/comodoro.sock"
-
-# Pick this transport when a command names none. Already the case when neither
-# transport claims the default, so this only matters against `tcp.default`.
-socket.default = true
-
-# --------------------------------------------------------------------------------
-# TCP transport
-# --------------------------------------------------------------------------------
-#
-# Defaulted like the socket, so `comodoro server start tcp` opens a port on an
-# account that says nothing about TCP. The listener is unauthenticated: whoever
-# reaches the port drives the timer, so keep it on loopback and start it only
-# when you want it.
-
-# Host and port the server binds and the clients connect to.
-#tcp.host = "127.0.0.1"
-#tcp.port = 9999
-
-# Pick this transport when a command names none. Ignored when `socket.default`
-# is set as well.
-#tcp.default = true
-
-# --------------------------------------------------------------------------------
-# Hooks
-# --------------------------------------------------------------------------------
-#
-# Reactions bound to timer events by name: `on-{cycle}-{event}` where the cycle
-# is the kebab-case cycle name and the event one of begin, running, set, pause,
-# resume, end. The timer itself fires `on-timer-start` and `on-timer-stop`.
-#
-# A hook that cannot run, exits non-zero or reaches no notification daemon is
-# logged and left there: nothing a hook does can stop the timer.
-
-# A command given as a string runs through the platform shell, so pipes,
-# redirections and globs work.
-#hooks.on-work-begin.command = "echo 'Work started!' >> /tmp/comodoro.log"
-
-# A command given as an array executes directly, with no shell involved, so no
-# quoting rule applies beyond the kernel exec rules.
-#hooks.on-work-begin.command = ["notify-send", "Comodoro", "Work started!"]
-
-# A notification is sent to the system notification daemon. Requires the
-# `notify` cargo feature, enabled by default.
-hooks.on-work-begin.notify.summary = "Comodoro"
-hooks.on-work-begin.notify.body = "Work started!"
+#cycles = [{ name = "Work", duration = 6720 }, { name = "Rest", duration = 1560 }]

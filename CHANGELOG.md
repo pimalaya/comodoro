@@ -9,12 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added config.sample.toml to the Nix package and the release archives as share/doc/comodoro/config.sample.toml, which install.sh copies too, so the first-run welcome copies it instead of downloading it.
 - Added a stable `code` to the `--json` failure object of the client commands: `server-unreachable`, `server-closed`, `server-error` and `server-mismatch`, described by `comodoro-error`.
 - Added the first-run welcome: run in a terminal with no configuration, `comodoro` and every command needing an account print the commands creating one from config.sample.toml, copied from share/doc/comodoro/ beside the binary when it ships there and downloaded otherwise, then exit 1. Scripts and `--json` callers keep getting the error.
 - Added the plural aliases `completions`, `manuals` and `json-schemas`, hidden from `--help`.
 
 ### Changed
 
+- Changed config.sample.toml to one `[accounts.example]` table of dotted keys, each line ending in a tab-aligned comment, and the cycle presets to sections to uncomment, Pomodoro, 52/17 and 112/26: a copied sample holds no active `cycles` until one is uncommented. A test parses it with every section and option uncommented.
 - **Breaking:** changed `-c` to take one path per flag, repeated to merge several files, and removed the `COMODORO_CONFIG` environment variable and the `:` delimiter, since `:` belongs to paths (`C:\` on Windows): use `-c "$VAR"`. Without `-c`, every existing default path now loads, each merged on top of the ones before, `$HOME/.comodororc` last.
 - Changed the `srv` alias of `server` to a hidden one.
 - Moved to pimalaya-cli 0.4 and pimalaya-config 0.4 from crates.io, dropping the git pin.

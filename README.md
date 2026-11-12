@@ -102,7 +102,7 @@ nix run
 
 ## Configuration
 
-Comodoro writes no configuration: write one by hand from the annotated [config.sample.toml](./config.sample.toml).
+Comodoro writes no configuration: start from [config.sample.toml](./config.sample.toml), which the first-run welcome copies from share/doc/comodoro/ when the package ships it, uncomment one of its cycle presets (Pomodoro, 52/17 or 112/26), then the options you need.
 
 A configuration is loaded from every existing path among `$XDG_CONFIG_HOME/comodoro/config.toml`, `$HOME/.config/comodoro/config.toml` and `$HOME/.comodororc`, each deep-merged on top of the ones before. `-c <PATH>` replaces them, repeated once per file: the first is the base and the next ones merge on top. Run without a configuration, Comodoro prints the commands creating one from the sample.
 

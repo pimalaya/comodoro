@@ -38,3 +38,11 @@ When no configuration exists at the path `-c` gave or the default one, and stder
 ### Scenario: A first run
 
 With no file at $XDG_CONFIG_HOME/comodoro/config.toml, $HOME/.config/comodoro/config.toml or $HOME/.comodororc, `comodoro` run in a terminal prints the welcome naming $XDG_CONFIG_HOME/comodoro/config.toml, the commands creating it from config.sample.toml and `comodoro server start`, and exits 1.
+
+## Requirement: One sample configuration, with a section per preset
+
+The repository SHALL ship config.sample.toml holding one `[accounts.example]` table with dotted keys and no nested table. It SHALL list the fields every account shares and each of their values, the default active and the others commented as `#key = value`, every line ending in one sentence tab-aligned at column 40, or past the block's longest line, and every command a failing `exit 127` placeholder. It SHALL end with one section per cycle preset (Pomodoro, 52/17, 112/26), each a paragraph of commented code only, headed by its name, holding the preset's `cycles` on one line; no `cycles` SHALL be active outside them. The file SHALL hold a working account once one section is uncommented. The test suite SHALL parse config.sample.toml through the loader `-c` uses with each section uncommented whole, then on top of it each commented line of code outside the sections, uncommented in place of the active lines of its field, so a configuration change that breaks one fails the build.
+
+### Scenario: A field is renamed
+
+When a field the sample's commented code sets, such as `cycles-count`, is renamed in the configuration types and the sample is not updated, the test suite fails naming the sample.

@@ -11,7 +11,7 @@ change: the-family-standards
 - [x] the-outputs-become-data
 - [x] the-shared-kit
 - [x] json-error-code
-- [ ] the-sample-is-tested-and-shipped
+- [x] the-sample-is-tested-and-shipped
 - [ ] hook-templates-from-config
 - [ ] dependencies-trimmed
 - [ ] every-feature-set-builds-clean

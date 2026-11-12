@@ -1,7 +1,7 @@
 ---
 cairn: change
 id: the-sample-is-tested-and-shipped
-status: active
+status: landed
 created: 2026-11-12
 ---
 

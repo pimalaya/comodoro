@@ -182,3 +182,54 @@ fn localhost() -> String {
 fn tcp_port() -> u16 {
     TCP_PORT
 }
+
+#[cfg(test)]
+mod tests {
+    use alloc::vec::Vec;
+    use core::slice;
+
+    use std::{fs, path::PathBuf};
+
+    use pimalaya_config::{sample::variants, toml::TomlConfig};
+    use tempfile::TempDir;
+
+    use crate::cli::{account::Account, config::Config};
+
+    /// The headings of the cycle presets, one of which a user uncomments.
+    const SECTIONS: [&str; 3] = ["# Pomodoro", "# 52/17", "# 112/26"];
+
+    /// Checks config.sample.toml: one `[accounts.example]` table and no
+    /// other, its preset sections each read through the loader `-c` uses
+    /// with every variant on top.
+    #[test]
+    fn the_sample_configuration_parses_with_each_variant() {
+        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("config.sample.toml");
+        let text = fs::read_to_string(&path).unwrap();
+        let headers: Vec<_> = text.lines().filter(|l| l.starts_with('[')).collect();
+        assert_eq!(headers, ["[accounts.example]"]);
+
+        let dir = TempDir::new().unwrap();
+        let path = dir.path().join("config.toml");
+
+        for variant in variants(&text, &SECTIONS) {
+            let name = variant.name;
+
+            // NOTE: a build without notifications refuses them, as it
+            // should.
+            if cfg!(not(feature = "notify")) && name.contains("notify") {
+                continue;
+            }
+
+            fs::write(&path, &variant.text).unwrap();
+
+            let (_, account) = Config::load(slice::from_ref(&path))
+                .and_then(|mut config| Ok(config.take_account(Some("example"))?))
+                .unwrap_or_else(|err| {
+                    panic!("config.sample.toml with {name} uncommented: {err:?}")
+                });
+
+            let account = Account::from(account);
+            assert!(!account.schedule.cycles.is_empty(), "{name}");
+        }
+    }
+}
