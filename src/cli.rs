@@ -188,7 +188,7 @@ pub fn meet_bare_invocation(config_paths: &[PathBuf]) -> Result<()> {
 /// command runs against.
 pub fn take_account(config_paths: &[PathBuf], account_name: Option<&str>) -> Result<Account> {
     let (_, account) = Config::load(config_paths)?.take_account(account_name)?;
-    Ok(Account::from(account))
+    Account::try_from(account)
 }
 
 /// The welcome a person meets when no configuration exists at `path`:

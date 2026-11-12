@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added hook variables, after GUIDELINES cli-008: a cycle hook fills `cycleName` and `cycleDuration` (the remaining seconds), expanded in its notification (`$cycleName`, `${cycleName}`, `${cycleName:-default}`) and handed to its command as environment variables of the same names. A hook can now run a command and show a notification both, the command first.
 - Added config.sample.toml to the Nix package and the release archives as share/doc/comodoro/config.sample.toml, which install.sh copies too, so the first-run welcome copies it instead of downloading it.
 - Added a stable `code` to the `--json` failure object of the client commands: `server-unreachable`, `server-closed`, `server-error` and `server-mismatch`, described by `comodoro-error`.
 - Added the first-run welcome: run in a terminal with no configuration, `comodoro` and every command needing an account print the commands creating one from config.sample.toml, copied from share/doc/comodoro/ beside the binary when it ships there and downloaded otherwise, then exit 1. Scripts and `--json` callers keep getting the error.
@@ -16,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Breaking:** renamed the per-second cycle hook `on-<cycle>-running` to `on-<cycle>-tick`, the event being a bare verb as GUIDELINES cli-008 asks.
+- **Breaking:** changed account resolution to refuse a hook name no event of the account fires (such as a mistyped `on-wrok-end`, which used to load and stay silent), a hook with neither `command` nor `notify`, a notification naming a variable its hook does not fill, and an account with no cycle, which used to load and fail once the server started.
 - Changed config.sample.toml to one `[accounts.example]` table of dotted keys, each line ending in a tab-aligned comment, and the cycle presets to sections to uncomment, Pomodoro, 52/17 and 112/26: a copied sample holds no active `cycles` until one is uncommented. A test parses it with every section and option uncommented.
 - **Breaking:** changed `-c` to take one path per flag, repeated to merge several files, and removed the `COMODORO_CONFIG` environment variable and the `:` delimiter, since `:` belongs to paths (`C:\` on Windows): use `-c "$VAR"`. Without `-c`, every existing default path now loads, each merged on top of the ones before, `$HOME/.comodororc` last.
 - Changed the `srv` alias of `server` to a hidden one.

@@ -11,7 +11,7 @@ precision = "minute"			# print the remaining minutes
 #tcp.default = true				# talk over TCP when a command names no transport
 
 #hooks.on-timer-start.command = "exit 127"		# a shell line, or a program and its arguments
-#hooks.on-work-end.notify.summary = "Work ended"	# a desktop notification on the event
+#hooks.on-work-end.notify.summary = "$cycleName ended"	# a notification, $cycleName and $cycleDuration filled
 
 # Pomodoro
 #

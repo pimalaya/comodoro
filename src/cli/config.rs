@@ -228,7 +228,7 @@ mod tests {
                     panic!("config.sample.toml with {name} uncommented: {err:?}")
                 });
 
-            let account = Account::from(account);
+            let account = Account::try_from(account).unwrap();
             assert!(!account.schedule.cycles.is_empty(), "{name}");
         }
     }

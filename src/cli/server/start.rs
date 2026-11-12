@@ -48,13 +48,13 @@ impl TimerServerStartCommand {
 
             let name = event.hook_name();
 
-            let Some(hook) = account.hooks.get_mut(&name) else {
+            let Some(hook) = account.hooks.get(&name) else {
                 continue;
             };
 
             info!("run hook {name}");
 
-            hook.execute();
+            hook.execute(&event.hook_variables());
         }
 
         Ok(())

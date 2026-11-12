@@ -36,8 +36,8 @@ fn path(name: &str) -> PathBuf {
 fn a_string_command_runs_through_a_shell() {
     let path = path("shell");
 
-    let mut hook = hook(&format!(r#"command = "echo hooked >> {}""#, path.display()));
-    hook.execute();
+    let hook = hook(&format!(r#"command = "echo hooked >> {}""#, path.display()));
+    hook.execute(&[]);
 
     assert_eq!(fs::read_to_string(&path).unwrap().trim(), "hooked");
     let _ = fs::remove_file(path);
@@ -50,8 +50,8 @@ fn a_string_command_runs_through_a_shell() {
 fn an_array_command_executes_with_no_shell() {
     let path = path("no shell > redirection");
 
-    let mut hook = hook(&format!(r#"command = ["touch", "{}"]"#, path.display()));
-    hook.execute();
+    let hook = hook(&format!(r#"command = ["touch", "{}"]"#, path.display()));
+    hook.execute(&[]);
 
     assert!(path.exists(), "{}", path.display());
     let _ = fs::remove_file(path);
@@ -63,14 +63,14 @@ fn an_array_command_executes_with_no_shell() {
 #[cfg(unix)]
 #[test]
 fn a_command_exiting_non_zero_is_inert() {
-    hook(r#"command = ["false"]"#).execute();
+    hook(r#"command = ["false"]"#).execute(&[]);
 }
 
 /// Inert for the same reason a non-zero exit is: a hook never takes the
 /// timer down with it.
 #[test]
 fn a_missing_program_is_inert() {
-    hook(r#"command = ["comodoro-hook-does-not-exist"]"#).execute();
+    hook(r#"command = ["comodoro-hook-does-not-exist"]"#).execute(&[]);
 }
 
 /// Sending is left alone on purpose: it needs a notification daemon,
@@ -80,12 +80,10 @@ fn a_missing_program_is_inert() {
 fn a_notification_carries_its_summary_and_body() {
     let hook = hook(r#"notify = { summary = "Comodoro", body = "Work started!" }"#);
 
-    let TimerHook::Notify(notification) = hook else {
-        panic!("expected a notification hook");
-    };
+    let notification = hook.notify.expect("notification hook");
 
-    assert_eq!(notification.summary, "Comodoro");
-    assert_eq!(notification.body, "Work started!");
+    assert_eq!(notification.summary(), "Comodoro");
+    assert_eq!(notification.body(), "Work started!");
 }
 
 #[cfg(not(feature = "notify"))]
@@ -115,7 +113,7 @@ fn events_name_the_hook_they_fire() {
     );
     assert_eq!(
         TimerEvent::Running(cycle.clone()).hook_name(),
-        "on-long-rest-running"
+        "on-long-rest-tick"
     );
     assert_eq!(
         TimerEvent::Set(cycle.clone()).hook_name(),
@@ -130,4 +128,73 @@ fn events_name_the_hook_they_fire() {
         "on-long-rest-resume"
     );
     assert_eq!(TimerEvent::Ended(cycle).hook_name(), "on-long-rest-end");
+}
+
+/// One spelling serves both: the variables a notification expands reach
+/// a command as environment variables of the same names.
+#[cfg(unix)]
+#[test]
+fn a_command_reads_the_cycle_from_its_environment() {
+    let path = path("env");
+    let line = format!(
+        r#"command = "printf '%s %s' \"$cycleName\" \"$cycleDuration\" > {}""#,
+        path.display()
+    );
+    let event = TimerEvent::Ended(TimerCycle::new("Long rest", 0));
+
+    hook(&line).execute(&event.hook_variables());
+
+    assert_eq!(fs::read_to_string(&path).unwrap(), "Long rest 0");
+    let _ = fs::remove_file(path);
+}
+
+#[cfg(feature = "notify")]
+#[test]
+fn a_hook_may_run_a_command_and_show_a_notification() {
+    let hook = hook(
+        r#"
+        command = "true"
+        notify = { summary = "$cycleName ended" }
+        "#,
+    );
+
+    let cycles = [TimerCycle::new("Work", 1500)];
+    hook.validate("on-work-end", &cycles).unwrap();
+    assert!(hook.command.is_some() && hook.notify.is_some());
+}
+
+#[test]
+fn a_hook_doing_nothing_is_refused() {
+    let cycles = [TimerCycle::new("Work", 1500)];
+    let err = hook("").validate("on-work-end", &cycles).unwrap_err();
+    assert!(err.to_string().contains("does nothing"), "{err}");
+}
+
+#[cfg(feature = "notify")]
+#[test]
+fn a_default_takes_the_shell_spelling_only() {
+    let cycles = [TimerCycle::new("Work", 1500)];
+
+    let toml = r#"notify = { summary = "${cycleName:-none}" }"#;
+    hook(toml).validate("on-work-end", &cycles).unwrap();
+
+    let toml = r#"notify = { summary = "${cycleName:none}" }"#;
+    let err = toml::from_str::<TimerHook>(toml).unwrap_err();
+    assert!(err.to_string().contains("${cycleName:none}"), "{err}");
+}
+
+#[test]
+fn a_hook_name_lists_the_cycles_when_no_event_fires_it() {
+    let cycles = [
+        TimerCycle::new("Work", 1500),
+        TimerCycle::new("Long rest", 300),
+    ];
+    let err = hook(r#"command = "true""#)
+        .validate("on-work-running", &cycles)
+        .unwrap_err();
+    let err = err.to_string();
+
+    assert!(err.contains("on-work-running"), "{err}");
+    assert!(err.contains("work, long-rest"), "{err}");
+    assert!(err.contains("tick"), "{err}");
 }

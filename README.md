@@ -27,7 +27,7 @@ One server owns a timer, any number of clients drive it and watch it. This proje
 - **Local socket and TCP**: either transport, or both at once.
 - **Standard protocol**: plain [JSON-RPC 2.0](https://www.jsonrpc.org/specification), drivable from any language.
 - **Pomodoro-style cycles**: any named durations, looping forever or a fixed number of times.
-- **Per-event hooks**: a shell command or a desktop notification on any timer event.
+- **Per-event hooks**: a shell command, a desktop notification or both on any timer event, given the cycle name and its remaining time as variables.
 - **Status-bar friendly**: second, minute or hour precision, plus `--json` for scripts.
 
 > [!TIP]

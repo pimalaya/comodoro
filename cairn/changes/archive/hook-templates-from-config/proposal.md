@@ -1,7 +1,7 @@
 ---
 cairn: change
 id: hook-templates-from-config
-status: active
+status: landed
 created: 2026-11-12
 ---
 

@@ -19,7 +19,7 @@ use pimalaya_config::toml::TomlConfig;
 fn account(toml: &str) -> Account {
     let mut config: Config = toml::from_str(toml).expect("deserialize config");
     let (_, account) = config.take_account(Some("example")).expect("take account");
-    account.into()
+    account.try_into().expect("resolve account")
 }
 
 #[test]
@@ -130,4 +130,68 @@ fn a_server_binds_the_transports_it_is_given() {
         account.addresses(&[Transport::UnixSocket, Transport::Tcp]),
         vec![socket, tcp]
     );
+}
+
+/// Runs the binary's `get` on an account file holding `toml`, and returns
+/// the failure it prints under `--json`.
+fn refusal(toml: &str) -> String {
+    let dir = tempfile::TempDir::new().unwrap();
+    let path = dir.path().join("config.toml");
+    let socket = dir.path().join("none.sock");
+    let toml = format!("{toml}\nsocket.path = {:?}\n", socket.display().to_string());
+    std::fs::write(&path, toml).unwrap();
+
+    let output = std::process::Command::new(env!("CARGO_BIN_EXE_comodoro"))
+        .arg("-c")
+        .arg(&path)
+        .args(["--json", "get"])
+        .output()
+        .unwrap();
+
+    let failure: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    failure.to_string()
+}
+
+#[test]
+fn a_hook_no_event_fires_is_refused() {
+    let failure = refusal(
+        r#"
+        [accounts.example]
+        default = true
+        cycles = [{ name = "Work", duration = 1500 }]
+        hooks.on-wrok-end.command = "true"
+        "#,
+    );
+
+    assert!(failure.contains("on-wrok-end"), "{failure}");
+    assert!(failure.contains("work"), "{failure}");
+}
+
+#[test]
+fn an_account_without_cycles_is_refused() {
+    let failure = refusal(
+        r#"
+        [accounts.example]
+        default = true
+        cycles = []
+        "#,
+    );
+
+    assert!(failure.contains("no cycle"), "{failure}");
+}
+
+#[cfg(feature = "notify")]
+#[test]
+fn a_cycle_variable_on_a_timer_hook_is_refused() {
+    let failure = refusal(
+        r#"
+        [accounts.example]
+        default = true
+        cycles = [{ name = "Work", duration = 1500 }]
+        hooks.on-timer-start.notify.summary = "$cycleName started"
+        "#,
+    );
+
+    assert!(failure.contains("on-timer-start"), "{failure}");
+    assert!(failure.contains("cycleName"), "{failure}");
 }

@@ -12,7 +12,7 @@ change: the-family-standards
 - [x] the-shared-kit
 - [x] json-error-code
 - [x] the-sample-is-tested-and-shipped
-- [ ] hook-templates-from-config
+- [x] hook-templates-from-config
 - [ ] dependencies-trimmed
 - [ ] every-feature-set-builds-clean
 - [ ] the-shared-repl-and-mcp

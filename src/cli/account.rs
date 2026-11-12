@@ -21,6 +21,8 @@ use alloc::{string::String, vec, vec::Vec};
 
 use std::collections::HashMap;
 
+use anyhow::{Error, Result, bail};
+
 use crate::{
     cli::{config::AccountConfig, hook::TimerHook, transport::Transport},
     timer::{TimerLoop, TimerPrecision, TimerSchedule},
@@ -75,8 +77,12 @@ impl Account {
     }
 }
 
-impl From<AccountConfig> for Account {
-    fn from(config: AccountConfig) -> Self {
+/// Resolves an account, refusing one with no cycle and one whose hooks
+/// no event fires or name a variable their event does not fill.
+impl TryFrom<AccountConfig> for Account {
+    type Error = Error;
+
+    fn try_from(config: AccountConfig) -> Result<Self> {
         let AccountConfig {
             default: _,
             socket,
@@ -87,6 +93,14 @@ impl From<AccountConfig> for Account {
             hooks,
         } = config;
 
+        if cycles.is_empty() {
+            bail!("The account has no cycle, give `cycles` at least one");
+        }
+
+        for (name, hook) in &hooks {
+            hook.validate(name, &cycles)?;
+        }
+
         // NOTE: the local socket wins the tie, since it is the transport
         // that opens no port: `tcp.default` is honoured only when the
         // socket does not claim the default itself.
@@ -96,7 +110,7 @@ impl From<AccountConfig> for Account {
             Transport::UnixSocket
         };
 
-        Self {
+        Ok(Self {
             schedule: TimerSchedule {
                 cycles,
                 loops: match cycles_count {
@@ -109,6 +123,6 @@ impl From<AccountConfig> for Account {
             socket: socket.address(),
             tcp: tcp.address(),
             default_transport,
-        }
+        })
     }
 }
