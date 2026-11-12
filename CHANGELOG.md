@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added `comodoro repl`, a session running the CLI's commands over one account, one per stdin line, on the REPL Himalaya and Ortie share; `watch` and `server start` are refused in it, since they run until interrupted.
+- Added `comodoro mcp`, a Model Context Protocol server over stdio exposing `get` to an agent, and with `--allow-write` the timer controls, each answering the timer as `structuredContent`.
 - Added hook variables, after GUIDELINES cli-008: a cycle hook fills `cycleName` and `cycleDuration` (the remaining seconds), expanded in its notification (`$cycleName`, `${cycleName}`, `${cycleName:-default}`) and handed to its command as environment variables of the same names. A hook can now run a command and show a notification both, the command first.
 - Added config.sample.toml to the Nix package and the release archives as share/doc/comodoro/config.sample.toml, which install.sh copies too, so the first-run welcome copies it instead of downloading it.
 - Added a stable `code` to the `--json` failure object of the client commands: `server-unreachable`, `server-closed`, `server-error` and `server-mismatch`, described by `comodoro-error`.

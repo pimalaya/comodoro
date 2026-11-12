@@ -48,9 +48,15 @@ mod tests {
     use crate::cli::{Cli, json_schema::registry};
 
     /// The commands printing nothing a schema could describe: a bare
-    /// `comodoro` shows the help, and a server prints nothing while it
-    /// runs.
-    const SILENT: &[&str] = &["comodoro", "comodoro-server-start"];
+    /// `comodoro` shows the help, a server prints nothing while it runs,
+    /// and the REPL and the MCP server print the payloads of the commands
+    /// they run.
+    const SILENT: &[&str] = &[
+        "comodoro",
+        "comodoro-server-start",
+        "comodoro-repl",
+        "comodoro-mcp",
+    ];
 
     /// Every runnable command is described, and every key names one: a
     /// renamed subcommand cannot leave a schema nobody can ask for, nor a

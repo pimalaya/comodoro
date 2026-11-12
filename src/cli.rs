@@ -30,6 +30,8 @@ pub mod config;
 pub mod error;
 pub mod hook;
 pub mod json_schema;
+pub mod mcp;
+pub mod repl;
 pub mod server;
 pub mod transport;
 
@@ -37,7 +39,7 @@ use alloc::format;
 
 use std::path::{Path, PathBuf};
 
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use clap::{CommandFactory, Parser, Subcommand};
 use log::trace;
 use pimalaya_cli::{
@@ -48,8 +50,9 @@ use pimalaya_cli::{
         },
     },
     footer, long_version,
+    mcp::exit_on_failure,
     printer::Printer,
-    welcome::Welcome,
+    welcome::{Welcome, is_wanted},
 };
 use pimalaya_config::toml::{ConfigMissingError, TomlConfig};
 
@@ -61,6 +64,9 @@ use crate::cli::{
         watch::TimerWatchCommand,
     },
     config::Config,
+    error::ErrorCode,
+    mcp::McpCommand,
+    repl::ReplCommand,
     server::TimerServerCommand,
 };
 
@@ -114,6 +120,10 @@ pub enum Command {
     Stop(TimerStopCommand),
     /// Set the remaining duration of the current cycle.
     Set(TimerSetCommand),
+    /// Start a session running commands over one account.
+    Repl(ReplCommand),
+    /// Start a Model Context Protocol server over stdio.
+    Mcp(McpCommand),
     /// Generate the shell completion scripts.
     #[command(aliases = ["completions", "cpl"])]
     Completion(CompletionCommand),
@@ -140,6 +150,24 @@ impl Command {
             Self::Completion(cmd) => cmd.execute(printer, Cli::command()),
             Self::Manual(cmd) => cmd.execute(printer, Cli::command()),
             Self::JsonSchema(cmd) => cmd.execute(printer, json_schema::registry()),
+            Self::Repl(cmd) => {
+                let account = take_account(config_paths, account_name)?;
+                cmd.execute(&*printer, account)
+            }
+            Self::Mcp(cmd) => {
+                // NOTE: stdout carries protocol messages only, so a
+                // failure goes to stderr, a person missing a
+                // configuration aside.
+                let account = match take_account(config_paths, account_name) {
+                    Err(err) if err.is::<ConfigMissingError>() && is_wanted(&*printer) => {
+                        return Err(err);
+                    }
+                    account => exit_on_failure::<ErrorCode, _>(account),
+                };
+
+                exit_on_failure::<ErrorCode, _>(cmd.execute(account));
+                Ok(())
+            }
             cmd => {
                 let mut account = take_account(config_paths, account_name)?;
                 cmd.run(printer, &mut account)
@@ -162,6 +190,7 @@ impl Command {
             Self::Completion(cmd) => cmd.execute(printer, Cli::command()),
             Self::Manual(cmd) => cmd.execute(printer, Cli::command()),
             Self::JsonSchema(cmd) => cmd.execute(printer, json_schema::registry()),
+            Self::Repl(_) | Self::Mcp(_) => Err(anyhow!("Cannot start a session inside a session")),
         };
 
         result.map_err(error::coded)

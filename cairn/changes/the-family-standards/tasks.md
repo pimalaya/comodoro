@@ -15,6 +15,6 @@ change: the-family-standards
 - [x] hook-templates-from-config
 - [x] dependencies-trimmed
 - [x] every-feature-set-builds-clean
-- [ ] the-shared-repl-and-mcp
+- [x] the-shared-repl-and-mcp
 - [ ] release-polish
 - [ ] Log; land

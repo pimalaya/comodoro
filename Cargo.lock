@@ -522,6 +522,7 @@ dependencies = [
  "serde",
  "serde_json",
  "shellexpand",
+ "shlex",
  "toml",
  "unicode-width",
 ]

@@ -91,3 +91,17 @@ fn a_json_caller_gets_the_missing_configuration_as_the_failure_object() {
     assert!(error.contains("config.sample.toml"), "{error}");
     assert!(output.stderr.is_empty(), "{}", text(&output.stderr));
 }
+
+/// stdout carries MCP messages only, so a server failing to start says why
+/// on stderr.
+#[test]
+fn an_mcp_server_missing_its_configuration_leaves_stdout_empty() {
+    let (home, path) = home(None);
+    let output = run(home.path(), &["-c", path.to_str().unwrap(), "mcp"]);
+    let stderr = text(&output.stderr);
+
+    assert_eq!(output.status.code(), Some(1));
+    assert!(output.stdout.is_empty(), "{}", text(&output.stdout));
+    let missing = format!("No configuration found at {}", path.display());
+    assert!(stderr.contains(&missing), "{stderr}");
+}

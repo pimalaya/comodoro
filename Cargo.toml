@@ -46,6 +46,16 @@ path = "tests/first_run.rs"
 required-features = ["cli"]
 
 [[test]]
+name = "repl"
+path = "tests/repl.rs"
+required-features = ["cli"]
+
+[[test]]
+name = "mcp"
+path = "tests/mcp.rs"
+required-features = ["cli"]
+
+[[test]]
 name = "output"
 path = "tests/output.rs"
 required-features = ["cli"]
@@ -84,7 +94,7 @@ clap = { version = "4.4", default-features = false, features = ["derive", "error
 convert_case = { version = "0.12", default-features = false, optional = true }
 humantime = { version = "2.2", default-features = false, optional = true }
 log = { version = "0.4", default-features = false }
-pimalaya-cli = { version = "0.4.0", default-features = false, features = ["terminal"], optional = true }
+pimalaya-cli = { version = "0.4.0", default-features = false, features = ["mcp", "repl", "terminal"], optional = true }
 pimalaya-config = { version = "0.4.0", default-features = false, features = ["toml", "secret"], optional = true }
 schemars = { version = "1", default-features = false, features = ["derive"], optional = true }
 serde = { version = "1", default-features = false, features = ["derive", "alloc"] }
