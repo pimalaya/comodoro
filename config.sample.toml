@@ -10,9 +10,8 @@
 # can be passed at once, separated by `:`; the first one is the base and the
 # rest are deep-merged on top of it.
 #
-# `comodoro configure` generates an account from one of the presets below, and
-# everything else here is written by hand. One server owns a timer and any
-# number of clients drive it, so the same account is read by both sides.
+# One server owns a timer and any number of clients drive it, so the same
+# account is read by both sides.
 # ================================================================================
 
 [accounts.example]

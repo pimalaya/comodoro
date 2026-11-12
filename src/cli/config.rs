@@ -7,14 +7,12 @@
 //! the timer cycles, and the hooks bound to timer events. Only the cycles
 //! are required, and config.sample.toml is the annotated reference.
 //!
-//! What lives here is the document alone: its shape, the way it is read,
-//! and the way an account is written back to it. What a command runs
-//! against is [`Account`], the resolved view built from these types.
+//! What lives here is the document alone: its shape and the way it is
+//! read. Comodoro never writes it. What a command runs against is [`Account`], the resolved view built from these types.
 //!
 //! [`Account`]: crate::cli::account::Account
 
 use alloc::{
-    format,
     string::{String, ToString},
     vec::Vec,
 };
@@ -22,7 +20,7 @@ use alloc::{
 use std::{collections::HashMap, path::PathBuf};
 
 use pimalaya_config::toml::TomlConfig;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 use crate::{
     cli::hook::TimerHook,
@@ -31,14 +29,14 @@ use crate::{
 };
 
 /// The annotated field reference, pointed at whenever a configuration is
-/// missing or a field needs a human rather than a prompt.
+/// missing.
 pub const CONFIG_SAMPLE_URL: &str = concat!(
     env!("CARGO_PKG_REPOSITORY"),
     "/blob/master/config.sample.toml"
 );
 
 /// The whole Comodoro configuration.
-#[derive(Debug, Default, Deserialize, Serialize)]
+#[derive(Debug, Default, Deserialize)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct Config {
     /// The accounts, by name.
@@ -66,7 +64,7 @@ impl TomlConfig for Config {
 }
 
 /// The configuration of a single Comodoro account.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct AccountConfig {
     /// Whether this account is picked when none is given.
@@ -100,77 +98,8 @@ pub struct AccountConfig {
     pub hooks: HashMap<String, TimerHook>,
 }
 
-impl AccountConfig {
-    /// Renders the account as the annotated sample writes one: one cycle
-    /// per line, `name` before `duration`, and only the fields that are
-    /// set.
-    ///
-    /// Hand-rendered rather than serialized, the shared serializer
-    /// rendering a whole array on one line: that turns a six-cycle
-    /// pomodoro into a two-hundred-column line in a hand-edited document.
-    ///
-    /// The direction [`Account`] cannot take: a resolved account has lost
-    /// the difference between a field left out and one written to today's
-    /// default, so rendering one would freeze a socket path into the file.
-    ///
-    /// Nothing needs escaping, the caller being the wizard: the cycles
-    /// come from its presets and the name from theirs, bare TOML keys by
-    /// construction.
-    ///
-    /// [`Account`]: crate::cli::account::Account
-    pub fn render(&self, name: &str) -> String {
-        let mut document = format!("[accounts.{name}]\n");
-
-        if self.default {
-            document.push_str("default = true\n");
-        }
-
-        document.push_str("cycles = [\n");
-
-        for TimerCycle { name, duration } in &self.cycles {
-            document.push_str(&format!(
-                "  {{ name = \"{name}\", duration = {duration} }},\n"
-            ));
-        }
-
-        document.push_str("]\n");
-
-        if let Some(count) = self.cycles_count {
-            document.push_str(&format!("cycles-count = {count}\n"));
-        }
-
-        // NOTE: every transport field has a default, so what is written
-        // is what departs from one. An account taking them all holds its
-        // cycles and nothing else.
-        if self.socket.path != default_socket_path() {
-            document.push_str(&format!(
-                "socket.path = \"{}\"\n",
-                self.socket.path.display()
-            ));
-        }
-
-        if self.socket.default {
-            document.push_str("socket.default = true\n");
-        }
-
-        if self.tcp.host != LOCALHOST {
-            document.push_str(&format!("tcp.host = \"{}\"\n", self.tcp.host));
-        }
-
-        if self.tcp.port != TCP_PORT {
-            document.push_str(&format!("tcp.port = {}\n", self.tcp.port));
-        }
-
-        if self.tcp.default {
-            document.push_str("tcp.default = true\n");
-        }
-
-        document
-    }
-}
-
 /// Where a client and a server meet over a local socket.
-#[derive(Debug, Eq, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Eq, PartialEq, Deserialize)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct SocketConfig {
     /// Whether a command talks over this transport when it names none.
@@ -205,7 +134,7 @@ impl Default for SocketConfig {
 /// The listener it describes is unauthenticated, so whoever reaches the
 /// port drives the timer. Hence the loopback host, the one default an
 /// account should have to overrule deliberately.
-#[derive(Debug, Eq, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Eq, PartialEq, Deserialize)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct TcpConfig {
     /// Whether a command talks over this transport when it names none.

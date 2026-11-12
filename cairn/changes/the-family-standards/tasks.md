@@ -6,7 +6,7 @@ change: the-family-standards
 # Tasks
 
 - [x] Cairn housekeeping: the nine landed changes archived; cli-alignment-leftovers abandoned and archived (A1 and F6 to the-shared-kit, B4, B9, H1 and H2 lapsing with the wizard)
-- [ ] the-wizard-leaves
+- [x] the-wizard-leaves
 - [ ] wire-values-are-kebab-case
 - [ ] the-outputs-become-data
 - [ ] the-shared-kit

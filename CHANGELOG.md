@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking:** renamed the timer's `started_at` key to `startedAt`, both in the `--json` output of `get` and `watch` and in the JSON-RPC protocol (the `timer.get` result), so every JSON key Comodoro emits is camelCase. Third-party clients reading the field need the new spelling, and schemas pinned from `json-schema` need regenerating.
 - Changed piped `--json` output to print one value per line, flushed, so `watch --json` streams newline-delimited JSON instead of values glued together and held in the buffer; each schema of `json-schema` now carries an `$id` naming the contract version (`v2`), and `comodoro-error` describes the JSON failure object (pimalaya-cli `55b6693`).
 
+### Removed
+
+- **Breaking:** removed the setup wizard, the `configure` command and its `wizard` alias, with the `comodoro-configure` schema. A bare `comodoro` prints the help, and a command finding no configuration fails naming the path it looked at and pointing at config.sample.toml rather than offering the wizard: write the configuration by hand from the sample.
+
 ### Fixed
 
 - Fixed `completion` writing files to the working directory instead of printing the script to stdout.

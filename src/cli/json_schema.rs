@@ -20,7 +20,7 @@ use std::collections::BTreeMap;
 use pimalaya_cli::{clap::commands::JsonSchemaRegistry, error::ErrorReport};
 use schemars::schema_for;
 
-use crate::{cli::configure::GeneratedConfig, timer::Timer};
+use crate::timer::Timer;
 
 /// Builds the command-to-schema registry consumed by `json-schema`.
 ///
@@ -43,7 +43,6 @@ pub fn registry() -> JsonSchemaRegistry {
     // on every change, so both describe the same payload.
     insert!("comodoro-get", Timer);
     insert!("comodoro-watch", Timer);
-    insert!("comodoro-configure", GeneratedConfig);
     insert!("comodoro-error", ErrorReport);
 
     JsonSchemaRegistry {

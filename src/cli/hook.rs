@@ -22,7 +22,7 @@ use std::process::Command;
 use convert_case::{Case, Casing};
 use log::{debug, error, warn};
 use pimalaya_config::notify::Notification;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 use crate::timer::TimerEvent;
 
@@ -58,7 +58,7 @@ impl TimerEvent {
 }
 
 /// A reaction bound to a timer event.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum TimerHook {
     /// Runs a command, a shell line or a program with its arguments.

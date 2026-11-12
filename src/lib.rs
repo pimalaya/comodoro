@@ -34,9 +34,9 @@
 //! items.
 //!
 //! [`cli`] holds the command grammar, [`cli::config`] the TOML document,
-//! [`cli::configure`] the wizard writing one, [`cli::account`] the view a
-//! command runs against, [`cli::hook`] the event reactions, and
-//! [`cli::json_schema`] the schemas of the printed output.
+//! [`cli::account`] the view a command runs against, [`cli::hook`] the
+//! event reactions, and [`cli::json_schema`] the schemas of the printed
+//! output.
 //!
 //! One module per command sits under [`cli::client`] and
 //! [`cli::server`].
@@ -87,8 +87,8 @@
 //!
 //! Runnable programs live in the examples folder. The tests cover the
 //! state machine, the envelope against the specification's own examples,
-//! the account configuration and its hooks, the account the wizard
-//! generates, and full exchanges over both transports.
+//! the account configuration and its hooks, and full exchanges over both
+//! transports.
 //!
 //! The development history and living design notes live in the cairn/
 //! folder.

@@ -102,7 +102,7 @@ nix run
 
 ## Configuration
 
-Run `comodoro` with no command: it offers to generate a first account, which `comodoro configure` does again later. Everything beyond its presets is written by hand, against the annotated [config.sample.toml](./config.sample.toml).
+Comodoro writes no configuration: write one by hand from the annotated [config.sample.toml](./config.sample.toml).
 
 A configuration is loaded from the first valid path among `$XDG_CONFIG_HOME/comodoro/config.toml`, `$HOME/.config/comodoro/config.toml` and `$HOME/.comodororc`. Override it with `-c <PATH>` or `COMODORO_CONFIG=<PATH>`, `:`-separated to deep-merge several files on top of the first.
 
@@ -111,12 +111,6 @@ An account only needs its `cycles`. Everything else defaults: a socket under `$X
 Which transport a server binds is what `comodoro server start [TRANSPORTS]` says, and which one a client talks over is what `socket.default` or `tcp.default` says. The TCP listener is unauthenticated, so keep it on loopback unless you mean otherwise.
 
 ## Usage
-
-Generate a first account, unless you wrote the configuration by hand already:
-
-```sh
-comodoro
-```
 
 Start the server, which owns the timer and stays in the foreground:
 
