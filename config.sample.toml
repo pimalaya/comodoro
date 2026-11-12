@@ -1,14 +1,13 @@
 # ================================================================================
 # `comodoro` configuration file.
 #
-# Loaded from the first valid path among:
+# Loaded from every existing path among, each merged on top of the ones before:
 #   - $XDG_CONFIG_HOME/comodoro/config.toml
 #   - $HOME/.config/comodoro/config.toml
 #   - $HOME/.comodororc
 #
-# Override with `comodoro -c <PATH>` or `COMODORO_CONFIG=<PATH>`. Multiple paths
-# can be passed at once, separated by `:`; the first one is the base and the
-# rest are deep-merged on top of it.
+# `comodoro -c <PATH>` replaces them, repeated once per file: the first one is
+# the base and the next ones are deep-merged on top of it.
 #
 # One server owns a timer and any number of clients drive it, so the same
 # account is read by both sides.

@@ -9,7 +9,7 @@ change: the-family-standards
 - [x] the-wizard-leaves
 - [x] wire-values-are-kebab-case
 - [x] the-outputs-become-data
-- [ ] the-shared-kit
+- [x] the-shared-kit
 - [ ] json-error-code
 - [ ] the-sample-is-tested-and-shipped
 - [ ] hook-templates-from-config

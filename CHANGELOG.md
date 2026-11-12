@@ -9,10 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added the first-run welcome: run in a terminal with no configuration, `comodoro` and every command needing an account print the commands creating one from config.sample.toml, copied from share/doc/comodoro/ beside the binary when it ships there and downloaded otherwise, then exit 1. Scripts and `--json` callers keep getting the error.
 - Added the plural aliases `completions`, `manuals` and `json-schemas`, hidden from `--help`.
 
 ### Changed
 
+- **Breaking:** changed `-c` to take one path per flag, repeated to merge several files, and removed the `COMODORO_CONFIG` environment variable and the `:` delimiter, since `:` belongs to paths (`C:\` on Windows): use `-c "$VAR"`. Without `-c`, every existing default path now loads, each merged on top of the ones before, `$HOME/.comodororc` last.
+- Changed the `srv` alias of `server` to a hidden one.
+- Moved to pimalaya-cli 0.4 and pimalaya-config 0.4 from crates.io, dropping the git pin.
 - **Breaking:** changed `start`, `pause`, `resume`, `stop` and `set` to print the timer after their change, as `get` does, instead of a confirmation sentence: the one-line status as text, and the timer object under `--json`, each described in `json-schema` (`comodoro-start` and the others).
 - **Breaking:** changed `startedAt` under `--json` to an RFC 3339 instant in UTC (`2026-11-12T09:00:00Z`) instead of epoch seconds. The JSON-RPC protocol keeps epoch seconds.
 - **Breaking:** changed the timer's values to kebab-case, both in the `--json` output and in the JSON-RPC protocol: `state` reads `running`, `paused` or `stopped` instead of `Running`, `Paused` or `Stopped`, and the schedule's `loops` is the number of loops or `null` when unbounded instead of `"Infinite"` or `{"Fixed": n}`. A client meeting a server of the previous version fails saying it may run another Comodoro version: restart the server, and any `watch` still running, after upgrading.
@@ -25,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fixed several accounts marked `default = true` resolving to whichever came first: they are refused, naming them.
 - Fixed `completion` writing files to the working directory instead of printing the script to stdout.
 
   It broke every packaging helper capturing stdout. `manual` and `json-schema` now share its shape: a positional list selecting what to generate, printed to stdout, and an optional `--dir` deciding where it lands instead of the directory they used to take as a positional argument.

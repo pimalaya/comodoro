@@ -13,6 +13,7 @@ use core::{fmt, time::Duration};
 use std::time::UNIX_EPOCH;
 
 use humantime::format_rfc3339_seconds;
+use pimalaya_cli::sanitize;
 use schemars::JsonSchema;
 use serde::{Serialize, Serializer};
 
@@ -58,7 +59,9 @@ impl TimerOutput {
     }
 
     fn fmt_state(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let cycle = &self.cycle.name;
+        // NOTE: a TCP server may be remote, so its cycle name could drive
+        // the terminal.
+        let cycle = sanitize::text(&self.cycle.name);
         let duration = self.cycle.duration;
 
         match self.state {

@@ -4,11 +4,16 @@
 //! parsed by main, and [`Command`] the flat grammar it dispatches to.
 //!
 //! Every command taking an account resolves it from the TOML
-//! configuration first, then hands it to the client or the server.
+//! configuration first, then hands it to the client or the server. The
+//! loading and the selection are pimalaya-config's, so a missing
+//! configuration, an unknown account and several defaults fail the way
+//! they fail across the family.
 //!
-//! Comodoro writes no configuration: a command finding none fails naming
-//! the path it looked at and pointing at config.sample.toml, and a bare
-//! `comodoro` shows the help.
+//! Comodoro writes no configuration. A bare `comodoro` shows the help
+//! when one exists, and a person running Comodoro without one meets the
+//! welcome ([`welcome`], the shared one in Comodoro's words), which
+//! copies config.sample.toml from the release or the package, or
+//! downloads it.
 //!
 //! Everything the CLI needs lives here, so the `cli` feature gates one
 //! subtree: [`config`] holds the TOML document, [`account`] the resolved
@@ -27,23 +32,25 @@ pub mod json_schema;
 pub mod server;
 pub mod transport;
 
-use alloc::{format, string::String, vec::Vec};
+use alloc::format;
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
-use anyhow::{Result, bail};
+use anyhow::Result;
 use clap::{CommandFactory, Parser, Subcommand};
 use log::trace;
 use pimalaya_cli::{
     clap::{
-        args::{AccountFlag, JsonFlag, LogFlags},
-        commands::{CompletionCommand, JsonSchemaCommand, ManualCommand},
-        parsers::path_parser,
+        args::{AccountFlag, ConfigFlags, JsonFlag, LogFlags},
+        commands::{
+            completion::CompletionCommand, json_schema::JsonSchemaCommand, manual::ManualCommand,
+        },
     },
     footer, long_version,
     printer::Printer,
+    welcome::Welcome,
 };
-use pimalaya_config::toml::TomlConfig;
+use pimalaya_config::toml::{ConfigMissingError, TomlConfig};
 
 use crate::cli::{
     account::Account,
@@ -52,9 +59,13 @@ use crate::cli::{
         set::TimerSetCommand, start::TimerStartCommand, stop::TimerStopCommand,
         watch::TimerWatchCommand,
     },
-    config::{CONFIG_SAMPLE_URL, Config},
+    config::Config,
     server::TimerServerCommand,
 };
+
+/// The sample configuration as a raw file, for `curl` to fetch.
+const SAMPLE_RAW_URL: &str =
+    "https://raw.githubusercontent.com/pimalaya/comodoro/master/config.sample.toml";
 
 /// The Comodoro command-line interface.
 #[derive(Debug, Parser)]
@@ -63,14 +74,12 @@ use crate::cli::{
 #[command(after_help = footer!())]
 #[command(propagate_version = true, infer_subcommands = true)]
 pub struct Cli {
-    /// The command to run.
-    ///
-    /// Omitted, a bare `comodoro` shows this help.
+    /// The command to run, bare `comodoro` showing the help.
     #[command(subcommand)]
     pub cmd: Option<Command>,
     /// The configuration file(s) to read the account from.
     #[command(flatten)]
-    pub config: ConfigPathsArg,
+    pub config: ConfigFlags,
     /// The account the command applies to.
     #[command(flatten)]
     pub account: AccountFlag,
@@ -88,7 +97,7 @@ pub enum Command {
     /// Manage the timer servers.
     #[command(arg_required_else_help = true)]
     #[command(subcommand)]
-    #[command(visible_alias = "srv")]
+    #[command(alias = "srv")]
     Server(TimerServerCommand),
     /// Start the timer.
     Start(TimerStartCommand),
@@ -115,21 +124,6 @@ pub enum Command {
     JsonSchema(JsonSchemaCommand),
 }
 
-impl Cli {
-    /// Runs the parsed command, or shows the help when there is none.
-    pub fn execute(self, printer: &mut impl Printer) -> Result<()> {
-        let config_paths = self.config.paths.as_ref();
-        let account_name = self.account.name.as_deref();
-
-        let Some(cmd) = self.cmd else {
-            Cli::command().print_help()?;
-            return Ok(());
-        };
-
-        cmd.execute(printer, config_paths, account_name)
-    }
-}
-
 impl Command {
     /// Resolves the account when the command needs one, then runs it.
     pub fn execute(
@@ -142,39 +136,27 @@ impl Command {
         trace!("account name: {account_name:?}");
 
         match self {
-            Self::Server(cmd) => {
+            Self::Completion(cmd) => cmd.execute(printer, Cli::command()),
+            Self::Manual(cmd) => cmd.execute(printer, Cli::command()),
+            Self::JsonSchema(cmd) => cmd.execute(printer, json_schema::registry()),
+            cmd => {
                 let mut account = take_account(config_paths, account_name)?;
-                cmd.execute(&mut account)
+                cmd.run(printer, &mut account)
             }
-            Self::Start(cmd) => {
-                let account = take_account(config_paths, account_name)?;
-                cmd.execute(printer, &account)
-            }
-            Self::Get(cmd) => {
-                let account = take_account(config_paths, account_name)?;
-                cmd.execute(printer, &account)
-            }
-            Self::Watch(cmd) => {
-                let account = take_account(config_paths, account_name)?;
-                cmd.execute(printer, &account)
-            }
-            Self::Set(cmd) => {
-                let account = take_account(config_paths, account_name)?;
-                cmd.execute(printer, &account)
-            }
-            Self::Pause(cmd) => {
-                let account = take_account(config_paths, account_name)?;
-                cmd.execute(printer, &account)
-            }
-            Self::Resume(cmd) => {
-                let account = take_account(config_paths, account_name)?;
-                cmd.execute(printer, &account)
-            }
-            Self::Stop(cmd) => {
-                let account = take_account(config_paths, account_name)?;
-                cmd.execute(printer, &account)
-            }
+        }
+    }
 
+    /// Runs the command against an account already resolved.
+    pub fn run(self, printer: &mut impl Printer, account: &mut Account) -> Result<()> {
+        match self {
+            Self::Server(cmd) => cmd.execute(account),
+            Self::Start(cmd) => cmd.execute(printer, account),
+            Self::Get(cmd) => cmd.execute(printer, account),
+            Self::Watch(cmd) => cmd.execute(printer, account),
+            Self::Set(cmd) => cmd.execute(printer, account),
+            Self::Pause(cmd) => cmd.execute(printer, account),
+            Self::Resume(cmd) => cmd.execute(printer, account),
+            Self::Stop(cmd) => cmd.execute(printer, account),
             Self::Completion(cmd) => cmd.execute(printer, Cli::command()),
             Self::Manual(cmd) => cmd.execute(printer, Cli::command()),
             Self::JsonSchema(cmd) => cmd.execute(printer, json_schema::registry()),
@@ -182,53 +164,115 @@ impl Command {
     }
 }
 
-/// Path(s) to the TOML configuration file(s).
-#[derive(Debug, Default, Parser)]
-pub struct ConfigPathsArg {
-    /// Override the default configuration file path.
-    ///
-    /// The given paths are shell-expanded then canonicalized when
-    /// applicable. Several can be given at once, delimited by `:` like
-    /// `$PATH`: the first one is the base and the rest are merged on top,
-    /// which keeps a public configuration apart from the private ones.
-    #[arg(long = "config", short = 'c', global = true, env = "COMODORO_CONFIG")]
-    #[arg(name = "config_paths", value_name = "PATH", value_parser = path_parser, value_delimiter = ':')]
-    pub paths: Vec<PathBuf>,
-}
-
-/// Resolves the account the command runs against, the one `-a` names or
-/// the one marked as default, into the [`Account`] it consumes.
-///
-/// Each failure names what is missing: the path a missing configuration
-/// was looked for at, the accounts a configuration does hold, and the two
-/// ways to pick a default.
-fn take_account(config_paths: &[PathBuf], account_name: Option<&str>) -> Result<Account> {
-    let Some(mut config) = Config::from_paths_or_default(config_paths)? else {
-        let path = Config::target_path(config_paths)?;
-
-        bail!(
-            "No configuration found at {}, write one by hand from the sample: {CONFIG_SAMPLE_URL}",
-            path.display(),
-        );
-    };
-
-    let named = account_name.filter(|name| !name.is_empty() && *name != "default");
-
-    if let Some(name) = named.filter(|name| !config.accounts.contains_key(*name)) {
-        let mut names: Vec<&str> = config.accounts.keys().map(String::as_str).collect();
-        names.sort_unstable();
-
-        bail!(
-            "Account `{name}` not found, the configuration holds: {}",
-            names.join(", "),
-        );
+/// Meets a bare `comodoro`: the help when a configuration exists, the
+/// missing configuration otherwise, which a person meets as the welcome.
+pub fn meet_bare_invocation(config_paths: &[PathBuf]) -> Result<()> {
+    // NOTE: a broken file counts as a configuration, its error left to
+    // the first command reading it.
+    if let Err(err) = Config::load(config_paths)
+        && err.is::<ConfigMissingError>()
+    {
+        return Err(err);
     }
 
-    let Some((_, account)) = config.take_account(account_name)? else {
-        bail!(
-            "No default account found, name one with `-a <NAME>` or mark one with `default = true`"
-        );
+    Cli::command().print_help()?;
+    Ok(())
+}
+
+/// Takes the account `-a` names, or the one marked default, out of the
+/// configuration at `config_paths`, resolved into the [`Account`] a
+/// command runs against.
+pub fn take_account(config_paths: &[PathBuf], account_name: Option<&str>) -> Result<Account> {
+    let (_, account) = Config::load(config_paths)?.take_account(account_name)?;
+    Ok(Account::from(account))
+}
+
+/// The welcome a person meets when no configuration exists at `path`:
+/// the commands creating it from `sample`, the shipped sample
+/// configuration, or downloading it without one, then `server start`.
+pub fn welcome<'a>(
+    path: &'a Path,
+    config_paths: &'a [PathBuf],
+    sample: Option<&'a Path>,
+) -> Welcome<'a> {
+    Welcome {
+        bin: "comodoro",
+        intro: "Welcome to Comodoro, the CLI to manage timers.",
+        path,
+        config_paths,
+        sample,
+        sample_url: SAMPLE_RAW_URL,
+        next: "Edit it and uncomment the options you need, then start the timer server:",
+        command: "server start",
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use alloc::{
+        format,
+        string::{String, ToString},
     };
 
-    Ok(account.into())
+    use std::{fs, path::PathBuf};
+
+    use clap::Parser;
+    use pimalaya_config::toml::{AccountError, ConfigMissingError};
+    use tempfile::TempDir;
+
+    use crate::cli::{Cli, take_account};
+
+    /// A directory holding a configuration file made of `toml`, and the
+    /// path of that file.
+    fn config(toml: &str) -> (TempDir, PathBuf) {
+        let dir = TempDir::new().unwrap();
+        let path = dir.path().join("config.toml");
+        fs::write(&path, toml).unwrap();
+        (dir, path)
+    }
+
+    fn account(name: &str, default: bool) -> String {
+        format!(
+            "[accounts.{name}]\ndefault = {default}\ncycles = [{{ name = \"Work\", duration = 1500 }}]\n"
+        )
+    }
+
+    #[test]
+    fn a_missing_configuration_is_typed_for_the_welcome() {
+        let paths = [PathBuf::from("/nonexistent/comodoro/config.toml")];
+        let err = take_account(&paths, None).unwrap_err();
+        let missing = err.downcast_ref::<ConfigMissingError>().unwrap();
+        assert_eq!(missing.path, paths[0]);
+    }
+
+    #[test]
+    fn an_unknown_account_lists_the_held_ones() {
+        let (_dir, path) = config(&(account("b", false) + &account("a", true)));
+        let err = take_account(&[path], Some("c")).unwrap_err();
+        let err = err.to_string();
+
+        assert!(err.contains("Account `c` not found"), "{err}");
+        assert!(err.contains("a, b"), "{err}");
+    }
+
+    /// Comodoro reports which accounts are marked default, so several are
+    /// refused rather than one taken at random.
+    #[test]
+    fn several_default_accounts_are_refused_naming_them() {
+        let (_dir, path) = config(&(account("b", true) + &account("a", true)));
+        let err = take_account(&[path], None).unwrap_err();
+
+        match err.downcast_ref::<AccountError>() {
+            Some(AccountError::SeveralDefaults(names)) => assert_eq!(names, &["a", "b"]),
+            _ => panic!("{err:?}"),
+        }
+    }
+
+    /// A `:` belongs to a path (`C:\` on Windows), so `-c` never splits on
+    /// it.
+    #[test]
+    fn a_delimited_config_value_stays_one_path() {
+        let cli = Cli::try_parse_from(["comodoro", "-c", "a.toml:b.toml"]).unwrap();
+        assert_eq!(cli.config.paths, [PathBuf::from("a.toml:b.toml")]);
+    }
 }

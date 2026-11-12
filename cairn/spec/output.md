@@ -35,13 +35,17 @@ On a stopped timer, `comodoro start --json` prints one object whose `state` is `
 
 `startedAt` SHALL print as an RFC 3339 instant in UTC with `Z`, `null` unless the timer runs, and no output type SHALL print an epoch number. Values SHALL be kebab-case (cairn/spec/protocol.md, "Values are kebab-case").
 
+## Requirement: Server text is sanitized
+
+A cycle name a server sends SHALL reach the terminal through pimalaya-cli's `sanitize::text`, control characters and terminal escapes replaced, since a TCP server may be remote. `--json` SHALL print it verbatim.
+
 ## Requirement: Text output ends with a newline
 
 Every command's text rendering SHALL end with a newline, so the shell prompt starts on a line of its own and a line-buffered pipe receives each `watch` line as it happens.
 
 ## Requirement: The JSON contract is described and versioned
 
-`json-schema` SHALL describe the payload of every command printing data, and the failure object every command prints instead under the key `comodoro-error`. Every generated schema SHALL carry an `$id` naming the contract version, the major version of Comodoro, reading `https://pimalaya.org/schemas/comodoro/v<major>/<key>.json`. Every registered payload SHALL be a JSON object, checked by a test. The keys are `comodoro-get`, `comodoro-watch`, `comodoro-start`, `comodoro-pause`, `comodoro-resume`, `comodoro-stop`, `comodoro-set` and `comodoro-error`.
+`json-schema` SHALL describe the payload of every command printing data, and the failure object every command prints instead under the key `comodoro-error`, checked by a test walking the command tree: only a bare `comodoro` (the help) and `server start` (printing nothing) are left out. Every generated schema SHALL carry an `$id` naming the contract version, the major version of Comodoro, reading `https://pimalaya.org/schemas/comodoro/v<major>/<key>.json`. Every registered payload SHALL be a JSON object, checked by a test. The keys are `comodoro-get`, `comodoro-watch`, `comodoro-start`, `comodoro-pause`, `comodoro-resume`, `comodoro-stop`, `comodoro-set` and `comodoro-error`.
 
 ### Scenario: `--json` output is piped
 

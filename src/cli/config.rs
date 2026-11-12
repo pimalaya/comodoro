@@ -8,7 +8,8 @@
 //! are required, and config.sample.toml is the annotated reference.
 //!
 //! What lives here is the document alone: its shape and the way it is
-//! read. Comodoro never writes it. What a command runs against is [`Account`], the resolved view built from these types.
+//! read, Comodoro never writing it. What a command runs against is
+//! [`Account`], the resolved view built from these types.
 //!
 //! [`Account`]: crate::cli::account::Account
 
@@ -28,13 +29,6 @@ use crate::{
     transport::{TimerAddress, default_socket_path},
 };
 
-/// The annotated field reference, pointed at whenever a configuration is
-/// missing.
-pub const CONFIG_SAMPLE_URL: &str = concat!(
-    env!("CARGO_PKG_REPOSITORY"),
-    "/blob/master/config.sample.toml"
-);
-
 /// The whole Comodoro configuration.
 #[derive(Debug, Default, Deserialize)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
@@ -50,12 +44,16 @@ impl TomlConfig for Config {
         env!("CARGO_PKG_NAME")
     }
 
-    fn take_default_account(&mut self) -> Option<(String, Self::Account)> {
-        let name = self
-            .accounts
-            .iter()
-            .find_map(|(name, account)| account.default.then(|| name.clone()))?;
-        self.accounts.remove_entry(&name)
+    fn sample_url() -> &'static str {
+        concat!(
+            env!("CARGO_PKG_REPOSITORY"),
+            "/blob/master/config.sample.toml"
+        )
+    }
+
+    fn accounts(&self) -> impl Iterator<Item = (&str, bool)> {
+        let accounts = self.accounts.iter();
+        accounts.map(|(name, account)| (name.as_str(), account.default))
     }
 
     fn take_named_account(&mut self, name: &str) -> Option<(String, Self::Account)> {

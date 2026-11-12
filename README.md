@@ -104,7 +104,7 @@ nix run
 
 Comodoro writes no configuration: write one by hand from the annotated [config.sample.toml](./config.sample.toml).
 
-A configuration is loaded from the first valid path among `$XDG_CONFIG_HOME/comodoro/config.toml`, `$HOME/.config/comodoro/config.toml` and `$HOME/.comodororc`. Override it with `-c <PATH>` or `COMODORO_CONFIG=<PATH>`, `:`-separated to deep-merge several files on top of the first.
+A configuration is loaded from every existing path among `$XDG_CONFIG_HOME/comodoro/config.toml`, `$HOME/.config/comodoro/config.toml` and `$HOME/.comodororc`, each deep-merged on top of the ones before. `-c <PATH>` replaces them, repeated once per file: the first is the base and the next ones merge on top. Run without a configuration, Comodoro prints the commands creating one from the sample.
 
 An account only needs its `cycles`. Everything else defaults: a socket under `$XDG_RUNTIME_DIR`, TCP on loopback port 9999, an endless loop, a precision of one minute.
 

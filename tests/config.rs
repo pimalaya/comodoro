@@ -18,10 +18,7 @@ use pimalaya_config::toml::TomlConfig;
 /// the dispatch layer does.
 fn account(toml: &str) -> Account {
     let mut config: Config = toml::from_str(toml).expect("deserialize config");
-    let (_, account) = config
-        .take_account(Some("example"))
-        .expect("take account")
-        .expect("account found");
+    let (_, account) = config.take_account(Some("example")).expect("take account");
     account.into()
 }
 
