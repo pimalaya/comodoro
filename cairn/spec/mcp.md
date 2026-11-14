@@ -17,7 +17,7 @@ capability: mcp
 
 ## Requirement: A tool's input is the command's grammar
 
-A tool's `inputSchema` SHALL be generated from its clap command by pimalaya-cli's `mcp::grammar::Grammar`, each property named as the CLI spells the argument (`transport`, and `seconds` for `set`), with `additionalProperties: false`, and a call SHALL be parsed back by that same command from the argv the grammar writes. An argument the `inputSchema` does not declare SHALL be refused before the command runs as a tool error naming the arguments the tool takes.
+A tool's `inputSchema` SHALL be generated from its clap command by pimalaya-cli's `mcp::grammar::Grammar`, each property named as the CLI spells the argument (`transport`, and `seconds` for `set`), with `additionalProperties: false`, and a call SHALL be parsed back by that same command from the argv the grammar writes. An argument the `inputSchema` does not declare, and a value the command's grammar refuses, SHALL be refused before the command runs as a tool error whose failure object is coded `usage-invalid`, the first naming the arguments the tool takes.
 
 ## Requirement: A tool's output is the command's payload
 

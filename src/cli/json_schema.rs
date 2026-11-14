@@ -41,7 +41,10 @@ pub fn registry() -> JsonSchemaRegistry {
 
 #[cfg(test)]
 mod tests {
-    use alloc::{string::String, vec::Vec};
+    use alloc::{
+        string::{String, ToString},
+        vec::Vec,
+    };
 
     use clap::CommandFactory;
 
@@ -72,5 +75,15 @@ mod tests {
     #[test]
     fn every_payload_is_an_object() {
         assert_eq!(registry().non_object_roots(), Vec::<String>::new());
+    }
+
+    /// The failure object's `code` admits the refused command line's code
+    /// beside Comodoro's own.
+    #[test]
+    fn the_failure_code_admits_usage_invalid() {
+        let schema = registry().schemas["comodoro-error"].to_string();
+
+        assert!(schema.contains("\"usage-invalid\""), "{schema}");
+        assert!(schema.contains("\"server-unreachable\""), "{schema}");
     }
 }

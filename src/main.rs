@@ -6,16 +6,19 @@
 //! the parsed command, or meets a bare invocation.
 //!
 //! A person missing a configuration meets the welcome on stderr, a
-//! script or a JSON caller the error.
+//! script or a JSON caller the error. A failure prints the failure object
+//! and exits 1. A command line the grammar refuses exits 2, before any
+//! configuration is read, its failure object coded `usage-invalid` on
+//! stdout under `--json`.
 //!
 //! Everything below this file lives in the library: see
 //! [`comodoro`](../comodoro/index.html) for the crate architecture.
 
 use std::process;
 
-use clap::Parser;
 use comodoro::cli::{self, Cli, error::ErrorCode};
 use pimalaya_cli::{
+    clap::parse,
     error::ErrorReport,
     log::Logger,
     printer::StdoutPrinter,
@@ -24,7 +27,7 @@ use pimalaya_cli::{
 use pimalaya_config::toml::ConfigMissingError;
 
 fn main() {
-    let cli = Cli::parse();
+    let cli = parse::<Cli>();
 
     Logger::try_init(&cli.log).expect("init logger");
     let mut printer = StdoutPrinter::new(&cli.json);

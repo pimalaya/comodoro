@@ -49,6 +49,7 @@ A failure a caller is expected to act on SHALL carry a stable code, printed unde
 
 | Code | Raised when |
 |---|---|
+| `usage-invalid` | the command line, a REPL line or an MCP tool call's arguments do not match the grammar, raised by pimalaya-cli; nothing ran |
 | `server-unreachable` | nothing listens at the transport's address; `comodoro server start` starts a server |
 | `server-closed` | the server closed the connection before answering |
 | `server-error` | the server answered a JSON-RPC error |
@@ -57,6 +58,14 @@ A failure a caller is expected to act on SHALL carry a stable code, printed unde
 ### Scenario: No server is running
 
 With an account whose socket nobody listens on, `comodoro get --json` prints the failure object with `"code": "server-unreachable"` and exits 1.
+
+## Requirement: A refused command line exits 2
+
+The command line SHALL be parsed through pimalaya-cli's `clap::parse`: help and version print as clap prints them, and a command line the grammar refuses (an unknown flag or command, a missing argument, a bad value) SHALL exit 2 before any configuration is read. With a `--json` word before any `--`, it SHALL print on stdout the failure object coded `usage-invalid`, its `error` clap's message without its `error: ` prefix nor styles, `sources` empty and `backtrace` null, and nothing on stderr; otherwise clap's rendering on stderr and nothing on stdout. Exit 1 stays the failure object; Comodoro has no partial outcome, which the family numbers from 3.
+
+### Scenario: An unknown flag under JSON
+
+`comodoro --json get --nope` prints one failure object coded `usage-invalid`, its `error` naming `--nope`, on stdout and exits 2.
 
 ## Requirement: The JSON contract is described and versioned
 

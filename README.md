@@ -143,6 +143,8 @@ Every command prints the timer, the controls as it is after their change. With `
 comodoro watch --json | jq -r --unbuffered '"\(.cycle.name) \(.cycle.duration)s"'
 ```
 
+The exit status tells the outcome: 0 on success, 1 on a failure, printed as the failure object under `--json` (its `code` naming the cause, `server-unreachable` when no server runs), and 2 when the command line itself is refused (an unknown flag or command, a missing argument, a bad value), coded `usage-invalid` on stdout under `--json` and clap's text on stderr otherwise.
+
 Every command takes an optional transport, `socket` or `tcp`, and falls back to the one the configuration marks as default. The server takes the list of transports to bind, and binds the default one when given none:
 
 ```sh

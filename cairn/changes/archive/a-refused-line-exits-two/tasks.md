@@ -24,15 +24,15 @@ change: a-refused-line-exits-two
 
 ## Phase 2, the refused line (commit `feat!: print a refused command line as a failure object under --json`)
 
-- [ ] src/main.rs:27: `pimalaya_cli::clap::parse::<Cli>()`.
-- [ ] src/cli/mcp.rs: a tool call whose argv clap refuses answers its failure through `pimalaya_cli::error::usage_error`; an unknown tool (:192) unchanged.
-- [ ] tests/exit.rs (new): the three cases of the proposal.
-- [ ] tests/repl.rs: a piped refused line prints `"code":"usage-invalid"` and no `error: ` prefix.
-- [ ] tests/mcp.rs: an undeclared argument and a refused value (`set` with `seconds: -1`, or the grammar's equivalent) answer `isError` coded `usage-invalid`.
-- [ ] src/json_schema.rs: the registry test still passes, `comodoro-error` admitting `usage-invalid`.
-- [ ] Phase checks pass.
+- [x] src/main.rs:27: `pimalaya_cli::clap::parse::<Cli>()`.
+- [x] src/cli/mcp.rs: a tool call whose argv clap refuses answers its failure through `pimalaya_cli::error::usage_error`; an unknown tool (:192) unchanged.
+- [x] tests/exit.rs (new): the three cases of the proposal. Its `[[test]]` entry requires `cli`, like the other suites running the binary.
+- [x] tests/repl.rs: a piped refused line prints `"code":"usage-invalid"` and no `error: ` prefix.
+- [x] tests/mcp.rs: an undeclared argument and a refused value (`set` with `seconds: -1`, or the grammar's equivalent) answer `isError` coded `usage-invalid`.
+- [x] src/cli/json_schema.rs (not src/json_schema.rs): the registry test still passes, and a new test checks `comodoro-error` admits `usage-invalid`.
+- [x] Phase checks pass.
 
 ## Landing
 
-- [ ] CHANGELOG (**Breaking:** as in the proposal), MIGRATION.md ("From v2 to v3", "Output"), README exit statuses, the src/main.rs header.
-- [ ] Delta folded into cairn/spec/output.md, repl.md and mcp.md (their requirements are `##` headings, their scenarios `###`); log cairn/log/<date>-a-refused-line-exits-two.md (frontmatter `cairn: log`, `change`, `landed:`); status landed; the folder moved to cairn/changes/archive/ as Comodoro's landed changes are.
+- [x] CHANGELOG (**Breaking:** as in the proposal), MIGRATION.md ("From v2 to v3", "Output"), README exit statuses, the src/main.rs header.
+- [x] Delta folded into cairn/spec/output.md, repl.md and mcp.md (their requirements are `##` headings, their scenarios `###`); log cairn/log/<date>-a-refused-line-exits-two.md (frontmatter `cairn: log`, `change`, `landed:`); status landed; the folder moved to cairn/changes/archive/ as Comodoro's landed changes are.

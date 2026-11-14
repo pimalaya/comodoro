@@ -21,7 +21,7 @@ Each line SHALL connect to the server on its own, so a server stopped or restart
 
 ## Requirement: A piped session answers once per line
 
-When stdin is not a terminal, every line SHALL produce one flushed answer on stdout: the result, or the failure object (`comodoro-error` under `--json`). Nothing SHALL be added after a result, every text output ending with its own newline. When stdin is a terminal, the prompt `comodoro> ` SHALL render on stderr.
+When stdin is not a terminal, every line SHALL produce one flushed answer on stdout: the result, or the failure object (`comodoro-error` under `--json`), a line the grammar refuses coded `usage-invalid` and printed without clap's `error: ` prefix. Nothing SHALL be added after a result, every text output ending with its own newline. When stdin is a terminal, the prompt `comodoro> ` SHALL render on stderr.
 
 ## Requirement: A line switches itself to JSON
 

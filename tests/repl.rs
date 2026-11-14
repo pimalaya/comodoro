@@ -135,3 +135,28 @@ fn sessions_and_commands_running_until_interrupted_are_refused() {
     assert_eq!(lines[3]["error"], "Cannot start a session inside a session");
     assert_eq!(lines[4]["state"], "stopped");
 }
+
+/// A line the grammar refuses is the failure object coded
+/// `usage-invalid`, clap's message without its `error: ` prefix, in JSON
+/// as in text, and the session goes on.
+#[test]
+fn a_refused_line_is_coded_usage_invalid() {
+    let scratch = serve();
+    let out = comodoro(&scratch.config, &["--json", "repl"], b"frobnicate\nget\n");
+
+    assert!(out.status.success(), "{out:?}");
+
+    let lines = json_lines(&out.stdout);
+    assert_eq!(lines.len(), 2, "{lines:?}");
+    assert_eq!(lines[0]["code"], "usage-invalid", "{lines:?}");
+    let error = lines[0]["error"].as_str().unwrap();
+    assert!(error.starts_with("unrecognized subcommand"), "{error}");
+    assert_eq!(lines[1]["state"], "stopped");
+
+    let out = comodoro(&scratch.config, &["repl"], b"frobnicate\n");
+    let stdout = String::from_utf8(out.stdout).unwrap();
+    assert!(
+        stdout.starts_with("Error: unrecognized subcommand"),
+        "stdout: {stdout}"
+    );
+}

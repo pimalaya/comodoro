@@ -19,6 +19,7 @@ use alloc::{format, string::ToString, vec::Vec};
 use anyhow::{Result, anyhow};
 use clap::{CommandFactory, Parser};
 use pimalaya_cli::{
+    error::usage_error,
     mcp::{ServerInfo, ToolCall, ToolResult, grammar::Grammar, serve, tool_output_schema},
     printer::CapturePrinter,
 };
@@ -182,7 +183,9 @@ struct McpServer {
 impl McpServer {
     /// Runs a tool call, listed and holding only the arguments its tool
     /// declares, a failure being a result with `isError` rather than a
-    /// protocol error, so the caller reads it.
+    /// protocol error, so the caller reads it. A value the command's
+    /// grammar refuses is coded `usage-invalid`, as pimalaya-cli codes an
+    /// undeclared argument.
     fn call(&mut self, call: &ToolCall) -> ToolResult {
         let Some(tool) = self
             .tools
@@ -197,7 +200,7 @@ impl McpServer {
         let result = tool
             .grammar
             .argv(&call.arguments)
-            .and_then(|argv| Ok(McpLine::try_parse_from(argv)?))
+            .and_then(|argv| McpLine::try_parse_from(argv).map_err(|err| usage_error(&err)))
             .and_then(|line| line.cmd.run(&mut printer, &mut self.account));
 
         ToolResult::printed::<ErrorCode>(printer, result)

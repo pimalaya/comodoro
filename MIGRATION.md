@@ -32,6 +32,7 @@ The CHANGELOG lists every change; these are the ones to act on.
 - **`startedAt` is an RFC 3339 instant** under `--json`, in UTC (`2026-11-12T09:00:00Z`), where v2 printed epoch seconds. The JSON-RPC protocol keeps epoch seconds.
 - **Values are kebab-case**, on the wire and under `--json` alike: `state` is `running`, `paused` or `stopped`, and the schedule's `loops` is a number of loops, or `null` when the timer loops forever, where v2 printed `"Infinite"` or `{"Fixed": 4}`.
 - **A failure names its cause** in the `--json` failure object: `code` is `server-unreachable` when no server listens, `server-closed`, `server-error` or `server-mismatch`, where v2 printed `null`.
+- **A refused command line is a failure object** under `--json`: an unknown flag or command, a missing argument or a bad value prints the failure object coded `usage-invalid` on stdout and exits 2, where v2 printed clap's text on stderr; a refused REPL line and a refused MCP tool call carry the same code.
 
 Reading the new output with jq:
 

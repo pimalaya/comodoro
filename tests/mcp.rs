@@ -168,15 +168,39 @@ fn get_and_start_answer_the_timer_as_structured_content() {
     assert_eq!(set["structuredContent"]["cycle"]["duration"], 60, "{set}");
 }
 
-#[test]
-fn an_unknown_argument_is_a_tool_error() {
-    let scratch = serve();
-    let mut server = Server::start(&scratch.config, &["--allow-write"]);
-    let result = server.call("set", json!({ "duration": 60 }));
-
+/// The failure object a refused call answers.
+fn failure(result: &Value) -> Value {
     assert_eq!(result["isError"], true, "{result}");
     let text = result["content"][0]["text"].as_str().unwrap();
-    assert!(text.contains("`duration`"), "{text}");
+    serde_json::from_str(text).unwrap_or_else(|err| panic!("{err}: {text}"))
+}
+
+#[test]
+fn an_unknown_argument_is_a_tool_error_coded_usage_invalid() {
+    let scratch = serve();
+    let mut server = Server::start(&scratch.config, &["--allow-write"]);
+    let failure = failure(&server.call("set", json!({ "duration": 60 })));
+
+    assert_eq!(failure["code"], "usage-invalid", "{failure}");
+    let error = failure["error"].as_str().unwrap();
+    assert!(error.contains("`duration`"), "{error}");
+    assert!(error.contains("`seconds`"), "{error}");
+}
+
+/// A value the command's grammar refuses is coded like an undeclared
+/// argument, and the server reads on.
+#[test]
+fn a_value_the_grammar_refuses_is_a_tool_error_coded_usage_invalid() {
+    let scratch = serve();
+    let mut server = Server::start(&scratch.config, &["--allow-write"]);
+    let failure = failure(&server.call("set", json!({ "seconds": -1 })));
+
+    assert_eq!(failure["code"], "usage-invalid", "{failure}");
+    let error = failure["error"].as_str().unwrap();
+    assert!(error.starts_with("invalid value '-1'"), "{error}");
+
+    let get = server.call("get", json!({}));
+    assert_eq!(get["structuredContent"]["state"], "stopped", "{get}");
 }
 
 /// No timer server running is a failed call naming the code, and the

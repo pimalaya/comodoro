@@ -28,10 +28,11 @@ Comodoro joins the standard the Pimalaya CLIs share. MIGRATION.md lists what to 
 - **Breaking:** changed `-c` to take one path per flag, repeated to merge several files, and removed the `COMODORO_CONFIG` environment variable and the `:` delimiter, since `:` belongs to paths (`C:\` on Windows): use `-c "$VAR"`. Without `-c`, every existing default path now loads, each merged on top of the ones before, `$HOME/.comodororc` last.
 - **Breaking:** renamed the per-second cycle hook `on-<cycle>-running` to `on-<cycle>-tick`, the event being a bare verb as GUIDELINES cli-008 asks.
 - **Breaking:** changed account resolution to refuse a hook name no event of the account fires (such as a mistyped `on-wrok-end`, which used to load and stay silent), a hook with neither `command` nor `notify`, a notification naming a variable its hook does not fill, and an account with no cycle, which used to load and fail once the server started.
+- **Breaking:** changed a command line the grammar refuses under `--json` to print the failure object coded `usage-invalid` on stdout, where clap printed its text on stderr; it still exits 2, the family keeping 2 for a refused line and 3 for a partial outcome. A refused REPL line and an MCP tool call whose arguments the grammar refuses carry `usage-invalid` too.
 - Changed config.sample.toml to one `[accounts.example]` table of dotted keys, each line ending in a tab-aligned comment, and the cycle presets to sections to uncomment, Pomodoro, 52/17 and 112/26: a copied sample holds no active `cycles` until one is uncommented. A test parses it with every section and option uncommented.
 - Changed piped `--json` output to print one value per line, flushed, so `watch --json` streams newline-delimited JSON instead of values glued together and held in the buffer; each schema of `json-schema` now carries an `$id` naming the contract version, the major version of Comodoro.
 - Changed the `srv` alias of `server` to a hidden one.
-- Moved to pimalaya-cli 0.4 and pimalaya-config 0.4 from crates.io, dropping the git pin.
+- Moved to pimalaya-cli 0.4, pinned by git rev until pimalaya-cli 0.4.1, and pimalaya-config 0.4 from crates.io.
 
 ### Removed
 
