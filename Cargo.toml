@@ -102,3 +102,6 @@ serde_json = { version = "1", default-features = false, features = ["alloc"] }
 
 [target.'cfg(windows)'.dependencies]
 uds_windows = { version = "1", default-features = false }
+
+[patch.crates-io]
+pimalaya-cli = { git = "https://github.com/pimalaya/cli", rev = "0be1b1f08d19ccb9d16ee8e1d4266c27c96e0cdd" }

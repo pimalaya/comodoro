@@ -16,11 +16,11 @@ change: a-refused-line-exits-two
 
 ## Phase 1, the libraries (commit `build: pin pimalaya-cli 0be1b1f, update deps`)
 
-- [ ] Cargo.toml `[patch.crates-io]`: pimalaya-cli 0be1b1f08d19ccb9d16ee8e1d4266c27c96e0cdd, no comment (or pimalaya-cli 0.4.1 from crates.io if released, no pin).
-- [ ] `cargo update`; the lock holds pimalaya-config 0.4.1.
-- [ ] Tests pinning the help footer or the manual pages follow pimalaya-cli's wording.
-- [ ] CHANGELOG: Fixed, a prompting credential command no longer hangs (pimalaya-config 0.4.1).
-- [ ] Phase checks pass.
+- [x] Cargo.toml `[patch.crates-io]`: pimalaya-cli 0be1b1f08d19ccb9d16ee8e1d4266c27c96e0cdd, no comment (or pimalaya-cli 0.4.1 from crates.io if released, no pin).
+- [x] `cargo update`; the lock holds pimalaya-config 0.4.1.
+- [x] Tests pinning the help footer or the manual pages follow pimalaya-cli's wording. None pins them; the help ends on the new Pimalaya paragraph and `manual` writes 15 pages, comodoro-server-start.1 among them.
+- [x] ~~CHANGELOG: Fixed, a prompting credential command no longer hangs (pimalaya-config 0.4.1).~~ Dropped: 0.4.1 changes only `Secret` (src/secret.rs), which Comodoro never builds; its hooks run through `CommandConfig`, untouched.
+- [x] Phase checks pass. deny.toml regains `allow-org.github = ["pimalaya"]`, dropped with the previous pin, so `sources` accepts the git pin.
 
 ## Phase 2, the refused line (commit `feat!: print a refused command line as a failure object under --json`)
 
