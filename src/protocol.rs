@@ -210,8 +210,8 @@ impl TimerEvent {
     pub const STARTED: &'static str = "timer.started";
     /// Notification method name of [`Self::Began`].
     pub const BEGAN: &'static str = "timer.began";
-    /// Notification method name of [`Self::Running`].
-    pub const RUNNING: &'static str = "timer.running";
+    /// Notification method name of [`Self::Ticked`].
+    pub const TICKED: &'static str = "timer.ticked";
     /// Notification method name of [`Self::Set`].
     pub const DURATION_SET: &'static str = "timer.durationSet";
     /// Notification method name of [`Self::Paused`].
@@ -228,7 +228,7 @@ impl TimerEvent {
         match self {
             Self::Started => Self::STARTED,
             Self::Began(_) => Self::BEGAN,
-            Self::Running(_) => Self::RUNNING,
+            Self::Ticked(_) => Self::TICKED,
             Self::Set(_) => Self::DURATION_SET,
             Self::Paused(_) => Self::PAUSED,
             Self::Resumed(_) => Self::RESUMED,
@@ -242,7 +242,7 @@ impl TimerEvent {
         match self {
             Self::Started | Self::Stopped => None,
             Self::Began(cycle)
-            | Self::Running(cycle)
+            | Self::Ticked(cycle)
             | Self::Set(cycle)
             | Self::Paused(cycle)
             | Self::Resumed(cycle)
@@ -272,7 +272,7 @@ impl TimerEvent {
             Self::STARTED => Some(Self::Started),
             Self::STOPPED => Some(Self::Stopped),
             Self::BEGAN => cycle().map(Self::Began),
-            Self::RUNNING => cycle().map(Self::Running),
+            Self::TICKED => cycle().map(Self::Ticked),
             Self::DURATION_SET => cycle().map(Self::Set),
             Self::PAUSED => cycle().map(Self::Paused),
             Self::RESUMED => cycle().map(Self::Resumed),
@@ -286,7 +286,10 @@ impl TimerEvent {
 mod tests {
     use alloc::{string::ToString, vec};
 
-    use crate::protocol::*;
+    use crate::{
+        protocol::*,
+        timer::{TimerLoop, TimerSchedule},
+    };
 
     #[test]
     fn request_round_trips_through_jsonrpc() {
@@ -336,7 +339,7 @@ mod tests {
             TimerEvent::Started,
             TimerEvent::Stopped,
             TimerEvent::Began(TimerCycle::new("Work", 1500)),
-            TimerEvent::Running(TimerCycle::new("Work", 1499)),
+            TimerEvent::Ticked(TimerCycle::new("Work", 1499)),
             TimerEvent::Set(TimerCycle::new("Work", 60)),
             TimerEvent::Paused(TimerCycle::new("Work", 42)),
             TimerEvent::Resumed(TimerCycle::new("Work", 42)),
@@ -364,6 +367,20 @@ mod tests {
             serde_json::to_string(&started).unwrap(),
             r#"{"jsonrpc":"2.0","method":"timer.started"}"#
         );
+    }
+
+    /// The per-second tick is past tense, as every other notification.
+    #[test]
+    fn the_tick_notification_is_ticked() {
+        let mut timer = Timer::new(TimerSchedule {
+            cycles: vec![TimerCycle::new("Work", 1500)],
+            loops: TimerLoop::Infinite,
+        });
+        timer.start(0);
+
+        let tick: Vec<_> = timer.update(1).into_iter().collect();
+        let notification = tick[0].clone().into_notification();
+        assert_eq!(notification.method, "timer.ticked");
     }
 
     #[test]

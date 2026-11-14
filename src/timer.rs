@@ -103,11 +103,11 @@ pub enum TimerEvent {
     Started,
     /// The timer began the given cycle.
     Began(TimerCycle),
-    /// The timer is running the given cycle (periodic tick).
+    /// The timer ticked inside the given cycle, once a second.
     ///
     /// Carries the remaining duration as of that tick, so two
     /// consecutive ones never carry the same duration.
-    Running(TimerCycle),
+    Ticked(TimerCycle),
     /// The remaining duration was manually set.
     Set(TimerCycle),
     /// The timer was paused at the given cycle.
@@ -216,7 +216,7 @@ impl Timer {
 
     /// Advances the timer by one tick and returns the events that fired.
     ///
-    /// Reports the cycle just computed: [`TimerEvent::Running`] inside a
+    /// Reports the cycle just computed: [`TimerEvent::Ticked`] inside a
     /// cycle, [`TimerEvent::Ended`] then [`TimerEvent::Began`] across a
     /// boundary, [`TimerEvent::Stopped`] and a reset on the last loop.
     ///
@@ -272,7 +272,7 @@ impl Timer {
                 events.push(TimerEvent::Ended(prev_cycle));
                 events.push(TimerEvent::Began(next_cycle.clone()));
             } else if self.cycle.duration != next_cycle.duration {
-                events.push(TimerEvent::Running(next_cycle.clone()));
+                events.push(TimerEvent::Ticked(next_cycle.clone()));
             }
 
             self.cycle = next_cycle;
@@ -482,11 +482,11 @@ mod tests {
         assert_eq!(
             events,
             vec![
-                TimerEvent::Running(TimerCycle::new("a", 2)),
-                TimerEvent::Running(TimerCycle::new("a", 1)),
+                TimerEvent::Ticked(TimerCycle::new("a", 2)),
+                TimerEvent::Ticked(TimerCycle::new("a", 1)),
                 TimerEvent::Ended(TimerCycle::new("a", 0)),
                 TimerEvent::Began(TimerCycle::new("b", 2)),
-                TimerEvent::Running(TimerCycle::new("b", 1)),
+                TimerEvent::Ticked(TimerCycle::new("b", 1)),
             ]
         );
     }
@@ -591,7 +591,7 @@ mod tests {
         assert_eq!(timer.cycle, TimerCycle::new("a", 2));
 
         let events: Vec<_> = timer.update(1).into_iter().collect();
-        assert_eq!(events, vec![TimerEvent::Running(TimerCycle::new("a", 1))]);
+        assert_eq!(events, vec![TimerEvent::Ticked(TimerCycle::new("a", 1))]);
     }
 
     /// Cycle "a" lasts 3, so asking for 10 restarts it instead of

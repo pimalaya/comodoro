@@ -300,10 +300,10 @@ mod tests {
 
     #[test]
     fn notification_omits_id() {
-        let notification = Jsonrpc20Request::notification("timer.running", None);
+        let notification = Jsonrpc20Request::notification("timer.ticked", None);
         let line = serde_json::to_string(&notification).unwrap();
 
-        assert_eq!(line, r#"{"jsonrpc":"2.0","method":"timer.running"}"#);
+        assert_eq!(line, r#"{"jsonrpc":"2.0","method":"timer.ticked"}"#);
         assert!(notification.is_notification());
     }
 

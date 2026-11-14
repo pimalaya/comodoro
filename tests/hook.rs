@@ -112,7 +112,7 @@ fn events_name_the_hook_they_fire() {
         "on-long-rest-begin"
     );
     assert_eq!(
-        TimerEvent::Running(cycle.clone()).hook_name(),
+        TimerEvent::Ticked(cycle.clone()).hook_name(),
         "on-long-rest-tick"
     );
     assert_eq!(

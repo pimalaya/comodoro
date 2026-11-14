@@ -75,7 +75,7 @@
 //! what keeps a request and a notification method from ever colliding.
 //!
 //! A subscriber receives `timer.started`, `timer.began`,
-//! `timer.running`, `timer.durationSet`, `timer.paused`,
+//! `timer.ticked`, `timer.durationSet`, `timer.paused`,
 //! `timer.resumed`, `timer.ended` and `timer.stopped`, each carrying the
 //! cycle it concerns except the two timer-wide ones.
 //!

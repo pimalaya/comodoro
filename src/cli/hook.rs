@@ -57,7 +57,7 @@ impl TimerEvent {
             Self::Started => return String::from(TIMER_HOOKS[0]),
             Self::Stopped => return String::from(TIMER_HOOKS[1]),
             Self::Began(_) => "begin",
-            Self::Running(_) => "tick",
+            Self::Ticked(_) => "tick",
             Self::Set(_) => "set",
             Self::Paused(_) => "pause",
             Self::Resumed(_) => "resume",

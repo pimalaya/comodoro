@@ -112,7 +112,7 @@ It stops, emitting `timer.ended` then `timer.stopped` as it does from a running 
 
 ## Requirement: Notifications are named after the past tense of what happened
 
-`timer.started`, `timer.began`, `timer.running`, `timer.durationSet`, `timer.paused`, `timer.resumed`, `timer.ended` and `timer.stopped`. Naming the two directions differently is what keeps a request method and a notification method from ever colliding, which is why `TimerEvent::Set` maps to `timer.durationSet` rather than to `timer.set`.
+`timer.started`, `timer.began`, `timer.ticked`, `timer.durationSet`, `timer.paused`, `timer.resumed`, `timer.ended` and `timer.stopped`. Naming the two directions differently is what keeps a request method and a notification method from ever colliding, which is why `TimerEvent::Set` maps to `timer.durationSet` rather than to `timer.set`.
 
 A notification carries `{"cycle": {...}}` when it concerns a cycle, and no parameters otherwise. It identifies its kind by its method name, so repeating the kind in the parameters would be redundant. Events travelling inside a result have no method name to lean on, so those carry their own `event` discriminator.
 
@@ -126,11 +126,11 @@ The per-second tick recomputes the current cycle from the elapsed time, then rep
 
 ### Scenario: The tick stays inside its cycle
 
-It sends `timer.running` carrying the remaining duration as of that tick.
+It sends `timer.ticked` carrying the remaining duration as of that tick.
 
 ### Scenario: The tick crosses into another cycle
 
-It sends `timer.ended` for the cycle that finished, then `timer.began` for the one starting, and no `timer.running`. The started cycle's remaining duration travels with `timer.began`, so a `timer.running` beside it would repeat it.
+It sends `timer.ended` for the cycle that finished, then `timer.began` for the one starting, and no `timer.ticked`. The started cycle's remaining duration travels with `timer.began`, so a `timer.ticked` beside it would repeat it.
 
 A boundary is recognised by the remaining duration going back up as well as by the cycle name changing, since remaining time only ever decreases inside a cycle. A configuration looping a single cycle, or repeating a name twice in a row, therefore announces its boundaries like any other.
 
@@ -138,7 +138,7 @@ A boundary is recognised by the remaining duration going back up as well as by t
 
 It sends nothing. A tick lands less than a second after the last state change when a client has just called `timer.set`, and the recomputed duration is then the one already reported.
 
-Two consecutive `timer.running` notifications therefore never carry the same duration.
+Two consecutive `timer.ticked` notifications therefore never carry the same duration.
 
 ### Scenario: The tick completes the last configured loop
 
