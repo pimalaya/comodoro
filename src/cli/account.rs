@@ -25,7 +25,7 @@ use anyhow::{Error, Result, bail};
 
 use crate::{
     cli::{config::AccountConfig, hook::TimerHook, transport::Transport},
-    timer::{TimerLoop, TimerPrecision, TimerSchedule},
+    timer::{TimerCycle, TimerLoop, TimerPrecision, TimerSchedule},
     transport::TimerAddress,
 };
 
@@ -92,6 +92,8 @@ impl TryFrom<AccountConfig> for Account {
             precision,
             hooks,
         } = config;
+
+        let cycles: Vec<TimerCycle> = cycles.into_iter().map(TimerCycle::from).collect();
 
         if cycles.is_empty() {
             bail!("The account has no cycle, give `cycles` at least one");

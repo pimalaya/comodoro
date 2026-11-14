@@ -38,3 +38,11 @@ A `notify` cargo feature, on by default, SHALL decide whether hooks can show not
 ## Requirement: An account runs at least one cycle
 
 An account whose `cycles` is empty SHALL be refused when it is resolved, rather than failing once a server builds its timer.
+
+## Requirement: A removed hook spelling is refused by name
+
+A hook name `on-<cycle>-running`, `<cycle>` one of the account's, SHALL be refused when the account is resolved, naming `on-<cycle>-tick` and MIGRATION.md, and a hook's `cmd` key, the 1.x spelling of `command`, SHALL be refused as the configuration loads, naming `command` and MIGRATION.md.
+
+### Scenario: A v2 tick hook
+
+An account whose cycle is `Work` and whose hooks hold `on-work-running` fails any command with "Hook `on-work-running` is now `on-work-tick`, see MIGRATION.md".

@@ -195,3 +195,67 @@ fn a_cycle_variable_on_a_timer_hook_is_refused() {
     assert!(failure.contains("on-timer-start"), "{failure}");
     assert!(failure.contains("cycleName"), "{failure}");
 }
+
+/// A key no configuration reads is refused at every level, naming it,
+/// rather than ignored.
+#[test]
+fn an_unknown_key_is_refused_at_every_level() {
+    let cycles = r#"cycles = [{ name = "Work", duration = 1500 }]"#;
+    let account = format!("[accounts.example]\ndefault = true\n{cycles}");
+
+    let mut tomls = vec![
+        format!("wrong-key = true\n{account}"),
+        format!("{account}\nwrong-key = true"),
+        format!("{account}\ntcp.wrong-key = true"),
+        format!("{account}\nsocket.wrong-key = true"),
+        format!("{account}\nhooks.on-work-end.command = \"true\"\nhooks.on-work-end.wrong-key = 1"),
+        format!(
+            "[accounts.example]\ndefault = true\ncycles = [{{ name = \"Work\", duration = 1500, wrong-key = 1 }}]"
+        ),
+    ];
+
+    if cfg!(feature = "notify") {
+        tomls.push(format!(
+            "{account}\nhooks.on-work-end.notify.summary = \"Done\"\nhooks.on-work-end.notify.wrong-key = 1"
+        ));
+    }
+
+    for toml in tomls {
+        let failure = refusal(&toml);
+        assert!(failure.contains("wrong-key"), "{toml}\n{failure}");
+    }
+}
+
+/// The per-second hook of 2.x is refused naming its new name and the
+/// migration guide, rather than as a name no event fires.
+#[test]
+fn the_running_hook_of_v2_is_refused_by_name() {
+    let failure = refusal(
+        r#"
+        [accounts.example]
+        default = true
+        cycles = [{ name = "Work", duration = 1500 }]
+        hooks.on-work-running.command = "true"
+        "#,
+    );
+
+    assert!(failure.contains("on-work-tick"), "{failure}");
+    assert!(failure.contains("MIGRATION.md"), "{failure}");
+}
+
+/// The `cmd` spelling of 1.x is refused naming `command` and the
+/// migration guide, rather than as any unknown key.
+#[test]
+fn the_cmd_hook_key_of_v1_is_refused_by_name() {
+    let failure = refusal(
+        r#"
+        [accounts.example]
+        default = true
+        cycles = [{ name = "Work", duration = 1500 }]
+        hooks.on-work-end.cmd = "true"
+        "#,
+    );
+
+    assert!(failure.contains("`command`"), "{failure}");
+    assert!(failure.contains("MIGRATION.md"), "{failure}");
+}

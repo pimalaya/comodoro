@@ -15,6 +15,9 @@
 //! hooks fill none. [`TimerHook::validate`] refuses a notification naming
 //! a variable its hook does not fill, as the account is resolved.
 //!
+//! The 1.x `cmd` key and the 2.x `on-<cycle>-running` name are refused
+//! naming what replaced them and MIGRATION.md.
+//!
 //! A build without the `notify` feature has no notification backend, so
 //! an account carrying one is refused as it loads, naming the cargo
 //! feature to rebuild with.
@@ -29,7 +32,7 @@ use anyhow::{Result, bail};
 use convert_case::{Case, Casing};
 use log::{debug, error, warn};
 use pimalaya_config::{command::CommandConfig, notify::NotificationTemplate};
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer, de::Error};
 
 use crate::timer::{TimerCycle, TimerEvent};
 
@@ -100,6 +103,20 @@ pub struct TimerHook {
     pub command: Option<CommandConfig>,
     /// Shows a desktop notification, given as a summary and a body.
     pub notify: Option<NotificationTemplate>,
+    /// Refused: the 1.x spelling of `command`.
+    pub cmd: Option<CmdRenamedConfig>,
+}
+
+/// The 1.x `cmd` key of a hook, refused naming `command`.
+#[derive(Debug)]
+pub enum CmdRenamedConfig {}
+
+impl<'de> Deserialize<'de> for CmdRenamedConfig {
+    fn deserialize<D: Deserializer<'de>>(_: D) -> Result<Self, D::Error> {
+        Err(D::Error::custom(
+            "The hook key `cmd` is now `command`, see MIGRATION.md",
+        ))
+    }
 }
 
 impl TimerHook {
@@ -117,6 +134,12 @@ impl TimerHook {
         });
 
         if !cycle_hook && !TIMER_HOOKS.contains(&name) {
+            let tick = prefixes.iter().find(|p| name == format!("on-{p}-running"));
+
+            if let Some(prefix) = tick {
+                bail!("Hook `{name}` is now `on-{prefix}-tick`, see MIGRATION.md");
+            }
+
             let mut prefixes = prefixes;
             prefixes.dedup();
 

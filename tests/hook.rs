@@ -190,11 +190,11 @@ fn a_hook_name_lists_the_cycles_when_no_event_fires_it() {
         TimerCycle::new("Long rest", 300),
     ];
     let err = hook(r#"command = "true""#)
-        .validate("on-work-running", &cycles)
+        .validate("on-work-done", &cycles)
         .unwrap_err();
     let err = err.to_string();
 
-    assert!(err.contains("on-work-running"), "{err}");
+    assert!(err.contains("on-work-done"), "{err}");
     assert!(err.contains("work, long-rest"), "{err}");
     assert!(err.contains("tick"), "{err}");
 }

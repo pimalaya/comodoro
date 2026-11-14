@@ -7,6 +7,9 @@
 //! the timer cycles, and the hooks bound to timer events. Only the cycles
 //! are required, and config.sample.toml is the annotated reference.
 //!
+//! Every table, a cycle included, refuses a key it does not read, rather
+//! than ignoring a typo.
+//!
 //! What lives here is the document alone: its shape and the way it is
 //! read, Comodoro never writing it. What a command runs against is
 //! [`Account`], the resolved view built from these types.
@@ -85,7 +88,7 @@ pub struct AccountConfig {
     #[serde(default)]
     pub tcp: TcpConfig,
     /// The ordered cycles the timer runs through.
-    pub cycles: Vec<TimerCycle>,
+    pub cycles: Vec<CycleConfig>,
     /// How many full loops the timer runs, unbounded when absent.
     pub cycles_count: Option<usize>,
     /// How precisely the remaining duration is displayed.
@@ -94,6 +97,22 @@ pub struct AccountConfig {
     /// The hooks to run, by event name.
     #[serde(default)]
     pub hooks: HashMap<String, TimerHook>,
+}
+
+/// One cycle of an account: a name and a duration in seconds.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+pub struct CycleConfig {
+    /// The name of the cycle, which its hook names are built from.
+    pub name: String,
+    /// How long the cycle lasts, in seconds.
+    pub duration: usize,
+}
+
+impl From<CycleConfig> for TimerCycle {
+    fn from(cycle: CycleConfig) -> Self {
+        TimerCycle::new(cycle.name, cycle.duration)
+    }
 }
 
 /// Where a client and a server meet over a local socket.

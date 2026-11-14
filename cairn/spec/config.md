@@ -46,3 +46,11 @@ The repository SHALL ship config.sample.toml holding one `[accounts.example]` ta
 ### Scenario: A field is renamed
 
 When a field the sample's commented code sets, such as `cycles-count`, is renamed in the configuration types and the sample is not updated, the test suite fails naming the sample.
+
+## Requirement: Unknown keys are refused at every level
+
+Every configuration table, the root, an account, `socket`, `tcp`, a cycle, a hook and its `notify`, SHALL refuse a key it does not read, naming it, rather than ignore it. No configuration type SHALL flatten another, which would defeat the refusal. A key Comodoro used to read and removed SHALL be refused naming what replaced it and MIGRATION.md (cairn/spec/hooks.md, "A removed hook spelling is refused by name").
+
+### Scenario: A misspelled cycle key
+
+An account whose cycles read `{ name = "Work", duraton = 1500 }` fails every command, naming `duraton` and the keys a cycle takes, `name` and `duration`.

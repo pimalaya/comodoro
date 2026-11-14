@@ -2,13 +2,14 @@
 
 ## From v2 to v3
 
-v3 brings Comodoro onto the standard the Pimalaya CLIs share: no configuration wizard, one configuration path per `-c`, a timer printed by every command, kebab-case values on the wire, hook variables, a session and an MCP server. A v2 configuration loads as it is, unless it marks several accounts default, holds a hook name no event fires, or an empty `cycles`.
+v3 brings Comodoro onto the standard the Pimalaya CLIs share: no configuration wizard, one configuration path per `-c`, a timer printed by every command, kebab-case values on the wire, hook variables, a session and an MCP server. A v2 configuration loads as it is, unless it marks several accounts default, holds a hook name no event fires, an empty `cycles`, or a cycle key other than `name` and `duration`.
 
 The CHANGELOG lists every change; these are the ones to act on.
 
 ### Upgrading a running timer
 
 - **Restart the server after upgrading**, and any status bar running `comodoro watch`. The wire values changed (below), so a v3 client and a v2 server cannot read each other: a v3 command meeting a v2 server fails with "Cannot read the timer server's answer, it may run another Comodoro version: restart it with this one", coded `server-mismatch` under `--json`. A remote server reached over TCP needs upgrading too.
+- **The per-second notification is `timer.ticked`**, where v2 sent `timer.running`: a client of your own subscribing over JSON-RPC renames it. The timer's `state` still reads `running`.
 
 ### Configuration and first run
 
@@ -19,10 +20,12 @@ The CHANGELOG lists every change; these are the ones to act on.
 - **Every default path is read, as layers.** $XDG_CONFIG_HOME/comodoro/config.toml, $HOME/.config/comodoro/config.toml and $HOME/.comodororc are each deep-merged on top of the ones before, where v2 read the first one found. An rc file left beside a config.toml now overrides it: delete the one you do not use.
 - **Several `default = true` accounts are refused**, naming them, where v2 picked one at random. Keep it on one account.
 - **An account with no cycle is refused** when a command resolves it, where v2 loaded it and the server failed once started.
+- **A cycle key other than `name` and `duration` is refused**, naming it, where v2 ignored it; every other table already refused a key it does not read.
 
 ### Hooks
 
-- **`on-<cycle>-running` is now `on-<cycle>-tick`**, the hook firing every second a cycle runs: rename it.
+- **`on-<cycle>-running` is now `on-<cycle>-tick`**, the hook firing every second a cycle runs: rename it. The old name is refused naming the new one.
+- **A 1.x `cmd` key is refused** naming `command`, its spelling since 2.x, which refused it as an unknown key.
 - **A hook name no event fires is refused**, naming the account's cycles and the events, where v2 loaded it and never ran it. A typo like `on-wrok-end` now fails every command: fix it.
 - **A hook can run a command and show a notification both**, the command first, and fills `$cycleName` and `$cycleDuration` (the remaining seconds): one `notify.summary = "$cycleName ended"` serves every cycle, and a command reads them from its environment. A notification naming another variable is refused, and so is `$cycleName` on `on-timer-start` and `on-timer-stop`, which fill none.
 
