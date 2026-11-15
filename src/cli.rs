@@ -49,6 +49,7 @@ use pimalaya_cli::{
             completion::CompletionCommand, json_schema::JsonSchemaCommand, manual::ManualCommand,
         },
     },
+    error::with_code,
     footer, long_version,
     mcp::exit_on_failure,
     printer::Printer,
@@ -193,7 +194,7 @@ impl Command {
             Self::Repl(_) | Self::Mcp(_) => Err(anyhow!("Cannot start a session inside a session")),
         };
 
-        result.map_err(error::coded)
+        result.map_err(|err| with_code(err, error::code))
     }
 }
 
@@ -212,11 +213,14 @@ pub fn meet_bare_invocation(config_paths: &[PathBuf]) -> Result<()> {
     Ok(())
 }
 
-/// Takes the account `-a` names, or the one marked default, out of the
-/// configuration at `config_paths`, resolved into the [`Account`] a
-/// command runs against.
+/// Takes the account `-a` names, or the one marked default without `-a`,
+/// out of the configuration at `config_paths`, resolved into the
+/// [`Account`] a command runs against. An account that cannot be taken
+/// fails coded, `default` being a name like any other.
 pub fn take_account(config_paths: &[PathBuf], account_name: Option<&str>) -> Result<Account> {
-    let (_, account) = Config::load(config_paths)?.take_account(account_name)?;
+    let (_, account) = Config::load(config_paths)?
+        .take_account(account_name)
+        .map_err(|err| with_code(err.into(), error::code))?;
     Account::try_from(account)
 }
 
@@ -250,10 +254,11 @@ mod tests {
     use std::{fs, path::PathBuf};
 
     use clap::Parser;
-    use pimalaya_config::toml::{AccountError, ConfigMissingError};
+    use pimalaya_cli::error::code_of;
+    use pimalaya_config::toml::ConfigMissingError;
     use tempfile::TempDir;
 
-    use crate::cli::{Cli, take_account};
+    use crate::cli::{Cli, error::ErrorCode, take_account};
 
     /// A directory holding a configuration file made of `toml`, and the
     /// path of that file.
@@ -295,10 +300,11 @@ mod tests {
         let (_dir, path) = config(&(account("b", true) + &account("a", true)));
         let err = take_account(&[path], None).unwrap_err();
 
-        match err.downcast_ref::<AccountError>() {
-            Some(AccountError::SeveralDefaults(names)) => assert_eq!(names, &["a", "b"]),
-            _ => panic!("{err:?}"),
-        }
+        assert_eq!(
+            code_of::<ErrorCode>(&err),
+            Some(ErrorCode::AccountDefaultSeveral)
+        );
+        assert!(err.to_string().contains("(a, b)"), "{err}");
     }
 
     /// A `:` belongs to a path (`C:\` on Windows), so `-c` never splits on

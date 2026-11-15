@@ -16,7 +16,7 @@
 
 use std::process;
 
-use comodoro::cli::{self, Cli, error::ErrorCode};
+use comodoro::cli::{self, Cli, Command, error::ErrorCode};
 use pimalaya_cli::{
     clap::parse,
     error::ErrorReport,
@@ -30,7 +30,12 @@ fn main() {
     let cli = parse::<Cli>();
 
     Logger::try_init(&cli.log).expect("init logger");
-    let mut printer = StdoutPrinter::new(&cli.json);
+    // NOTE: `watch` streams its text events into a pipe too, since a
+    // status bar reads them from one.
+    let mut printer = match cli.cmd {
+        Some(Command::Watch(_)) => StdoutPrinter::new(&cli.json).streaming(),
+        _ => StdoutPrinter::new(&cli.json),
+    };
 
     let config_paths = cli.config.paths.as_ref();
     let account_name = cli.account.name.as_deref();

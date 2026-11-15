@@ -189,3 +189,52 @@ fn a_server_of_another_version_is_coded_mismatch() {
     fake_server(&socket, Some(answer));
     assert_eq!(failure_code(&config, &["get"]), "server-mismatch");
 }
+
+/// A configuration in a scratch directory holding `toml`.
+fn config_of(name: &str, toml: &str) -> PathBuf {
+    let (config, _) = config_at(name);
+    fs::write(&config, toml).expect("write config");
+    config
+}
+
+fn account(name: &str, default: bool) -> String {
+    format!(
+        "[accounts.{name}]\ndefault = {default}\ncycles = [{{ name = \"Work\", duration = 1500 }}]\n"
+    )
+}
+
+/// `default` is a name like any other: it takes no account marked default,
+/// a missing `-a` does.
+#[test]
+fn a_missing_account_is_coded_account_missing() {
+    let config = config_of("account-missing", &account("a", true));
+
+    let output = Command::new(env!("CARGO_BIN_EXE_comodoro"))
+        .arg("-c")
+        .arg(&config)
+        .args(["--json", "-a", "default", "get"])
+        .output()
+        .expect("run comodoro");
+
+    assert_eq!(output.status.code(), Some(1));
+    let stdout = String::from_utf8(output.stdout).expect("utf-8 stdout");
+    let failure: Value =
+        serde_json::from_str(&stdout).unwrap_or_else(|err| panic!("{err}: {stdout}"));
+    assert_eq!(failure["code"], "account-missing", "{failure}");
+
+    let error = failure["error"].as_str().unwrap_or_default();
+    assert!(error.contains("omit `-a`"), "{failure}");
+}
+
+#[test]
+fn no_default_account_is_coded_account_default_missing() {
+    let config = config_of("account-default-missing", &account("a", false));
+    assert_eq!(failure_code(&config, &["get"]), "account-default-missing");
+}
+
+#[test]
+fn several_default_accounts_are_coded_account_default_several() {
+    let toml = account("a", true) + &account("b", true);
+    let config = config_of("account-default-several", &toml);
+    assert_eq!(failure_code(&config, &["get"]), "account-default-several");
+}

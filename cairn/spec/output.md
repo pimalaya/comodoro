@@ -27,9 +27,13 @@ A timer running its `Work` cycle with 25 minutes left, on an account whose preci
 
 On a stopped timer, `comodoro start --json` prints one object whose `state` is `running` and whose `startedAt` is the instant it started.
 
-## Requirement: `watch` prints a result per change
+## Requirement: `watch` streams events
 
-`watch` SHALL print one `TimerOutput` on start and one per visible change of the timer, until interrupted, several events of one tick printing one result. It is the one command printing more than one result.
+`watch` SHALL stream the timer as events through `printer.event`, on pimalaya-cli's streaming printer, so its text lines reach a pipe as they come: one `timer-changed` event on start and one per visible change of the timer, several events of one tick printing one, each the `TimerOutput` keys beside `"event": "timer-changed"` and the timer's one line as text. A termination signal (SIGINT, SIGTERM, SIGHUP, Ctrl-C) SHALL stop it through pimalaya-cli's `signal::Shutdown`, printing one result, `{"stoppedBy": "signal"}` (`Watch stopped` as text), and exiting 0; a second signal ends it at once with 130. The server closing the connection SHALL fail, coded `server-closed`, after the events, and exit 1.
+
+### Scenario: A status bar stops its watch
+
+`comodoro watch --json` piped on a stopped timer prints `{"event":"timer-changed",...,"state":"stopped",...}`, then a `timer-changed` line per change; on SIGTERM it prints `{"stoppedBy":"signal"}` and exits 0.
 
 ## Requirement: Shared shapes and spellings
 
@@ -50,6 +54,9 @@ A failure a caller is expected to act on SHALL carry a stable code, printed unde
 | Code | Raised when |
 |---|---|
 | `usage-invalid` | the command line, a REPL line or an MCP tool call's arguments do not match the grammar, raised by pimalaya-cli; nothing ran |
+| `account-missing` | no account has the name `-a` gave |
+| `account-default-missing` | no account is marked `default = true` and `-a` named none |
+| `account-default-several` | several accounts are marked `default = true` and `-a` named none |
 | `server-unreachable` | nothing listens at the transport's address; `comodoro server start` starts a server |
 | `server-closed` | the server closed the connection before answering |
 | `server-error` | the server answered a JSON-RPC error |
@@ -69,8 +76,8 @@ The command line SHALL be parsed through pimalaya-cli's `clap::parse`: help and 
 
 ## Requirement: The JSON contract is described and versioned
 
-`json-schema` SHALL describe the payload of every command printing data, and the failure object every command prints instead under the key `comodoro-error`, checked by a test walking the command tree: only a bare `comodoro` (the help), `server start` (printing nothing), `repl` and `mcp` are left out. Every generated schema SHALL carry an `$id` naming the contract version, the major version of Comodoro, reading `https://pimalaya.org/schemas/comodoro/v<major>/<key>.json`. Every registered payload SHALL be a JSON object, checked by a test. The keys are `comodoro-get`, `comodoro-watch`, `comodoro-start`, `comodoro-pause`, `comodoro-resume`, `comodoro-stop`, `comodoro-set` and `comodoro-error`.
+`json-schema` SHALL describe the payload of every command printing data, and the failure object every command prints instead under the key `comodoro-error`, checked by a test walking the command tree: only a bare `comodoro` (the help), `server start` (printing nothing), `repl` and `mcp` are left out. Every generated schema SHALL carry an `$id` naming the contract version, the major version of Comodoro, reading `https://pimalaya.org/schemas/comodoro/v<major>/<key>.json`. Every registered payload SHALL be a JSON object, checked by a test. The keys are `comodoro-get`, `comodoro-watch`, `comodoro-start`, `comodoro-pause`, `comodoro-resume`, `comodoro-stop`, `comodoro-set` and `comodoro-error`, and `watch`'s events are described apart as `comodoro-watch.events`, written to `comodoro-watch.events.json`, every alternative carrying `event`, checked by the same test.
 
 ### Scenario: `--json` output is piped
 
-Each value is printed compact on its own line and flushed, so `watch --json` is newline-delimited JSON a reader receives as each change happens. On a terminal the value is pretty-printed instead.
+Each value is printed compact on its own line and flushed, so `watch --json` is newline-delimited JSON a reader receives as each change happens. On a terminal a result is pretty-printed instead, an event staying one line.

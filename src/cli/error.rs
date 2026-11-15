@@ -5,20 +5,16 @@
 //!
 //! The message stays for humans and may be reworded at any time; the
 //! code is the contract. A failure with no code prints `code: null`. The
-//! mechanism (`CodedError`, `code_of`, the report) lives in
+//! mechanism (`CodedError`, `code_of`, `with_code`, the report) lives in
 //! `pimalaya_cli::error`; only the vocabulary is Comodoro's.
 //!
 //! The client is library code free of pimalaya-cli, so it attaches a
-//! [`TimerClientError`] to its failures, and [`coded`] gives the chain
-//! the matching code.
-
-use alloc::{
-    string::{String, ToString},
-    vec::Vec,
-};
+//! [`TimerClientError`] to its failures, and pimalaya-config fails the
+//! account resolution with an [`AccountError`]: [`code`] reads the code
+//! off either, for `pimalaya_cli::error::with_code` to give the chain.
 
 use anyhow::Error;
-use pimalaya_cli::error::CodedError;
+use pimalaya_config::toml::AccountError;
 use schemars::JsonSchema;
 use serde::Serialize;
 
@@ -28,6 +24,12 @@ use crate::client::std::TimerClientError;
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub enum ErrorCode {
+    /// No account has the name `-a` gave.
+    AccountMissing,
+    /// No account is marked default, and `-a` named none.
+    AccountDefaultMissing,
+    /// Several accounts are marked default, and `-a` named none.
+    AccountDefaultSeveral,
     /// Nothing listens at the transport's address: `comodoro server
     /// start` starts a server.
     ServerUnreachable,
@@ -51,63 +53,53 @@ impl From<TimerClientError> for ErrorCode {
     }
 }
 
-/// Gives a failure the code of the client cause it carries, its messages
-/// unchanged, and leaves any other failure as it is.
-///
-/// The chain is rebuilt with a [`CodedError`] at its root, since that is
-/// where the shared report looks for a code, each message kept at its
-/// place.
-pub fn coded(err: Error) -> Error {
-    let Some(cause) = err.downcast_ref::<TimerClientError>() else {
-        return err;
-    };
+impl From<&AccountError> for ErrorCode {
+    fn from(err: &AccountError) -> Self {
+        match err {
+            AccountError::Missing { .. } => Self::AccountMissing,
+            AccountError::NoDefault => Self::AccountDefaultMissing,
+            AccountError::SeveralDefaults(_) => Self::AccountDefaultSeveral,
+        }
+    }
+}
 
-    let code = ErrorCode::from(*cause);
-    let mut messages: Vec<String> = err.chain().map(ToString::to_string).collect();
-    let root = messages.pop().unwrap_or_default();
-    let mut coded = Error::new(CodedError::new(code, root));
-
-    for message in messages.into_iter().rev() {
-        coded = coded.context(message);
+/// The code of the client or account cause a failure carries, if any.
+pub fn code(err: &Error) -> Option<ErrorCode> {
+    if let Some(cause) = err.downcast_ref::<TimerClientError>() {
+        return Some(ErrorCode::from(*cause));
     }
 
-    coded
+    err.downcast_ref::<AccountError>().map(ErrorCode::from)
 }
 
 #[cfg(test)]
 mod tests {
-    use alloc::{format, vec::Vec};
-
     use anyhow::{Context, anyhow};
-    use pimalaya_cli::error::code_of;
+    use pimalaya_cli::error::{code_of, with_code};
 
     use crate::{
-        cli::error::{ErrorCode, coded},
+        cli::error::{ErrorCode, code},
         client::std::TimerClientError,
     };
 
     #[test]
-    fn a_client_cause_is_coded_with_its_messages_kept() {
+    fn a_client_cause_under_context_is_coded() {
         let err = Err::<(), _>(anyhow!("Connection refused"))
             .context("Connect to timer server at /tmp/c.sock error")
             .context(TimerClientError::Unreachable)
+            .context("Get timer error")
             .unwrap_err();
-        let before = format!("{err:#}");
 
-        let err = coded(err);
+        let err = with_code(err, code);
 
         assert_eq!(
             code_of::<ErrorCode>(&err),
             Some(ErrorCode::ServerUnreachable)
         );
-        assert_eq!(format!("{err:#}"), before);
-        assert_eq!(err.chain().count(), 3);
     }
 
     #[test]
-    fn a_failure_with_no_client_cause_stays_uncoded() {
-        let err = coded(anyhow!("Something else"));
-        assert_eq!(code_of::<ErrorCode>(&err), None);
-        assert_eq!(err.chain().collect::<Vec<_>>().len(), 1);
+    fn a_failure_with_no_known_cause_has_no_code() {
+        assert_eq!(code(&anyhow!("Something else")), None);
     }
 }

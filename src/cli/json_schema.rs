@@ -7,17 +7,25 @@
 //! `comodoro-`, mirroring how the man pages are named `comodoro-<cmd>.1`,
 //! and [`JsonSchemaCommand`] writes one `<key>.json` file per entry.
 //!
-//! Every client command prints the same [`TimerOutput`], the controls the
-//! timer after their change, so every key describes that one type. The
-//! one key naming no command is `comodoro-error`, the failure object any
-//! command prints instead of its payload.
+//! Every client command but `watch` prints the same [`TimerOutput`], the
+//! controls the timer after their change. `watch` streams it as
+//! `timer-changed` events, described apart as `comodoro-watch.events`,
+//! then prints what stopped it. The one key naming no command is
+//! `comodoro-error`, the failure object any command prints instead of
+//! its payload.
 //!
 //! [`JsonSchemaCommand`]: pimalaya_cli::clap::commands::json_schema::JsonSchemaCommand
 //! [`TimerOutput`]: crate::cli::client::timer::TimerOutput
 
 use pimalaya_cli::{clap::commands::json_schema::JsonSchemaRegistry, error::ErrorReport};
 
-use crate::cli::{client::timer::TimerOutput, error::ErrorCode};
+use crate::cli::{
+    client::{
+        timer::TimerOutput,
+        watch::{TimerWatchEvent, TimerWatchOutput},
+    },
+    error::ErrorCode,
+};
 
 /// Builds the command-to-schema registry consumed by `json-schema`.
 ///
@@ -28,7 +36,8 @@ pub fn registry() -> JsonSchemaRegistry {
     let mut registry = JsonSchemaRegistry::new("comodoro", env!("CARGO_PKG_VERSION"));
 
     registry.insert::<TimerOutput>("comodoro-get");
-    registry.insert::<TimerOutput>("comodoro-watch");
+    registry.insert::<TimerWatchOutput>("comodoro-watch");
+    registry.insert_events::<TimerWatchEvent>("comodoro-watch");
     registry.insert::<TimerOutput>("comodoro-start");
     registry.insert::<TimerOutput>("comodoro-pause");
     registry.insert::<TimerOutput>("comodoro-resume");
@@ -85,5 +94,19 @@ mod tests {
 
         assert!(schema.contains("\"usage-invalid\""), "{schema}");
         assert!(schema.contains("\"server-unreachable\""), "{schema}");
+        assert!(schema.contains("\"account-missing\""), "{schema}");
+        assert!(schema.contains("\"account-default-missing\""), "{schema}");
+        assert!(schema.contains("\"account-default-several\""), "{schema}");
+    }
+
+    /// `watch` streams the timer as events, and prints what stopped it.
+    #[test]
+    fn watch_describes_its_events_apart() {
+        let registry = registry();
+        let events = registry.events["comodoro-watch"].to_string();
+        let result = registry.schemas["comodoro-watch"].to_string();
+
+        assert!(events.contains("\"timer-changed\""), "{events}");
+        assert!(result.contains("\"stoppedBy\""), "{result}");
     }
 }

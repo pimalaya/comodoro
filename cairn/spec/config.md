@@ -17,11 +17,15 @@ A bare `comodoro` SHALL show the help when a configuration exists, a broken one 
 
 ## Requirement: Account resolution failures name what is missing
 
-Each of the four ways account resolution fails SHALL name what is missing or wrong and what to do about it: a missing configuration names the path it looked for and points at config.sample.toml, a missing named account lists the accounts the configuration does hold, sorted, a missing default names both ways of picking one, and several accounts marked `default = true`, none named, are refused naming them, sorted, rather than one taken.
+`-a` SHALL name an account as written, `default` being a name like any other; without `-a`, or with an empty one, the account marked `default = true` SHALL be taken. Each of the four ways account resolution fails SHALL name what is missing or wrong and what to do about it: a missing configuration names the path it looked for and points at config.sample.toml, a missing named account lists the accounts the configuration does hold, sorted, adding for the name `default` to omit `-a` to take the account marked default, a missing default names both ways of picking one, and several accounts marked `default = true`, none named, are refused naming them, sorted, rather than one taken. Under `--json` the last three SHALL be coded `account-missing`, `account-default-missing` and `account-default-several`.
 
 ### Scenario: Two default accounts
 
 With accounts `a` and `b` both setting `default = true`, `comodoro get` without `-a` fails with "Several accounts are marked default (a, b), keep `default = true` on one, or name one with `-a <NAME>`", and `comodoro -a b get` runs on `b`.
+
+### Scenario: `-a default` names an account
+
+With only account `a`, marked `default = true`, `comodoro --json -a default get` fails coded `account-missing`, listing `a` and saying to omit `-a` to take the account marked default.
 
 ## Requirement: The configuration path comes from `-c` only
 

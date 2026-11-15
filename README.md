@@ -131,19 +131,19 @@ comodoro set 300
 comodoro stop
 ```
 
-Feed a status bar without polling, which prints the timer once and then on every change until interrupted:
+Feed a status bar without polling, which prints the timer once and then on every change, piped or not, until a signal (Ctrl-C, SIGTERM) stops it with `Watch stopped` and exit 0:
 
 ```sh
 comodoro watch
 ```
 
-Every command prints the timer, the controls as it is after their change. With `--json` it prints the timer object instead, `watch --json` one object per line as each change happens:
+Every command prints the timer, the controls as it is after their change. With `--json` it prints the timer object instead, and `watch --json` one `timer-changed` event per line as each change happens, the timer's keys beside `"event": "timer-changed"`, then `{"stoppedBy":"signal"}` once stopped:
 
 ```sh
-comodoro watch --json | jq -r --unbuffered '"\(.cycle.name) \(.cycle.duration)s"'
+comodoro watch --json | jq -r --unbuffered 'select(.event == "timer-changed") | "\(.cycle.name) \(.cycle.duration)s"'
 ```
 
-The exit status tells the outcome: 0 on success, 1 on a failure, printed as the failure object under `--json` (its `code` naming the cause, `server-unreachable` when no server runs), and 2 when the command line itself is refused (an unknown flag or command, a missing argument, a bad value), coded `usage-invalid` on stdout under `--json` and clap's text on stderr otherwise.
+The exit status tells the outcome: 0 on success, 1 on a failure, printed as the failure object under `--json` (its `code` naming the cause, `server-unreachable` when no server runs, `server-closed` when the server a `watch` follows goes away), and 2 when the command line itself is refused (an unknown flag or command, a missing argument, a bad value), coded `usage-invalid` on stdout under `--json` and clap's text on stderr otherwise.
 
 Every command takes an optional transport, `socket` or `tcp`, and falls back to the one the configuration marks as default. The server takes the list of transports to bind, and binds the default one when given none:
 

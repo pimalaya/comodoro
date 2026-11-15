@@ -90,15 +90,18 @@ hooks.on-work-begin.notify.summary = "Earn $$5 an hour"
 - **The controls print the timer.** `start`, `pause`, `resume`, `stop` and `set` print the timer as it is after their change, as `get` does, where v2 printed a sentence such as "Timer successfully started": the one-line status as text (`[Work] 25min`, `[Work] paused`, `OFF`), the timer object under `--json`. A script checking the sentence checks the exit status instead, 0 on success.
 - **`completion`, `manual` and `json-schema` print to stdout**, or write into the directory `--dir` names, where v2's `manual` and `json-schema` took the directory as a positional argument and `completion` wrote its file to the working directory. Each takes a list of what to generate (shells, or command names such as `comodoro-get`), every item when given none, which requires `--dir`.
 - **A refused command line still exits 2**, and under `--json` now prints the failure object coded `usage-invalid` on stdout, where v2 printed clap's text on stderr (below).
+- **`-a default` names the account called `default`**, where v2 took the account marked `default = true` whatever its name: omit `-a` to take that one. With no account called `default`, `-a default` fails saying to omit `-a`.
 
 ```sh
 # v2
 comodoro start | grep -q successfully && echo started
+comodoro -a default get   # the account marked default
 comodoro manual ./man
 comodoro json-schema ./schemas
 comodoro completion bash   # wrote a file in the working directory
 # v3
 comodoro start >/dev/null && echo started
+comodoro get              # the account marked default
 comodoro manual --dir ./man
 comodoro json-schema --dir ./schemas
 comodoro completion bash > comodoro.bash
@@ -108,8 +111,8 @@ comodoro completion bash > comodoro.bash
 
 - **`startedAt` is an RFC 3339 instant** under `--json`, in UTC (`2026-08-14T12:41:38Z`), where v2 printed epoch seconds under `started_at`. The JSON-RPC protocol keeps epoch seconds.
 - **Values are kebab-case**, on the wire and under `--json` alike: `state` is `running`, `paused` or `stopped`, and the schedule's `loops` is a number of loops, or `null` when the timer loops forever, where v2 printed `"Infinite"` or `{"Fixed": 4}`.
-- **`watch --json` prints one value per line**, flushed as it comes, where v2 glued the values together and held them in the buffer.
-- **A failure names its cause** in the `--json` failure object: `code` is `server-unreachable` when no server listens, `server-closed`, `server-error` or `server-mismatch`, where v2 printed `null`.
+- **`watch` streams events**: each change is one `timer-changed` event line, the timer's keys beside `"event": "timer-changed"`, flushed as it comes, where v2 printed bare timer objects glued together and held in the buffer. A status bar script selects `.event == "timer-changed"` lines. A signal (SIGINT, SIGTERM, Ctrl-C) now ends it with one last line, `{"stoppedBy":"signal"}` (`Watch stopped` as text), and exit 0, where v2 died silently; the server going away fails coded `server-closed` and exits 1, where v2 exited 0. The text lines reach a pipe too, as before.
+- **A failure names its cause** in the `--json` failure object: `code` is `server-unreachable` when no server listens, `server-closed`, `server-error` or `server-mismatch`, and `account-missing`, `account-default-missing` or `account-default-several` when `-a` names no account, no account is marked default or several are, where v2 printed `null`; a `watch` whose server goes away fails coded `server-closed`.
 - **A refused command line is a failure object** under `--json`: an unknown flag or command, a missing argument or a bad value prints the failure object coded `usage-invalid` on stdout and exits 2, where v2 printed clap's text on stderr; a refused REPL line and a refused MCP tool call carry the same code.
 - **The JSON Schemas carry an `$id`** naming the contract version, and the schedule and the cycle say `additionalProperties: false`.
 
@@ -118,6 +121,12 @@ comodoro completion bash > comodoro.bash
 {"schedule":{"cycles":[{"name":"Work","duration":1500}],"loops":"Infinite"},"state":"Running","cycle":{"name":"Work","duration":1493},"started_at":1786711298,"elapsed":0}
 // v3: comodoro get --json
 {"schedule":{"cycles":[{"name":"Work","duration":1500}],"loops":null},"state":"running","cycle":{"name":"Work","duration":1493},"startedAt":"2026-08-14T12:41:38Z","elapsed":0}
+
+// v2: comodoro watch --json, piped
+{"schedule":{"cycles":[{"name":"Work","duration":1500}],"loops":"Infinite"},"state":"Running","cycle":{"name":"Work","duration":1499},"started_at":1786711298,"elapsed":0}{"schedule":...}
+// v3: comodoro watch --json, piped, then SIGTERM
+{"event":"timer-changed","schedule":{"cycles":[{"name":"Work","duration":1500}],"loops":null},"state":"running","cycle":{"name":"Work","duration":1499},"startedAt":"2026-08-14T12:41:38Z","elapsed":0}
+{"stoppedBy":"signal"}
 
 // v3: comodoro --json get --nope, exit 2, on stdout
 {"code":"usage-invalid","error":"unexpected argument '--nope' found\n\n...","sources":[],"backtrace":null}
@@ -135,7 +144,7 @@ comodoro get --json | jq '.startedAt | if . then fromdateiso8601 else null end'
 # how many loops the timer runs, endless when unbounded
 comodoro get --json | jq '.schedule.loops // "endless"'
 # a status bar line on every change
-comodoro watch --json | jq -r --unbuffered '"\(.cycle.name) \(.cycle.duration)s"'
+comodoro watch --json | jq -r --unbuffered 'select(.event == "timer-changed") | "\(.cycle.name) \(.cycle.duration)s"'
 # a refused command line, told apart from a failed one
 comodoro --json get; [ $? -eq 2 ] && echo "bad command line"
 ```
