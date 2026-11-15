@@ -91,6 +91,8 @@ impl TryFrom<AccountConfig> for Account {
             cycles_count,
             precision,
             hooks,
+            preset: _,
+            timer_precision: _,
         } = config;
 
         let cycles: Vec<TimerCycle> = cycles.into_iter().map(TimerCycle::from).collect();

@@ -9,6 +9,8 @@
 //!
 //! Every table, a cycle included, refuses a key it does not read, rather
 //! than ignoring a typo.
+//! The 0.x `presets`, `preset` and `timer-precision` are refused naming
+//! what replaced them and MIGRATION.md.
 //!
 //! What lives here is the document alone: its shape and the way it is
 //! read, Comodoro never writing it. What a command runs against is
@@ -24,7 +26,7 @@ use alloc::{
 use std::{collections::HashMap, path::PathBuf};
 
 use pimalaya_config::toml::TomlConfig;
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer, de::Error};
 
 use crate::{
     cli::hook::TimerHook,
@@ -38,6 +40,8 @@ use crate::{
 pub struct Config {
     /// The accounts, by name.
     pub accounts: HashMap<String, AccountConfig>,
+    /// Refused: the 0.x name of `accounts`.
+    pub presets: Option<PresetsRenamedConfig>,
 }
 
 impl TomlConfig for Config {
@@ -97,6 +101,47 @@ pub struct AccountConfig {
     /// The hooks to run, by event name.
     #[serde(default)]
     pub hooks: HashMap<String, TimerHook>,
+    /// Refused: the 0.x cycle preset, written as `cycles` since 1.0.
+    pub preset: Option<PresetRemovedConfig>,
+    /// Refused: the 0.x name of `precision`.
+    pub timer_precision: Option<TimerPrecisionRenamedConfig>,
+}
+
+/// The 0.x `presets` table, refused naming `accounts`.
+#[derive(Debug)]
+pub enum PresetsRenamedConfig {}
+
+impl<'de> Deserialize<'de> for PresetsRenamedConfig {
+    fn deserialize<D: Deserializer<'de>>(_: D) -> Result<Self, D::Error> {
+        Err(D::Error::custom(
+            "The table `presets` is now `accounts`, see MIGRATION.md",
+        ))
+    }
+}
+
+/// The 0.x `preset` key of an account, refused naming `cycles`.
+#[derive(Debug)]
+pub enum PresetRemovedConfig {}
+
+impl<'de> Deserialize<'de> for PresetRemovedConfig {
+    fn deserialize<D: Deserializer<'de>>(_: D) -> Result<Self, D::Error> {
+        Err(D::Error::custom(
+            "The account key `preset` is gone, copy a preset's `cycles` from config.sample.toml, see MIGRATION.md",
+        ))
+    }
+}
+
+/// The 0.x `timer-precision` key of an account, refused naming
+/// `precision`.
+#[derive(Debug)]
+pub enum TimerPrecisionRenamedConfig {}
+
+impl<'de> Deserialize<'de> for TimerPrecisionRenamedConfig {
+    fn deserialize<D: Deserializer<'de>>(_: D) -> Result<Self, D::Error> {
+        Err(D::Error::custom(
+            "The account key `timer-precision` is now `precision`, see MIGRATION.md",
+        ))
+    }
 }
 
 /// One cycle of an account: a name and a duration in seconds.

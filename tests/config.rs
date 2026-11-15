@@ -259,3 +259,28 @@ fn the_cmd_hook_key_of_v1_is_refused_by_name() {
     assert!(failure.contains("`command`"), "{failure}");
     assert!(failure.contains("MIGRATION.md"), "{failure}");
 }
+
+/// The 0.x keys are refused naming what replaced them and the migration
+/// guide, rather than as any unknown key.
+#[test]
+fn the_keys_of_v0_are_refused_by_name() {
+    let cycles = r#"cycles = [{ name = "Work", duration = 1500 }]"#;
+
+    let cases = [
+        (format!("[presets.example]\n{cycles}"), "`accounts`"),
+        (
+            format!("[accounts.example]\ndefault = true\n{cycles}\npreset = \"pomodoro\""),
+            "config.sample.toml",
+        ),
+        (
+            format!("[accounts.example]\ndefault = true\n{cycles}\ntimer-precision = \"minute\""),
+            "`precision`",
+        ),
+    ];
+
+    for (toml, replacement) in cases {
+        let failure = refusal(&toml);
+        assert!(failure.contains(replacement), "{toml}\n{failure}");
+        assert!(failure.contains("MIGRATION.md"), "{toml}\n{failure}");
+    }
+}
