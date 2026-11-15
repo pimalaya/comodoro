@@ -57,6 +57,7 @@ impl From<TimerLoop> for Option<usize> {
 /// A single step in the timer lifecycle: a name and a duration in seconds.
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct TimerCycle {
     /// The name of this cycle.
     pub name: String,
@@ -97,7 +98,12 @@ pub enum TimerState {
 /// event stays self-describing without a method name next to it. See
 /// [`crate::protocol`] for the wire mapping.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-#[serde(tag = "event", content = "cycle", rename_all = "camelCase")]
+#[serde(
+    tag = "event",
+    content = "cycle",
+    rename_all = "camelCase",
+    deny_unknown_fields
+)]
 pub enum TimerEvent {
     /// The timer started.
     Started,
@@ -126,6 +132,7 @@ pub enum TimerEvent {
 /// since a CLI has a configuration of its own and this is not it.
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct TimerSchedule {
     /// The ordered list of timer cycles.
     pub cycles: Vec<TimerCycle>,
@@ -173,7 +180,7 @@ impl TimerSchedule {
 /// testable without a clock and usable under no_std.
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Timer {
     /// What the timer runs: its cycles, and how many loops of them.
     pub schedule: TimerSchedule,

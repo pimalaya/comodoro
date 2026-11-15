@@ -15,6 +15,10 @@
 //! only the cycle it concerns. A result has no method name of its own,
 //! so the events inside one carry their own `event` discriminator.
 //!
+//! Every object of the method surface, the timer types included, refuses
+//! a key it does not read: a server and its clients upgrade together, so
+//! an unknown key is another version, never something to skip.
+//!
 //! Codes -32000 to -32099 are reserved by the specification for
 //! server-defined errors. Comodoro defines none today: every failure it
 //! can report is one of the standard codes.
@@ -284,7 +288,7 @@ impl TimerEvent {
 
 #[cfg(test)]
 mod tests {
-    use alloc::{string::ToString, vec};
+    use alloc::{format, string::ToString, vec};
 
     use crate::{
         protocol::*,
@@ -420,6 +424,47 @@ mod tests {
             value.to_string(),
             r#"{"events":[{"cycle":{"duration":0,"name":"Work"},"event":"ended"},{"event":"stopped"}]}"#
         );
+    }
+
+    /// Every object read off the wire refuses a key it does not read, as
+    /// the parameter and result objects around it do.
+    #[test]
+    fn a_wire_object_refuses_a_key_it_does_not_read() {
+        let cycle = r#"{"name":"Work","duration":1500}"#;
+        let odd = r#"{"name":"Work","duration":1500,"color":"red"}"#;
+        let schedule = format!(r#"{{"cycles":[{cycle}],"loops":null}}"#);
+        let timer = |schedule: &str, cycle: &str, extra: &str| {
+            format!(
+                r#"{{"schedule":{schedule},"state":"stopped","cycle":{cycle},"startedAt":null,"elapsed":0{extra}}}"#
+            )
+        };
+
+        let read = |request: &TimerRequest, json: &str| {
+            TimerResponse::from_value(request, serde_json::from_str(json).unwrap())
+        };
+
+        let get = TimerRequest::Get;
+        assert!(read(&get, &timer(&schedule, cycle, "")).is_ok());
+        assert!(read(&get, &timer(&schedule, odd, "")).is_err());
+        assert!(read(&get, &timer(&schedule, cycle, r#","color":"red""#)).is_err());
+
+        let odd_schedule = format!(r#"{{"cycles":[{odd}],"loops":null}}"#);
+        assert!(read(&get, &timer(&odd_schedule, cycle, "")).is_err());
+
+        let odd_schedule = format!(r#"{{"cycles":[{cycle}],"loops":null,"color":"red"}}"#);
+        assert!(read(&get, &timer(&odd_schedule, cycle, "")).is_err());
+
+        let start = TimerRequest::Start;
+        let began = format!(r#"{{"events":[{{"event":"began","cycle":{odd}}}]}}"#);
+        assert!(read(&start, &began).is_err());
+        let started = r#"{"events":[{"event":"started","color":"red"}]}"#;
+        assert!(read(&start, started).is_err());
+
+        let notification = Jsonrpc20Request::notification(
+            TimerEvent::BEGAN,
+            Some(serde_json::from_str(&format!(r#"{{"cycle":{odd}}}"#)).unwrap()),
+        );
+        assert_eq!(TimerEvent::from_notification(&notification), None);
     }
 
     #[test]

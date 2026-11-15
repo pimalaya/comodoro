@@ -178,6 +178,18 @@ Configuration types SHALL stay kebab-case: they are read from TOML, and what the
 
 Every value Comodoro emits spelled from a variant name, on the wire and under `--json` alike, SHALL be kebab-case, and a count that may be unbounded SHALL be a number or `null`, never a tagged object.
 
+## Requirement: Unknown keys are refused on the wire
+
+Every object of the method surface, the parameters, the results, the timer, its schedule, a cycle and an event inside a result, SHALL refuse a key it does not read rather than ignore it: a server and its clients upgrade together, so an unknown key is another version, never something to skip. The JSON-RPC envelope around them follows the specification instead.
+
+### Scenario: A result carries a key the client does not read
+
+A `timer.get` result whose cycle carries `"color": "red"` makes `comodoro get` fail naming another Comodoro version and the restart, coded `server-mismatch` under `--json`.
+
+### Scenario: A notification carries a key the client does not read
+
+It is ignored, as a notification the client does not know is.
+
 ## Requirement: A peer speaking another version is named
 
 A client that cannot read a server's result SHALL fail with "Cannot read the timer server's answer, it may run another Comodoro version: restart it with this one", rather than with the parse error alone.
