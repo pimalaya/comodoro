@@ -91,10 +91,10 @@ strip = "symbols"
 panic = "abort"
 
 [build-dependencies]
-pimalaya-cli = { version = "0.4.0", default-features = false, features = ["build"], optional = true }
+pimalaya-cli = { version = "0.5", default-features = false, features = ["build"], optional = true }
 
 [dev-dependencies]
-pimalaya-config = { version = "0.4.0", default-features = false, features = ["sample"] }
+pimalaya-config = { version = "0.5", default-features = false, features = ["sample"] }
 tempfile = { version = "3", default-features = false }
 toml = { version = "1.1", default-features = false, features = ["parse", "serde", "std"] }
 
@@ -104,15 +104,11 @@ clap = { version = "4.4", default-features = false, features = ["derive", "error
 convert_case = { version = "0.12", default-features = false, optional = true }
 humantime = { version = "2.2", default-features = false, optional = true }
 log = { version = "0.4", default-features = false }
-pimalaya-cli = { version = "0.4.0", default-features = false, features = ["mcp", "repl", "signal", "terminal"], optional = true }
-pimalaya-config = { version = "0.4.0", default-features = false, features = ["toml", "secret"], optional = true }
+pimalaya-cli = { version = "0.5", default-features = false, features = ["mcp", "repl", "signal", "terminal"], optional = true }
+pimalaya-config = { version = "0.5", default-features = false, features = ["toml", "secret"], optional = true }
 schemars = { version = "1", default-features = false, features = ["derive"], optional = true }
 serde = { version = "1", default-features = false, features = ["derive", "alloc"] }
 serde_json = { version = "1", default-features = false, features = ["alloc"] }
 
 [target.'cfg(windows)'.dependencies]
 uds_windows = { version = "1", default-features = false }
-
-[patch.crates-io]
-pimalaya-cli = { git = "https://github.com/pimalaya/cli", rev = "8190dc544e277aeeba6acc43817100179f19643b" }
-pimalaya-config = { git = "https://github.com/pimalaya/config", rev = "d5a33cba3fe9826b82f15a479043a7f79ca742ce" }

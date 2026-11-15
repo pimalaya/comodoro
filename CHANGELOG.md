@@ -39,7 +39,7 @@ Comodoro joins the standard the Pimalaya CLIs share. MIGRATION.md lists what to 
 - Changed config.sample.toml to one `[accounts.example]` table of dotted keys, each line ending in a tab-aligned comment, and the cycle presets to sections to uncomment, Pomodoro, 52/17 and 112/26: a copied sample holds no active `cycles` until one is uncommented. A test parses it with every section and option uncommented.
 - Changed piped `--json` output to print one value per line, flushed, so `watch --json` streams newline-delimited JSON instead of values glued together and held in the buffer; each schema of `json-schema` now carries an `$id` naming the contract version, the major version of Comodoro.
 - Changed the `srv` alias of `server` to a hidden one.
-- Moved to pimalaya-cli 0.4, pinned by git rev until pimalaya-cli 0.4.1 (with its `signal` feature), and pimalaya-config 0.4, pinned by git rev until its next release.
+- Moved to pimalaya-cli 0.5 (with its `signal` feature) and pimalaya-config 0.5.
 
 ### Removed
 
