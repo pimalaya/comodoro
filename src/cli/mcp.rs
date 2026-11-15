@@ -19,13 +19,12 @@ use alloc::{format, string::ToString, vec::Vec};
 use anyhow::{Result, anyhow};
 use clap::{CommandFactory, Parser};
 use pimalaya_cli::{
-    error::usage_error,
     mcp::{ServerInfo, ToolCall, ToolResult, grammar::Grammar, serve, tool_output_schema},
     printer::CapturePrinter,
 };
 use serde_json::{Value, json};
 
-use crate::cli::{Cli, Command, account::Account, error::ErrorCode, json_schema};
+use crate::cli::{Cli, Command, Session, error::ErrorCode, json_schema};
 
 /// What the server tells the agent at initialization.
 const INFO: ServerInfo = ServerInfo {
@@ -77,12 +76,12 @@ pub struct McpCommand {
 
 impl McpCommand {
     /// Serves JSON-RPC requests off stdin until EOF, answering each on
-    /// stdout.
-    pub fn execute(self, account: Account) -> Result<()> {
+    /// stdout, the calls running over `session`.
+    pub fn execute(self, session: &mut Session) -> Result<()> {
         let tools = McpToolSpec::all(self.allow_write);
         let definitions: Vec<Value> = tools.iter().map(|tool| tool.definition.clone()).collect();
 
-        let mut server = McpServer { account, tools };
+        let mut server = McpServer { session, tools };
 
         serve(&INFO, &definitions, |call| server.call(call))
     }
@@ -174,18 +173,19 @@ impl McpToolSpec {
     }
 }
 
-/// The server: the tools it lists and the account they run against.
-struct McpServer {
-    account: Account,
+/// The server: the tools it lists and the session holding the account
+/// they run against.
+struct McpServer<'a, 'b> {
+    session: &'a mut Session<'b>,
     tools: Vec<McpToolSpec>,
 }
 
-impl McpServer {
+impl McpServer<'_, '_> {
     /// Runs a tool call, listed and holding only the arguments its tool
     /// declares, a failure being a result with `isError` rather than a
     /// protocol error, so the caller reads it. A value the command's
-    /// grammar refuses is coded `usage-invalid`, as pimalaya-cli codes an
-    /// undeclared argument.
+    /// grammar refuses is coded `usage-invalid`, naming the argument as
+    /// the tool's input does.
     fn call(&mut self, call: &ToolCall) -> ToolResult {
         let Some(tool) = self
             .tools
@@ -200,8 +200,10 @@ impl McpServer {
         let result = tool
             .grammar
             .argv(&call.arguments)
-            .and_then(|argv| McpLine::try_parse_from(argv).map_err(|err| usage_error(&err)))
-            .and_then(|line| line.cmd.run(&mut printer, &mut self.account));
+            .and_then(|argv| {
+                McpLine::try_parse_from(argv).map_err(|err| tool.grammar.usage_error(&err))
+            })
+            .and_then(|line| line.cmd.execute(&mut printer, self.session));
 
         ToolResult::printed::<ErrorCode>(printer, result)
     }

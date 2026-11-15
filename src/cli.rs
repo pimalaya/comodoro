@@ -3,9 +3,10 @@
 //! Command-line interface of Comodoro. [`Cli`] is the clap entry point
 //! parsed by main, and [`Command`] the flat grammar it dispatches to.
 //!
-//! Every command taking an account resolves it from the TOML
-//! configuration first, then hands it to the client or the server. The
-//! loading and the selection are pimalaya-config's, so a missing
+//! Every command taking an account takes it through the [`Session`],
+//! which resolves it from the TOML configuration on first use and keeps
+//! it for the lines of a REPL, then hands it to the client or the server.
+//! The loading and the selection are pimalaya-config's, so a missing
 //! configuration, an unknown account and several defaults fail the way
 //! they fail across the family.
 //!
@@ -39,7 +40,7 @@ use alloc::format;
 
 use std::path::{Path, PathBuf};
 
-use anyhow::{Result, anyhow};
+use anyhow::Result;
 use clap::{CommandFactory, Parser, Subcommand};
 use log::trace;
 use pimalaya_cli::{
@@ -100,7 +101,11 @@ pub struct Cli {
 }
 
 /// The commands Comodoro exposes.
+///
+/// The version it carries is what a `-V` or `--version` line of a
+/// session prints, as the command line does.
 #[derive(Debug, Subcommand)]
+#[command(version, long_version = long_version!())]
 pub enum Command {
     /// Manage the timer servers.
     #[command(arg_required_else_help = true)]
@@ -137,64 +142,77 @@ pub enum Command {
 }
 
 impl Command {
-    /// Resolves the account when the command needs one, then runs it.
-    pub fn execute(
-        self,
-        printer: &mut impl Printer,
-        config_paths: &[PathBuf],
-        account_name: Option<&str>,
-    ) -> Result<()> {
-        trace!("config paths: {config_paths:?}");
-        trace!("account name: {account_name:?}");
+    /// Runs the command over `session`, which takes the account on first
+    /// use, a client failure carrying its code.
+    pub fn execute(self, printer: &mut impl Printer, session: &mut Session) -> Result<()> {
+        trace!("config paths: {:?}", session.config_paths);
+        trace!("account name: {:?}", session.account_name);
 
-        match self {
-            Self::Completion(cmd) => cmd.execute(printer, Cli::command()),
-            Self::Manual(cmd) => cmd.execute(printer, Cli::command()),
-            Self::JsonSchema(cmd) => cmd.execute(printer, json_schema::registry()),
-            Self::Repl(cmd) => {
-                let account = take_account(config_paths, account_name)?;
-                cmd.execute(&*printer, account)
-            }
+        let result = match self {
+            Self::Server(cmd) => cmd.execute(session.account()?),
+            Self::Start(cmd) => cmd.execute(printer, session.account()?),
+            Self::Get(cmd) => cmd.execute(printer, session.account()?),
+            Self::Watch(cmd) => cmd.execute(printer, session.account()?),
+            Self::Set(cmd) => cmd.execute(printer, session.account()?),
+            Self::Pause(cmd) => cmd.execute(printer, session.account()?),
+            Self::Resume(cmd) => cmd.execute(printer, session.account()?),
+            Self::Stop(cmd) => cmd.execute(printer, session.account()?),
+            Self::Repl(cmd) => cmd.execute(&*printer, session),
             Self::Mcp(cmd) => {
                 // NOTE: stdout carries protocol messages only, so a
                 // failure goes to stderr, a person missing a
                 // configuration aside.
-                let account = match take_account(config_paths, account_name) {
-                    Err(err) if err.is::<ConfigMissingError>() && is_wanted(&*printer) => {
+                if let Err(err) = session.account() {
+                    if err.is::<ConfigMissingError>() && is_wanted(&*printer) {
                         return Err(err);
                     }
-                    account => exit_on_failure::<ErrorCode, _>(account),
-                };
 
-                exit_on_failure::<ErrorCode, _>(cmd.execute(account));
+                    exit_on_failure::<ErrorCode, ()>(Err(err));
+                }
+
+                exit_on_failure::<ErrorCode, _>(cmd.execute(session));
                 Ok(())
             }
-            cmd => {
-                let mut account = take_account(config_paths, account_name)?;
-                cmd.run(printer, &mut account)
-            }
-        }
-    }
-
-    /// Runs the command against an account already resolved, a client
-    /// failure carrying its code.
-    pub fn run(self, printer: &mut impl Printer, account: &mut Account) -> Result<()> {
-        let result = match self {
-            Self::Server(cmd) => cmd.execute(account),
-            Self::Start(cmd) => cmd.execute(printer, account),
-            Self::Get(cmd) => cmd.execute(printer, account),
-            Self::Watch(cmd) => cmd.execute(printer, account),
-            Self::Set(cmd) => cmd.execute(printer, account),
-            Self::Pause(cmd) => cmd.execute(printer, account),
-            Self::Resume(cmd) => cmd.execute(printer, account),
-            Self::Stop(cmd) => cmd.execute(printer, account),
             Self::Completion(cmd) => cmd.execute(printer, Cli::command()),
             Self::Manual(cmd) => cmd.execute(printer, Cli::command()),
             Self::JsonSchema(cmd) => cmd.execute(printer, json_schema::registry()),
-            Self::Repl(_) | Self::Mcp(_) => Err(anyhow!("Cannot start a session inside a session")),
         };
 
         result.map_err(|err| with_code(err, error::code))
+    }
+}
+
+/// What the commands of one run share: the configuration paths, the
+/// account `-a` names, and that account once taken, which a REPL session
+/// keeps across its lines.
+pub struct Session<'a> {
+    /// The configuration paths, `-c` or the default ones.
+    pub config_paths: &'a [PathBuf],
+    /// The account `-a` names, the default one when `None`.
+    pub account_name: Option<&'a str>,
+    /// The account, taken on first use.
+    pub account: Option<Account>,
+}
+
+impl<'a> Session<'a> {
+    /// A session over the configuration at `config_paths`, its account
+    /// not taken yet.
+    pub fn new(config_paths: &'a [PathBuf], account_name: Option<&'a str>) -> Self {
+        Self {
+            config_paths,
+            account_name,
+            account: None,
+        }
+    }
+
+    /// The session's account, taken from the configuration on first use.
+    pub fn account(&mut self) -> Result<&mut Account> {
+        let account = match self.account.take() {
+            Some(account) => account,
+            None => take_account(self.config_paths, self.account_name)?,
+        };
+
+        Ok(self.account.insert(account))
     }
 }
 

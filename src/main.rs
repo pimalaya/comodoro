@@ -16,7 +16,7 @@
 
 use std::process;
 
-use comodoro::cli::{self, Cli, Command, error::ErrorCode};
+use comodoro::cli::{self, Cli, Command, Session, error::ErrorCode};
 use pimalaya_cli::{
     clap::parse,
     error::ErrorReport,
@@ -41,7 +41,10 @@ fn main() {
     let account_name = cli.account.name.as_deref();
 
     let result = match cli.cmd {
-        Some(cmd) => cmd.execute(&mut printer, config_paths, account_name),
+        Some(cmd) => {
+            let mut session = Session::new(config_paths, account_name);
+            cmd.execute(&mut printer, &mut session)
+        }
         None => cli::meet_bare_invocation(config_paths),
     };
 

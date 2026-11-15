@@ -66,7 +66,7 @@ cycles = [{ name = "Study", duration = 3120 }, { name = "Rest", duration = 1020 
 ### Hooks
 
 - **`on-<cycle>-running` is now `on-<cycle>-tick`**, the hook firing every second a cycle runs: rename it. The old name is refused naming the new one.
-- **A 1.x `cmd` key is refused** naming `command`, its spelling since 2.x, which refused it as an unknown key.
+- **A 1.x `cmd` key reads again**, as the alias of `command` wherever the family configures a command, where v2 refused it as an unknown key: nothing to change, write `command` in a new hook.
 - **A hook name no event fires is refused**, naming the account's cycles and the events, where v2 loaded it and never ran it. A typo like `on-wrok-end` now fails every command: fix it.
 - **A hook with neither `command` nor `notify` is refused**, where v2 loaded it and did nothing: give it one, or delete it.
 - **A hook can run a command and show a notification both**, the command first, and fills `$cycleName` and `$cycleDuration` (the remaining seconds): one `notify.summary = "$cycleName ended"` serves every cycle, and a command reads them from its environment. A notification naming another variable is refused, and so is `$cycleName` on `on-timer-start` and `on-timer-stop`, which fill none. A notification is now templated, so a literal `$` in it is written `$$`.
@@ -155,6 +155,7 @@ comodoro --json get; [ $? -eq 2 ] && echo "bad command line"
 - **`AccountConfig::cycles` is a `Vec<CycleConfig>`**, the configuration's own cycle, where it was a `Vec<TimerCycle>`; `TimerCycle::from` converts one.
 - **`Config` and `AccountConfig` gain fields** refusing the 0.x keys (`presets`, `preset`, `timer_precision`), typed so they never hold a value: a pattern destructuring them names them or ends in `..`.
 - **`TimerCycle`, `TimerSchedule`, `Timer` and `TimerEvent` refuse unknown keys** when deserialized.
+- **`cli::Command::execute` takes a `cli::Session`**, built by `Session::new(config_paths, account_name)`, where it took the two.
 
 ```rust
 // v2
@@ -172,13 +173,13 @@ if let TimerEvent::Ticked(cycle) = event {}
 
 ## From v1 to v2
 
-v2 moved the wire to JSON-RPC 2.0 and reworked the transports. A v1 configuration loads as it is, unless a hook spells `cmd`.
+v2 moved the wire to JSON-RPC 2.0 and reworked the transports. A v1 configuration loads as it is, unless a hook spells `cmd` (v3 reads it again).
 
 - **Restart the server after upgrading.** v2 speaks JSON-RPC 2.0, so a v2 client and a v1 server cannot talk.
 - **The `unix-socket` table is `socket`.** `unix-socket` stays an accepted alias, so nothing breaks; rename it at leisure. Every transport field has a default, so the tables are optional.
 - **`server start` binds the transports it is given**, the default one when given none, where v1 bound every transport the account configured: a server serving both runs `comodoro server start socket tcp`.
 - **The `[PROTOCOL]` argument is `[TRANSPORT]`**, taking `socket` (alias `unix-socket`) or `tcp`.
-- **A hook's `cmd` is refused**: spell it `command`. v1 read both.
+- **A hook's `cmd` is refused**: spell it `command`. v1 read both; v3 reads `cmd` again, as the alias of `command`.
 - **`--debug` and `--trace` are `--log-level debug` and `--log-level trace`**, beside a new `--log-file <PATH>`.
 - **`manuals` and `completions` are `manual` and `completion`**; v3 accepts the plural again, hidden.
 - **The cargo features `std`, `timer` and `command` are gone**: shell hooks always build, and `vendored` forwards to notify-rust.
@@ -226,7 +227,7 @@ v1 renamed the configuration's presets to accounts, picked by `-a` rather than b
 - **`[presets.<name>]` is `[accounts.<name>]`**, and `default = true` marks the account a command takes when `-a` names none. v3 refuses `presets` naming `accounts`.
 - **`preset = "pomodoro"` or `"52/17"` is gone**: write the cycles out in `cycles`. config.sample.toml holds Pomodoro, 52/17 and 112/26 as sections to copy. v3 refuses `preset` naming them.
 - **`timer-precision` is `precision`**, taking the same values. v3 refuses `timer-precision` naming `precision`.
-- **A hook's `cmd` is `command`**; v1 still read `cmd`, v2 stopped.
+- **A hook's `cmd` is `command`**; v1 still read `cmd`, v2 stopped, and v3 reads it again as the alias of `command`.
 - **The `timer` subcommand is gone**: the controls are top-level and take the account through `-a`, the transport as an optional argument. The server takes the account the same way.
 - **The cargo features `hook-command` and `hook-notify` are `command` and `notify`**, and `hooks` and `tcp` are gone.
 

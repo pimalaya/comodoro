@@ -243,10 +243,12 @@ fn the_running_hook_of_v2_is_refused_by_name() {
     assert!(failure.contains("MIGRATION.md"), "{failure}");
 }
 
-/// The `cmd` spelling of 1.x is refused naming `command` and the
-/// migration guide, rather than as any unknown key.
+/// `cmd`, the 1.x spelling, reads as the alias of `command`, as wherever
+/// the family configures a command. A hook holding no command would be
+/// refused as doing nothing, so the account resolving and `get` failing
+/// only for want of a server shows `cmd` set the command.
 #[test]
-fn the_cmd_hook_key_of_v1_is_refused_by_name() {
+fn the_cmd_hook_key_reads_as_command() {
     let failure = refusal(
         r#"
         [accounts.example]
@@ -256,8 +258,10 @@ fn the_cmd_hook_key_of_v1_is_refused_by_name() {
         "#,
     );
 
-    assert!(failure.contains("`command`"), "{failure}");
-    assert!(failure.contains("MIGRATION.md"), "{failure}");
+    assert!(
+        failure.contains(r#""code":"server-unreachable""#),
+        "{failure}"
+    );
 }
 
 /// The 0.x keys are refused naming what replaced them and the migration

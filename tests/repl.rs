@@ -112,17 +112,18 @@ fn the_help_goes_to_stderr_in_a_json_session() {
 }
 
 /// A command running until interrupted would end the session with it,
-/// and a session holds no other one: each is refused by name.
+/// and a session holds no other one: each is refused by name, a nested
+/// session coded `usage-invalid` by pimalaya-cli, by name or prefix.
 #[test]
 fn sessions_and_commands_running_until_interrupted_are_refused() {
     let scratch = serve();
-    let input = b"watch\nserver start\nrepl\nmcp\nget\n";
+    let input = b"watch\nserver start\nrepl\nmcp\nmc --allow-write\nget\n";
     let out = comodoro(&scratch.config, &["--json", "repl"], input);
 
     assert!(out.status.success(), "{out:?}");
 
     let lines = json_lines(&out.stdout);
-    assert_eq!(lines.len(), 5, "{lines:?}");
+    assert_eq!(lines.len(), 6, "{lines:?}");
     assert_eq!(
         lines[0]["error"],
         "`watch` runs until interrupted, run it outside a session"
@@ -131,9 +132,33 @@ fn sessions_and_commands_running_until_interrupted_are_refused() {
         lines[1]["error"],
         "`server start` runs until interrupted, run it outside a session"
     );
-    assert_eq!(lines[2]["error"], "Cannot start a session inside a session");
-    assert_eq!(lines[3]["error"], "Cannot start a session inside a session");
-    assert_eq!(lines[4]["state"], "stopped");
+
+    for line in &lines[2..5] {
+        assert_eq!(line["code"], "usage-invalid", "{lines:?}");
+        assert_eq!(line["error"], "Cannot start a session inside a session");
+    }
+
+    assert_eq!(lines[5]["state"], "stopped");
+}
+
+/// A version line prints what the command line prints, `-V` the short
+/// version and `--version` the long one, and the session goes on.
+#[test]
+fn a_version_line_prints_the_version() {
+    let scratch = serve();
+    let out = comodoro(&scratch.config, &["repl"], b"-V\n--version\nget\n");
+
+    assert!(out.status.success(), "{out:?}");
+
+    let stdout = String::from_utf8(out.stdout).unwrap();
+    let version = concat!("comodoro ", env!("CARGO_PKG_VERSION"));
+    let long = concat!("comodoro v", env!("CARGO_PKG_VERSION"), " ");
+    let mut lines = stdout.lines();
+
+    assert_eq!(lines.next(), Some(version), "stdout: {stdout}");
+    let line = lines.next().unwrap_or_default();
+    assert!(line.starts_with(long), "stdout: {stdout}");
+    assert_eq!(stdout.lines().last(), Some("OFF"), "stdout: {stdout}");
 }
 
 /// A line the grammar refuses is the failure object coded

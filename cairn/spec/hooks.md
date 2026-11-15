@@ -17,7 +17,11 @@ An account whose cycles are `Work` and `Rest` and whose hooks hold `on-wrok-end`
 
 ## Requirement: A hook runs a command, shows a notification, or both
 
-A hook SHALL hold a `command`, read through pimalaya-config's `command` module, a `notify` with a `summary` and an optional `body`, or both, and SHALL be refused holding neither. With both, the command SHALL run first, then the notification show. A hook failing SHALL be logged and SHALL NOT stop the timer.
+A hook SHALL hold a `command`, read through pimalaya-config's `command` module and also read under `cmd`, its alias wherever the family configures a command (pimalaya-config cairn/spec/command.md), a `notify` with a `summary` and an optional `body`, or both, and SHALL be refused holding neither. With both, the command SHALL run first, then the notification show. A hook failing SHALL be logged and SHALL NOT stop the timer.
+
+### Scenario: A 1.x hook command
+
+An account whose hooks hold `on-work-end.cmd = "true"` loads, and runs `true` when the Work cycle ends, as `on-work-end.command = "true"` does.
 
 ## Requirement: A hook templates against what its event carries
 
@@ -41,7 +45,7 @@ An account whose `cycles` is empty SHALL be refused when it is resolved, rather 
 
 ## Requirement: A removed hook spelling is refused by name
 
-A hook name `on-<cycle>-running`, `<cycle>` one of the account's, SHALL be refused when the account is resolved, naming `on-<cycle>-tick` and MIGRATION.md, and a hook's `cmd` key, the 1.x spelling of `command`, SHALL be refused as the configuration loads, naming `command` and MIGRATION.md.
+A hook name `on-<cycle>-running`, `<cycle>` one of the account's, SHALL be refused when the account is resolved, naming `on-<cycle>-tick` and MIGRATION.md.
 
 ### Scenario: A v2 tick hook
 

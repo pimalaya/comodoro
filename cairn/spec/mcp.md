@@ -17,7 +17,11 @@ capability: mcp
 
 ## Requirement: A tool's input is the command's grammar
 
-A tool's `inputSchema` SHALL be generated from its clap command by pimalaya-cli's `mcp::grammar::Grammar`, each property named as the CLI spells the argument (`transport`, and `seconds` for `set`), with `additionalProperties: false`, and a call SHALL be parsed back by that same command from the argv the grammar writes. An argument the `inputSchema` does not declare, and a value the command's grammar refuses, SHALL be refused before the command runs as a tool error whose failure object is coded `usage-invalid`, the first naming the arguments the tool takes.
+A tool's `inputSchema` SHALL be generated from its clap command by pimalaya-cli's `mcp::grammar::Grammar`, each property named as the CLI spells the argument (`transport`, and `seconds` for `set`), with `additionalProperties: false`, and a call SHALL be parsed back by that same command from the argv the grammar writes. An argument the `inputSchema` does not declare, a required argument missing, and a value the command's grammar refuses, SHALL be refused before the command runs as a tool error whose failure object is coded `usage-invalid`: the first naming the arguments the tool takes, the others naming the argument as the tool's input does, never clap's usage text, through `Grammar::usage_error` (``Missing argument `<name>` ``, ``Invalid value `<value>` for `<name>`: <reason>``).
+
+### Scenario: A negative duration
+
+A `set` call with `seconds: -1` answers `isError` with the failure object coded `usage-invalid` reading ``Invalid value `-1` for `seconds`: invalid digit found in string``, and the server reads on.
 
 ## Requirement: A tool's output is the command's payload
 

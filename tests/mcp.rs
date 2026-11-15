@@ -188,7 +188,8 @@ fn an_unknown_argument_is_a_tool_error_coded_usage_invalid() {
 }
 
 /// A value the command's grammar refuses is coded like an undeclared
-/// argument, and the server reads on.
+/// argument, named as the tool's input names it, and the server reads
+/// on.
 #[test]
 fn a_value_the_grammar_refuses_is_a_tool_error_coded_usage_invalid() {
     let scratch = serve();
@@ -197,7 +198,10 @@ fn a_value_the_grammar_refuses_is_a_tool_error_coded_usage_invalid() {
 
     assert_eq!(failure["code"], "usage-invalid", "{failure}");
     let error = failure["error"].as_str().unwrap();
-    assert!(error.starts_with("invalid value '-1'"), "{error}");
+    assert_eq!(
+        error,
+        "Invalid value `-1` for `seconds`: invalid digit found in string"
+    );
 
     let get = server.call("get", json!({}));
     assert_eq!(get["structuredContent"]["state"], "stopped", "{get}");

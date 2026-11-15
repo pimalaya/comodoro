@@ -5,10 +5,13 @@
 //! session.
 //!
 //! pimalaya-cli's [`Repl`] runs the loop: each line split as a shell
-//! splits it, parsed with the one-shot grammar plus `--json`, every
-//! answer on stdout, the session flags refused by name. Each line
-//! connects to the server anew, so a server restarted between two lines
-//! is met by the next as a one-shot run meets it.
+//! splits it, parsed with the one-shot grammar plus `--json` and run over
+//! the [`Session`] holding the account, every answer on stdout, the
+//! session flags refused by name, a nested `repl` or `mcp` line refused
+//! coded `usage-invalid` before it reaches this crate, and a `--version`
+//! line answered with the version [`Command`] carries. Each line connects
+//! to the server anew, so a server restarted between two lines is met by
+//! the next as a one-shot run meets it.
 //!
 //! pimalaya-cli installs no Ctrl-C handler, so the commands running until
 //! interrupted, `watch` and `server start`, are refused: interrupting
@@ -18,7 +21,7 @@ use anyhow::{Result, anyhow};
 use clap::Parser;
 use pimalaya_cli::{printer::Printer, repl::Repl};
 
-use crate::cli::{Command, account::Account, error::ErrorCode};
+use crate::cli::{Command, Session, error::ErrorCode};
 
 /// Start a session running commands over one account.
 ///
@@ -31,15 +34,20 @@ use crate::cli::{Command, account::Account, error::ErrorCode};
 pub struct ReplCommand;
 
 impl ReplCommand {
-    /// Runs the read-eval-print loop until EOF or a quit command, each
-    /// line printing as `printer` does unless it asks for JSON.
-    pub fn execute(self, printer: &impl Printer, mut account: Account) -> Result<()> {
+    /// Runs the read-eval-print loop until EOF or a quit command, keeping
+    /// the session's account across lines, each line printing as
+    /// `printer` does unless it asks for JSON.
+    pub fn execute(self, printer: &impl Printer, session: &mut Session) -> Result<()> {
+        // NOTE: taken up front, so a missing configuration or account
+        // fails the session rather than its first line.
+        session.account()?;
+
         let repl = Repl::new("comodoro", printer.is_json());
 
         repl.run::<Command, ErrorCode>(|printer, cmd| match cmd {
             Command::Watch(_) => Err(until_interrupted("watch")),
             Command::Server(_) => Err(until_interrupted("server start")),
-            cmd => cmd.run(printer, &mut account),
+            cmd => cmd.execute(printer, session),
         })
     }
 }

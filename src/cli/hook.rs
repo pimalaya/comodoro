@@ -15,8 +15,9 @@
 //! hooks fill none. [`TimerHook::validate`] refuses a notification naming
 //! a variable its hook does not fill, as the account is resolved.
 //!
-//! The 1.x `cmd` key and the 2.x `on-<cycle>-running` name are refused
-//! naming what replaced them and MIGRATION.md.
+//! The 2.x `on-<cycle>-running` name is refused naming `on-<cycle>-tick`
+//! and MIGRATION.md. `cmd` reads as the alias of `command`, as wherever
+//! the family configures a command.
 //!
 //! A build without the `notify` feature has no notification backend, so
 //! an account carrying one is refused as it loads, naming the cargo
@@ -32,7 +33,7 @@ use anyhow::{Result, bail};
 use convert_case::{Case, Casing};
 use log::{debug, error, warn};
 use pimalaya_config::{command::CommandConfig, notify::NotificationTemplate};
-use serde::{Deserialize, Deserializer, de::Error};
+use serde::Deserialize;
 
 use crate::timer::{TimerCycle, TimerEvent};
 
@@ -100,23 +101,12 @@ fn cycle_hook_prefix(cycle: &TimerCycle) -> String {
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub struct TimerHook {
     /// Runs a command, a shell line or a program with its arguments.
+    ///
+    /// `cmd` is read as its alias, as wherever a command is configured.
+    #[serde(alias = "cmd")]
     pub command: Option<CommandConfig>,
     /// Shows a desktop notification, given as a summary and a body.
     pub notify: Option<NotificationTemplate>,
-    /// Refused: the 1.x spelling of `command`.
-    pub cmd: Option<CmdRenamedConfig>,
-}
-
-/// The 1.x `cmd` key of a hook, refused naming `command`.
-#[derive(Debug)]
-pub enum CmdRenamedConfig {}
-
-impl<'de> Deserialize<'de> for CmdRenamedConfig {
-    fn deserialize<D: Deserializer<'de>>(_: D) -> Result<Self, D::Error> {
-        Err(D::Error::custom(
-            "The hook key `cmd` is now `command`, see MIGRATION.md",
-        ))
-    }
 }
 
 impl TimerHook {

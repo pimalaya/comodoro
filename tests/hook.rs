@@ -43,6 +43,19 @@ fn a_string_command_runs_through_a_shell() {
     let _ = fs::remove_file(path);
 }
 
+/// `cmd`, the 1.x spelling, reads as the alias of `command`, as wherever
+/// the family configures a command.
+#[test]
+fn a_cmd_key_runs_as_the_command() {
+    let path = path("cmd");
+
+    let hook = hook(&format!(r#"cmd = "echo hooked >> {}""#, path.display()));
+    hook.execute(&[]);
+
+    assert_eq!(fs::read_to_string(&path).unwrap().trim(), "hooked");
+    let _ = fs::remove_file(path);
+}
+
 /// A shell would read the `>` as a redirection. Executed directly, it is
 /// one more character in the file name.
 #[cfg(unix)]

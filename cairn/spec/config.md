@@ -53,7 +53,7 @@ When a field the sample's commented code sets, such as `cycles-count`, is rename
 
 ## Requirement: Unknown keys are refused at every level
 
-Every configuration table, the root, an account, `socket`, `tcp`, a cycle, a hook and its `notify`, SHALL refuse a key it does not read, naming it, rather than ignore it. No configuration type SHALL flatten another, which would defeat the refusal. A key Comodoro used to read and removed SHALL be refused naming what replaced it and MIGRATION.md: the 0.x root table `presets` naming `accounts`, an account's 0.x `preset` naming the presets of config.sample.toml, its 0.x `timer-precision` naming `precision`, and the removed hook spellings (cairn/spec/hooks.md, "A removed hook spelling is refused by name").
+Every configuration table, the root, an account, `socket`, `tcp`, a cycle, a hook and its `notify`, SHALL refuse a key it does not read, naming it, rather than ignore it. No configuration type SHALL flatten another, which would defeat the refusal. A key Comodoro used to read and removed SHALL be refused naming what replaced it and MIGRATION.md: the 0.x root table `presets` naming `accounts`, an account's 0.x `preset` naming the presets of config.sample.toml, its 0.x `timer-precision` naming `precision`, and the 2.x hook name `on-<cycle>-running` (cairn/spec/hooks.md, "A removed hook spelling is refused by name"). A hook's `cmd` is no such key: it reads as the alias of `command` (cairn/spec/hooks.md).
 
 ### Scenario: A misspelled cycle key
 

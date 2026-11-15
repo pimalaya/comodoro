@@ -9,7 +9,7 @@ capability: repl
 
 ## Requirement: A session runs the CLI over one account
 
-`comodoro repl` SHALL start a session bound to one account and its configuration, and run pimalaya-cli's shared REPL loop over it: read one command per stdin line, split as a shell splits it, a blank line or a line whose first word starts a `#` comment skipped, parse it with the one-shot grammar plus `--json`, subcommand names inferred from a unique prefix, and run it, until `quit`, `exit` or EOF. `repl` and `mcp` SHALL be refused inside it with `Cannot start a session inside a session`, and `watch` and `server start` with `` `<command>` runs until interrupted, run it outside a session ``, pimalaya-cli installing no Ctrl-C handler. A line whose quote is not closed, a line that is not UTF-8, a parse error or a command error SHALL be printed, on stdout as the failure object when piped, and the loop SHALL continue.
+`comodoro repl` SHALL start a session bound to one account and its configuration, and run pimalaya-cli's shared REPL loop over it: read one command per stdin line, split as a shell splits it, a blank line or a line whose first word starts a `#` comment skipped, parse it with the one-shot grammar plus `--json`, subcommand names inferred from a unique prefix, and run it, until `quit`, `exit` or EOF. A line starting a session, `repl` or `mcp` by its name, an alias or a prefix, SHALL be refused by pimalaya-cli before Comodoro runs it, with `Cannot start a session inside a session` coded `usage-invalid`, and `watch` and `server start` with `` `<command>` runs until interrupted, run it outside a session ``, pimalaya-cli installing no Ctrl-C handler. A line whose quote is not closed, a line that is not UTF-8, a parse error or a command error SHALL be printed, on stdout as the failure object when piped, and the loop SHALL continue.
 
 ### Scenario: A status bar command in a session
 
@@ -33,4 +33,8 @@ A line setting a flag the session fixes when it starts, `-a`, `--account`, `-c`,
 
 ## Requirement: Help keeps JSON lines whole
 
-A line asking for help SHALL print clap's text on stdout in a text session, and on stderr when the session's `--json` or a `--json` word of the line is set, so stdout keeps one JSON value per line. Its usage line SHALL name the binary before the command, as `Usage: comodoro set [OPTIONS] <SECONDS> [TRANSPORT]`.
+A line asking for help or the version SHALL print clap's text on stdout in a text session, and on stderr when the session's `--json` or a `--json` word of the line is set, so stdout keeps one JSON value per line. Its usage line SHALL name the binary before the command, as `Usage: comodoro set [OPTIONS] <SECONDS> [TRANSPORT]`. The version SHALL be the one the command line prints, `-V` the short one and `--version` the long one, which the `Command` enum carries.
+
+### Scenario: The version in a text session
+
+In a text session, the lines `-V` and `--version` print `comodoro <version>`, then the long version the command line prints, opening with `comodoro v<version>` and the build's features, and the session goes on.
