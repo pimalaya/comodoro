@@ -109,4 +109,4 @@ serde_json = { version = "1", default-features = false, features = ["alloc"] }
 uds_windows = { version = "1", default-features = false }
 
 [patch.crates-io]
-pimalaya-cli = { path = "../cli" }
+pimalaya-cli = { git = "https://github.com/pimalaya/cli", rev = "9952b7f1c6a2cb9890e06c32ea73ed873b00995f" }
