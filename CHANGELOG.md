@@ -49,6 +49,7 @@ Comodoro joins the standard the Pimalaya CLIs share. MIGRATION.md lists what to 
 
 ### Fixed
 
+- Fixed, through pimalaya-cli 0.6.1 and pimalaya-config 0.6.0, a value filled into a hook notification being read as markup by the notification daemon: a cycle name holding `<b>` or `&` is shown as written, its line breaks and tabs as spaces, its other control and bidi override characters dropped. Fixed the text error report writing the control characters of its causes raw to the terminal, `--log-file` creating the file under the umask and following a symbolic link (it is created at 0600 and a link is refused), the manual pages printing `vv<version>`, a TOML parse error of the configuration printing its source line, and a refused secret echoing its value; a secret command that fails names the command and says to run it yourself, never printing its output.
 - Fixed install.sh saving an HTTP error page as the archive and letting `tar` fail on it: it downloads with `curl -fsSLo` and stops on the error.
 - Fixed several accounts marked `default = true` resolving to whichever came first: they are refused, naming them.
 - Fixed `completion` writing files to the working directory instead of printing the script to stdout.
