@@ -49,6 +49,7 @@ Comodoro joins the standard the Pimalaya CLIs share. MIGRATION.md lists what to 
 
 ### Fixed
 
+- Fixed install.sh saving an HTTP error page as the archive and letting `tar` fail on it: it downloads with `curl -fsSLo` and stops on the error.
 - Fixed several accounts marked `default = true` resolving to whichever came first: they are refused, naming them.
 - Fixed `completion` writing files to the working directory instead of printing the script to stdout.
 
