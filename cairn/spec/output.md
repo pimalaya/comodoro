@@ -15,9 +15,13 @@ Each command printing a value SHALL print one type named after what it prints an
 
 `TimerOutput` SHALL carry the timer's `schedule`, `state`, `cycle`, `startedAt` and `elapsed`, as the wire's timer does but for `startedAt`. Its text SHALL be one line: `OFF` when stopped, `[<cycle>] paused` when paused, and `[<cycle>]` followed by the remaining duration at the account precision when running, ending with a newline.
 
+## Requirement: A duration prints in jiff's friendly form
+
+The remaining duration SHALL be truncated to the account precision (`second`, `minute` or `hour`), down to the unit under it when the precision's own would read zero (`59s` at `minute` or `hour`, `59m` at `hour`), then printed as a jiff `Span` balanced up to days of 24 hours through the default friendly printer: `0s`, `1m 30s`, `25m`, `1h 30m`, `2d 4h`, zero units left out. A duration too long for a span SHALL print in hours. The JSON output and hook variables SHALL keep seconds.
+
 ### Scenario: A status bar reads the timer
 
-A timer running its `Work` cycle with 25 minutes left, on an account whose precision is `minute`, makes `comodoro get` print `[Work] 25min` and a newline.
+A timer running its `Work` cycle with 25 minutes left, on an account whose precision is `minute`, makes `comodoro get` print `[Work] 25m` and a newline.
 
 ## Requirement: A timer control answers the timer
 

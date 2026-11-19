@@ -7,21 +7,19 @@
 //! how coarsely a duration reads is an account setting, and prints the
 //! start as an instant rather than as the epoch seconds the wire carries.
 
-use alloc::string::String;
+use alloc::{format, string::String};
 use core::{fmt, time::Duration};
 
-use std::time::UNIX_EPOCH;
-
-use humantime::format_rfc3339_seconds;
+use jiff::{SignedDuration, Span, SpanRound, Unit, civil, fmt::friendly::SpanPrinter};
 use pimalaya_cli::sanitize;
 use schemars::JsonSchema;
-use serde::{Serialize, Serializer};
+use serde::{Serialize, Serializer, ser::Error as _};
 
 use crate::timer::{Timer, TimerCycle, TimerPrecision, TimerSchedule, TimerState};
 
 /// The timer, as a client command prints it.
 ///
-/// Its text is one line, `OFF`, `[Work] paused` or `[Work] 25min`, so a
+/// Its text is one line, `OFF`, `[Work] paused` or `[Work] 25m`, so a
 /// status bar reads it as is.
 #[derive(Clone, Debug, JsonSchema, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -62,37 +60,47 @@ impl TimerOutput {
         // NOTE: a TCP server may be remote, so its cycle name could drive
         // the terminal.
         let cycle = sanitize::text(&self.cycle.name);
-        let duration = self.cycle.duration;
 
         match self.state {
             TimerState::Stopped => write!(f, "OFF"),
             TimerState::Paused => write!(f, "[{cycle}] paused"),
-            TimerState::Running if duration < 60 => write!(f, "[{cycle}] {duration}s"),
-            TimerState::Running if duration < 3600 => match self.precision {
-                TimerPrecision::Second => {
-                    write!(f, "[{cycle}] {}min {}s", duration / 60, duration % 60)
-                }
-                TimerPrecision::Minute | TimerPrecision::Hour => {
-                    write!(f, "[{cycle}] {}min", duration / 60)
-                }
-            },
-            TimerState::Running => match self.precision {
-                TimerPrecision::Second => write!(
-                    f,
-                    "[{cycle}] {}h {}min {}s",
-                    duration / 3600,
-                    (duration % 3600) / 60,
-                    (duration % 3600) % 60,
-                ),
-                TimerPrecision::Minute => write!(
-                    f,
-                    "[{cycle}] {}h {}min",
-                    duration / 3600,
-                    (duration % 3600) / 60,
-                ),
-                TimerPrecision::Hour => write!(f, "[{cycle}] {}h", duration / 3600),
-            },
+            TimerState::Running => {
+                let left = truncate(self.cycle.duration as u64, &self.precision);
+                write!(f, "[{cycle}] {}", friendly(left))
+            }
         }
+    }
+}
+
+/// Truncates a remaining duration in seconds to the precision, down to
+/// the unit under it when the precision's own would read zero.
+fn truncate(secs: u64, precision: &TimerPrecision) -> u64 {
+    let unit = match precision {
+        TimerPrecision::Second => 1,
+        TimerPrecision::Minute | TimerPrecision::Hour if secs < 60 => 1,
+        TimerPrecision::Minute => 60,
+        TimerPrecision::Hour if secs < 3600 => 60,
+        TimerPrecision::Hour => 3600,
+    };
+
+    secs - secs % unit
+}
+
+/// Prints a duration in seconds in jiff's friendly form, balanced up to
+/// days of 24 hours: `2d 4h 30m`, `0s` when empty.
+///
+/// A duration too long for a jiff span stops at hours.
+fn friendly(secs: u64) -> String {
+    let rounding = SpanRound::new().largest(Unit::Day).days_are_24_hours();
+
+    let span = i64::try_from(secs)
+        .ok()
+        .and_then(|secs| Span::new().try_seconds(secs).ok())
+        .and_then(|span| span.round(rounding).ok());
+
+    match span {
+        Some(span) => format!("{span:#}"),
+        None => SpanPrinter::new().unsigned_duration_to_string(&Duration::from_secs(secs)),
     }
 }
 
@@ -106,13 +114,58 @@ impl fmt::Display for TimerOutput {
     }
 }
 
-/// Serializes Unix epoch seconds as an RFC 3339 instant in UTC.
+/// The last second RFC 3339 can write, 9999-12-31T23:59:59Z, in Unix
+/// epoch seconds.
+const RFC3339_MAX_SECS: u64 = 253_402_300_799;
+
+/// Serializes Unix epoch seconds as an RFC 3339 instant in UTC, clamped
+/// to the last instant RFC 3339 can write.
 fn serialize_rfc3339<S: Serializer>(secs: &Option<u64>, s: S) -> Result<S::Ok, S::Error> {
     match secs {
         Some(secs) => {
-            let instant = UNIX_EPOCH + Duration::from_secs(*secs);
-            s.collect_str(&format_rfc3339_seconds(instant))
+            let secs = (*secs).min(RFC3339_MAX_SECS) as i64;
+            let epoch = civil::date(1970, 1, 1).at(0, 0, 0, 0);
+            let instant = epoch
+                .checked_add(SignedDuration::from_secs(secs))
+                .map_err(S::Error::custom)?;
+
+            s.collect_str(&format_args!("{instant}Z"))
         }
         None => s.serialize_none(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        cli::client::timer::{friendly, truncate},
+        timer::TimerPrecision,
+    };
+
+    #[test]
+    fn a_remaining_duration_prints_at_its_precision() {
+        let cases = [
+            (0, TimerPrecision::Minute, "0s"),
+            (59, TimerPrecision::Hour, "59s"),
+            (90, TimerPrecision::Second, "1m 30s"),
+            (90, TimerPrecision::Minute, "1m"),
+            (1500, TimerPrecision::Minute, "25m"),
+            (3599, TimerPrecision::Hour, "59m"),
+            (3600, TimerPrecision::Second, "1h"),
+            (5430, TimerPrecision::Second, "1h 30m 30s"),
+            (5430, TimerPrecision::Minute, "1h 30m"),
+            (5430, TimerPrecision::Hour, "1h"),
+            (187_200 + 61, TimerPrecision::Second, "2d 4h 1m 1s"),
+            (187_200 + 61, TimerPrecision::Hour, "2d 4h"),
+        ];
+
+        for (secs, precision, text) in cases {
+            assert_eq!(friendly(truncate(secs, &precision)), text, "{secs}");
+        }
+    }
+
+    #[test]
+    fn a_duration_past_a_span_prints_in_hours() {
+        assert_eq!(friendly(u64::MAX), "5124095576030431h 15s");
     }
 }

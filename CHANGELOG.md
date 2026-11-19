@@ -43,6 +43,8 @@ Comodoro joins the standard the Pimalaya CLIs share. MIGRATION.md lists what to 
 - Changed piped `--json` output to print one value per line, flushed, so `watch --json` streams newline-delimited JSON instead of values glued together and held in the buffer; each schema of `json-schema` now carries an `$id` naming the contract version, the major version of Comodoro.
 - Changed the `srv` alias of `server` to a hidden one.
 - Moved to pimalaya-cli 0.5.2 (with its `signal` feature) and pimalaya-config 0.5.
+- **Breaking:** changed the remaining duration of the timer's text line to jiff's friendly form, as the other Pimalaya CLIs print a duration: `[Work] 25m` instead of `[Work] 25min`, `1h 30m 5s` instead of `1h 30min 5s`, zero units left out (`1h` instead of `1h 0min`), and a day and over in days (`1d 1h` instead of `25h 0min`). The precision truncates as before. The `--json` output and the `$cycleDuration` hook variable keep seconds.
+- Changed the humantime dependency to jiff 1, humantime being unmaintained (RUSTSEC-2026-0542); `startedAt` under `--json` is written as before.
 
 ### Removed
 
