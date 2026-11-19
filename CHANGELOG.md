@@ -22,7 +22,7 @@ Comodoro joins the standard the Pimalaya CLIs share. MIGRATION.md lists what to 
 
 ### Changed
 
-- Changed the pimalaya-cli dependency to 0.7.0.
+- Changed the pimalaya-cli dependency to 0.7.1.
 - **Breaking:** changed the timer's values to kebab-case, both in the `--json` output and in the JSON-RPC protocol: `state` reads `running`, `paused` or `stopped` instead of `Running`, `Paused` or `Stopped`, and the schedule's `loops` is the number of loops or `null` when unbounded instead of `"Infinite"` or `{"Fixed": n}`. A client meeting a server of the previous version fails saying it may run another Comodoro version: restart the server, and any `watch` still running, after upgrading.
 - **Breaking:** renamed the timer's `started_at` key to `startedAt`, both in the `--json` output and in the JSON-RPC protocol (the `timer.get` result), so every JSON key Comodoro emits is camelCase.
 - **Breaking:** changed `startedAt` under `--json` to an RFC 3339 instant in UTC (`2026-11-12T09:00:00Z`) instead of epoch seconds. The JSON-RPC protocol keeps epoch seconds.

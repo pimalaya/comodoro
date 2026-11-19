@@ -7,11 +7,11 @@
 //! how coarsely a duration reads is an account setting, and prints the
 //! start as an instant rather than as the epoch seconds the wire carries.
 
-use alloc::{format, string::String};
-use core::{fmt, time::Duration};
+use alloc::string::String;
+use core::fmt;
 
-use jiff::{SignedDuration, Span, SpanRound, Unit, civil, fmt::friendly::SpanPrinter};
-use pimalaya_cli::sanitize;
+use jiff::{SignedDuration, civil};
+use pimalaya_cli::{duration::friendly, sanitize};
 use schemars::JsonSchema;
 use serde::{Serialize, Serializer, ser::Error as _};
 
@@ -86,24 +86,6 @@ fn truncate(secs: u64, precision: &TimerPrecision) -> u64 {
     secs - secs % unit
 }
 
-/// Prints a duration in seconds in jiff's friendly form, balanced up to
-/// days of 24 hours: `2d 4h 30m`, `0s` when empty.
-///
-/// A duration too long for a jiff span stops at hours.
-fn friendly(secs: u64) -> String {
-    let rounding = SpanRound::new().largest(Unit::Day).days_are_24_hours();
-
-    let span = i64::try_from(secs)
-        .ok()
-        .and_then(|secs| Span::new().try_seconds(secs).ok())
-        .and_then(|span| span.round(rounding).ok());
-
-    match span {
-        Some(span) => format!("{span:#}"),
-        None => SpanPrinter::new().unsigned_duration_to_string(&Duration::from_secs(secs)),
-    }
-}
-
 impl fmt::Display for TimerOutput {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.fmt_state(f)?;
@@ -137,10 +119,9 @@ fn serialize_rfc3339<S: Serializer>(secs: &Option<u64>, s: S) -> Result<S::Ok, S
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        cli::client::timer::{friendly, truncate},
-        timer::TimerPrecision,
-    };
+    use pimalaya_cli::duration::friendly;
+
+    use crate::{cli::client::timer::truncate, timer::TimerPrecision};
 
     #[test]
     fn a_remaining_duration_prints_at_its_precision() {
@@ -162,10 +143,5 @@ mod tests {
         for (secs, precision, text) in cases {
             assert_eq!(friendly(truncate(secs, &precision)), text, "{secs}");
         }
-    }
-
-    #[test]
-    fn a_duration_past_a_span_prints_in_hours() {
-        assert_eq!(friendly(u64::MAX), "5124095576030431h 15s");
     }
 }
