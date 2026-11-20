@@ -114,10 +114,17 @@ Which transport a server binds is what `comodoro server start [TRANSPORTS]` says
 
 ## Usage
 
-Start the server, which owns the timer and stays in the foreground:
+Start the server, which owns the timer and stays in the foreground until a signal (Ctrl-C, SIGTERM) stops it with `Server stopped` and exit 0, its socket removed:
 
 ```sh
 comodoro server start
+```
+
+List the accounts of the configuration, and check that a server answers on each transport an account declares (one row each, exit 3 when one fails):
+
+```sh
+comodoro account list
+comodoro account check
 ```
 
 Then drive the timer from anywhere:
@@ -143,7 +150,7 @@ Every command prints the timer, the controls as it is after their change. With `
 comodoro watch --json | jq -r --unbuffered 'select(.event == "timer-changed") | "\(.cycle.name) \(.cycle.duration)s"'
 ```
 
-The exit status tells the outcome: 0 on success, 1 on a failure, printed as the failure object under `--json` (its `code` naming the cause, `server-unreachable` when no server runs, `server-closed` when the server a `watch` follows goes away), and 2 when the command line itself is refused (an unknown flag or command, a missing argument, a bad value), coded `usage-invalid` on stdout under `--json` and clap's text on stderr otherwise.
+The exit status tells the outcome: 0 on success, 1 on a failure, printed as the failure object under `--json` (its `code` naming the cause, `server-unreachable` when no server runs, `server-closed` when the server a `watch` follows goes away, `address-busy` when `server start` meets a server already running there), 2 when the command line itself is refused (an unknown flag or command, a missing argument, a bad value), coded `usage-invalid` on stdout under `--json` and clap's text on stderr otherwise, and 3 when `account check` printed a failed row.
 
 Every command takes an optional transport, `socket` or `tcp`, and falls back to the one the configuration marks as default. The server takes the list of transports to bind, and binds the default one when given none:
 

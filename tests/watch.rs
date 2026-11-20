@@ -17,7 +17,7 @@ use std::{
 
 use serde_json::Value;
 
-use crate::common::{comodoro, scratch, serve};
+use crate::common::{comodoro, kill, scratch, serve};
 
 /// Spawns `comodoro -c <config> <args> watch`, stdout piped.
 fn watch(config: &std::path::Path, args: &[&str]) -> (Child, Lines<BufReader<ChildStdout>>) {
@@ -34,17 +34,6 @@ fn watch(config: &std::path::Path, args: &[&str]) -> (Child, Lines<BufReader<Chi
 
     let lines = BufReader::new(child.stdout.take().unwrap()).lines();
     (child, lines)
-}
-
-/// Sends `signal` to the child, as a status bar stopping it does.
-fn kill(child: &Child, signal: &str) {
-    let status = Command::new("kill")
-        .arg(format!("-{signal}"))
-        .arg(child.id().to_string())
-        .status()
-        .unwrap();
-
-    assert!(status.success());
 }
 
 fn parse(line: &str) -> Value {

@@ -19,7 +19,7 @@ use crate::{
     jsonrpc20::{Jsonrpc20Id, Jsonrpc20Outcome, Jsonrpc20Request, Jsonrpc20Response},
     protocol::{TimerRequest, TimerResponse},
     timer::{Timer, TimerEvent},
-    transport::{TimerAddress, TimerStream},
+    transport::{TimerAddress, TimerStream, TimerTransportError},
 };
 
 /// Why a call to a timer server failed, attached to the error a
@@ -68,8 +68,16 @@ pub struct TimerClient {
 
 impl TimerClient {
     /// Connects to the server listening at the given address.
+    ///
+    /// A socket path the platform refuses keeps its
+    /// [`TimerTransportError`], no server being at fault.
     pub fn connect(address: &TimerAddress) -> Result<Self> {
-        let stream = TimerStream::connect(address).context(TimerClientError::Unreachable)?;
+        let stream = match TimerStream::connect(address) {
+            Ok(stream) => stream,
+            Err(err) if err.is::<TimerTransportError>() => return Err(err),
+            Err(err) => return Err(err.context(TimerClientError::Unreachable)),
+        };
+
         let reader = BufReader::new(stream.try_clone()?);
 
         Ok(Self {
@@ -174,7 +182,8 @@ impl TimerClient {
         let id = Jsonrpc20Id::Number(self.id);
         let envelope = request.clone().into_jsonrpc(self.id);
 
-        let mut line = serde_json::to_string(&envelope).context("Serialize timer request error")?;
+        let mut line =
+            serde_json::to_string(&envelope).context("Cannot serialize the timer request")?;
         trace!("send: {line}");
         line.push('\n');
 

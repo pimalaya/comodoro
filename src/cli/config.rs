@@ -8,9 +8,7 @@
 //! are required, and config.sample.toml is the annotated reference.
 //!
 //! Every table, a cycle included, refuses a key it does not read, rather
-//! than ignoring a typo.
-//! The 0.x `presets`, `preset` and `timer-precision` are refused naming
-//! what replaced them and MIGRATION.md.
+//! than ignoring a typo, a key an earlier version read included.
 //!
 //! What lives here is the document alone: its shape and the way it is
 //! read, Comodoro never writing it. What a command runs against is
@@ -26,10 +24,10 @@ use alloc::{
 use std::{collections::HashMap, path::PathBuf};
 
 use pimalaya_config::toml::TomlConfig;
-use serde::{Deserialize, Deserializer, de::Error};
+use serde::Deserialize;
 
 use crate::{
-    cli::hook::TimerHook,
+    cli::{hook::TimerHook, transport::Transport},
     timer::{TimerCycle, TimerPrecision},
     transport::{TimerAddress, default_socket_path},
 };
@@ -40,8 +38,6 @@ use crate::{
 pub struct Config {
     /// The accounts, by name.
     pub accounts: HashMap<String, AccountConfig>,
-    /// Refused: the 0.x name of `accounts`.
-    pub presets: Option<PresetsRenamedConfig>,
 }
 
 impl TomlConfig for Config {
@@ -79,18 +75,19 @@ pub struct AccountConfig {
     ///
     /// Every field has a default, so an account describes a socket
     /// without holding a `socket` table at all: the table adjusts the
-    /// address, never whether the transport exists.
+    /// address, never whether the transport exists. Holding one declares
+    /// the transport to `account list` and `account check`.
     ///
     /// Also spelled `unix-socket`, the name Comodoro 1.x used, so a 1.x
     /// account file loads unchanged.
     #[serde(default, alias = "unix-socket")]
-    pub socket: SocketConfig,
+    pub socket: Option<SocketConfig>,
     /// Where the client and the server meet over TCP.
     ///
     /// Defaulted like the socket, so `comodoro server start tcp` opens
     /// a port on an account that says nothing about TCP.
     #[serde(default)]
-    pub tcp: TcpConfig,
+    pub tcp: Option<TcpConfig>,
     /// The ordered cycles the timer runs through.
     pub cycles: Vec<CycleConfig>,
     /// How many full loops the timer runs, unbounded when absent.
@@ -101,46 +98,36 @@ pub struct AccountConfig {
     /// The hooks to run, by event name.
     #[serde(default)]
     pub hooks: HashMap<String, TimerHook>,
-    /// Refused: the 0.x cycle preset, written as `cycles` since 1.0.
-    pub preset: Option<PresetRemovedConfig>,
-    /// Refused: the 0.x name of `precision`.
-    pub timer_precision: Option<TimerPrecisionRenamedConfig>,
 }
 
-/// The 0.x `presets` table, refused naming `accounts`.
-#[derive(Debug)]
-pub enum PresetsRenamedConfig {}
+impl AccountConfig {
+    /// The transport a command talks over when it names none.
+    ///
+    /// The local socket wins a tie, being the transport that opens no
+    /// port: `tcp.default` counts only when `socket.default` is unset.
+    pub fn default_transport(&self) -> Transport {
+        let socket = self.socket.as_ref().is_some_and(|socket| socket.default);
+        let tcp = self.tcp.as_ref().is_some_and(|tcp| tcp.default);
 
-impl<'de> Deserialize<'de> for PresetsRenamedConfig {
-    fn deserialize<D: Deserializer<'de>>(_: D) -> Result<Self, D::Error> {
-        Err(D::Error::custom(
-            "The table `presets` is now `accounts`, see MIGRATION.md",
-        ))
+        if tcp && !socket {
+            Transport::Tcp
+        } else {
+            Transport::UnixSocket
+        }
     }
-}
 
-/// The 0.x `preset` key of an account, refused naming `cycles`.
-#[derive(Debug)]
-pub enum PresetRemovedConfig {}
+    /// The transports the account declares, the socket first: those it
+    /// holds a table for, and the default one, which every command
+    /// naming none talks over.
+    pub fn transports(&self) -> Vec<Transport> {
+        let default = self.default_transport();
 
-impl<'de> Deserialize<'de> for PresetRemovedConfig {
-    fn deserialize<D: Deserializer<'de>>(_: D) -> Result<Self, D::Error> {
-        Err(D::Error::custom(
-            "The account key `preset` is gone, copy a preset's `cycles` from config.sample.toml, see MIGRATION.md",
-        ))
-    }
-}
+        let socket = self.socket.is_some() || default == Transport::UnixSocket;
+        let tcp = self.tcp.is_some() || default == Transport::Tcp;
 
-/// The 0.x `timer-precision` key of an account, refused naming
-/// `precision`.
-#[derive(Debug)]
-pub enum TimerPrecisionRenamedConfig {}
-
-impl<'de> Deserialize<'de> for TimerPrecisionRenamedConfig {
-    fn deserialize<D: Deserializer<'de>>(_: D) -> Result<Self, D::Error> {
-        Err(D::Error::custom(
-            "The account key `timer-precision` is now `precision`, see MIGRATION.md",
-        ))
+        let declared = [(Transport::UnixSocket, socket), (Transport::Tcp, tcp)];
+        let declared = declared.into_iter().filter(|(_, declared)| *declared);
+        declared.map(|(transport, _)| transport).collect()
     }
 }
 
@@ -286,13 +273,13 @@ mod tests {
 
             fs::write(&path, &variant.text).unwrap();
 
-            let (_, account) = Config::load(slice::from_ref(&path))
+            let (account_name, account) = Config::load(slice::from_ref(&path))
                 .and_then(|mut config| Ok(config.take_account(Some("example"))?))
                 .unwrap_or_else(|err| {
                     panic!("config.sample.toml with {name} uncommented: {err:?}")
                 });
 
-            let account = Account::try_from(account).unwrap();
+            let account = Account::new(account_name, account).unwrap();
             assert!(!account.schedule.cycles.is_empty(), "{name}");
         }
     }

@@ -11,15 +11,16 @@
 //! they fail across the family.
 //!
 //! Comodoro writes no configuration. A bare `comodoro` shows the help
-//! when one exists, and a person running Comodoro without one meets the
-//! welcome ([`welcome`], the shared one in Comodoro's words), which
-//! copies config.sample.toml from the release or the package, or
-//! downloads it.
+//! when one exists and is a refused command line under `--json`, main
+//! meeting it through pimalaya-cli. A person running Comodoro without a
+//! configuration meets the welcome ([`welcome`], the shared one in
+//! Comodoro's words), which copies config.sample.toml from the release
+//! or the package, or downloads it.
 //!
 //! Everything the CLI needs lives here, so the `cli` feature gates one
-//! subtree: [`config`] holds the TOML document, [`account`] the resolved
-//! view a command runs against, [`transport`] the selection of the one a
-//! command talks over.
+//! subtree: [`config`] holds the TOML document, [`account`] the account
+//! commands and the resolved view a command runs against, [`transport`]
+//! the selection of the one a command talks over.
 //!
 //! [`hook`] holds the reactions bound to timer events, [`json_schema`]
 //! the schemas of what the commands print, and [`client`] and [`server`]
@@ -59,7 +60,7 @@ use pimalaya_cli::{
 use pimalaya_config::toml::{ConfigMissingError, TomlConfig};
 
 use crate::cli::{
-    account::Account,
+    account::{Account, AccountCommand},
     client::{
         get::TimerGetCommand, pause::TimerPauseCommand, resume::TimerResumeCommand,
         set::TimerSetCommand, start::TimerStartCommand, stop::TimerStopCommand,
@@ -107,6 +108,11 @@ pub struct Cli {
 #[derive(Debug, Subcommand)]
 #[command(version, long_version = long_version!())]
 pub enum Command {
+    /// Manage the accounts of the configuration.
+    #[command(arg_required_else_help = true)]
+    #[command(subcommand)]
+    #[command(alias = "accounts")]
+    Account(AccountCommand),
     /// Manage the timer servers.
     #[command(arg_required_else_help = true)]
     #[command(subcommand)]
@@ -149,7 +155,8 @@ impl Command {
         trace!("account name: {:?}", session.account_name);
 
         let result = match self {
-            Self::Server(cmd) => cmd.execute(session.account()?),
+            Self::Account(cmd) => cmd.execute(printer, session),
+            Self::Server(cmd) => cmd.execute(printer, session.account()?),
             Self::Start(cmd) => cmd.execute(printer, session.account()?),
             Self::Get(cmd) => cmd.execute(printer, session.account()?),
             Self::Watch(cmd) => cmd.execute(printer, session.account()?),
@@ -216,30 +223,15 @@ impl<'a> Session<'a> {
     }
 }
 
-/// Meets a bare `comodoro`: the help when a configuration exists, the
-/// missing configuration otherwise, which a person meets as the welcome.
-pub fn meet_bare_invocation(config_paths: &[PathBuf]) -> Result<()> {
-    // NOTE: a broken file counts as a configuration, its error left to
-    // the first command reading it.
-    if let Err(err) = Config::load(config_paths)
-        && err.is::<ConfigMissingError>()
-    {
-        return Err(err);
-    }
-
-    Cli::command().print_help()?;
-    Ok(())
-}
-
 /// Takes the account `-a` names, or the one marked default without `-a`,
 /// out of the configuration at `config_paths`, resolved into the
 /// [`Account`] a command runs against. An account that cannot be taken
 /// fails coded, `default` being a name like any other.
 pub fn take_account(config_paths: &[PathBuf], account_name: Option<&str>) -> Result<Account> {
-    let (_, account) = Config::load(config_paths)?
+    let (name, account) = Config::load(config_paths)?
         .take_account(account_name)
         .map_err(|err| with_code(err.into(), error::code))?;
-    Account::try_from(account)
+    Account::new(name, account)
 }
 
 /// The welcome a person meets when no configuration exists at `path`:

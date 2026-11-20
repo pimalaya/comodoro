@@ -13,7 +13,11 @@ Comodoro SHALL NOT write a configuration file: the user writes it, from config.s
 
 ## Requirement: A bare invocation shows the help
 
-A bare `comodoro` SHALL show the help when a configuration exists, a broken one included, and so SHALL `--account` with no subcommand. Without one it SHALL fail as an account-bound command does, with the welcome or the error. Comodoro SHALL NOT prompt to create a configuration.
+A bare `comodoro` SHALL show the help when a configuration exists, a broken one included, and so SHALL `--account` with no subcommand. Without one it SHALL fail as an account-bound command does, with the welcome or the error. Under `--json` it SHALL instead be a refused command line, through pimalaya-cli's `clap::meet_bare_invocation`, its configuration left unread: the failure object coded `usage-invalid`, `error` reading `A command is required, see --help`, exit 2. Comodoro SHALL NOT prompt to create a configuration.
+
+### Scenario: A bare run under JSON
+
+`comodoro --json`, with or without a configuration, prints `{"code":"usage-invalid","error":"A command is required, see --help",...}` on stdout, nothing on stderr, and exits 2.
 
 ## Requirement: Account resolution failures name what is missing
 
@@ -53,7 +57,7 @@ When a field the sample's commented code sets, such as `cycles-count`, is rename
 
 ## Requirement: Unknown keys are refused at every level
 
-Every configuration table, the root, an account, `socket`, `tcp`, a cycle, a hook and its `notify`, SHALL refuse a key it does not read, naming it, rather than ignore it. No configuration type SHALL flatten another, which would defeat the refusal. A key Comodoro used to read and removed SHALL be refused naming what replaced it and MIGRATION.md: the 0.x root table `presets` naming `accounts`, an account's 0.x `preset` naming the presets of config.sample.toml, its 0.x `timer-precision` naming `precision`, and the 2.x hook name `on-<cycle>-running` (cairn/spec/hooks.md, "A removed hook spelling is refused by name"). A hook's `cmd` is no such key: it reads as the alias of `command` (cairn/spec/hooks.md).
+Every configuration table, the root, an account, `socket`, `tcp`, a cycle, a hook and its `notify`, SHALL refuse a key it does not read, naming it, rather than ignore it. No configuration type SHALL flatten another, which would defeat the refusal. The refusal SHALL be serde's own, `deny_unknown_fields`, and nothing more: a key Comodoro used to read and removed, such as the 0.x root table `presets` or an account's 0.x `preset` and `timer-precision`, SHALL be refused as any unknown key, never by name nor pointing at MIGRATION.md, and no configuration type SHALL hold a field for it. A hook's `cmd` is no such key: it reads as the alias of `command` (cairn/spec/hooks.md).
 
 ### Scenario: A misspelled cycle key
 
@@ -61,4 +65,4 @@ An account whose cycles read `{ name = "Work", duraton = 1500 }` fails every com
 
 ### Scenario: A 0.x configuration
 
-A configuration holding `[presets.example]` fails every command with "The table `presets` is now `accounts`, see MIGRATION.md".
+A configuration holding `[presets.example]` fails every command naming the unknown field `presets` and the one key the root reads, `accounts`, as it would a typo.

@@ -9,7 +9,7 @@ use std::{
     fs,
     io::Write,
     path::PathBuf,
-    process::{Command, Output, Stdio},
+    process::{Child, Command, Output, Stdio},
     thread,
 };
 
@@ -79,4 +79,16 @@ pub fn comodoro(config: &PathBuf, args: &[&str], input: &[u8]) -> Output {
 
     child.stdin.take().unwrap().write_all(input).unwrap();
     child.wait_with_output().unwrap()
+}
+
+/// Sends `signal` to the child, as a status bar or a service manager
+/// stopping it does.
+pub fn kill(child: &Child, signal: &str) {
+    let status = Command::new("kill")
+        .arg(format!("-{signal}"))
+        .arg(child.id().to_string())
+        .status()
+        .unwrap();
+
+    assert!(status.success());
 }

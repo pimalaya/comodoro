@@ -15,9 +15,8 @@
 //! hooks fill none. [`TimerHook::validate`] refuses a notification naming
 //! a variable its hook does not fill, as the account is resolved.
 //!
-//! The 2.x `on-<cycle>-running` name is refused naming `on-<cycle>-tick`
-//! and MIGRATION.md. `cmd` reads as the alias of `command`, as wherever
-//! the family configures a command.
+//! `cmd` reads as the alias of `command`, as wherever the family
+//! configures a command.
 //!
 //! A build without the `notify` feature has no notification backend, so
 //! an account carrying one is refused as it loads, naming the cargo
@@ -124,12 +123,6 @@ impl TimerHook {
         });
 
         if !cycle_hook && !TIMER_HOOKS.contains(&name) {
-            let tick = prefixes.iter().find(|p| name == format!("on-{p}-running"));
-
-            if let Some(prefix) = tick {
-                bail!("Hook `{name}` is now `on-{prefix}-tick`, see MIGRATION.md");
-            }
-
             let mut prefixes = prefixes;
             prefixes.dedup();
 

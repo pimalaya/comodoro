@@ -13,7 +13,7 @@ Each command printing a value SHALL print one type named after what it prints an
 
 ## Requirement: The timer prints as one line
 
-`TimerOutput` SHALL carry the timer's `schedule`, `state`, `cycle`, `startedAt` and `elapsed`, as the wire's timer does but for `startedAt`. Its text SHALL be one line: `OFF` when stopped, `[<cycle>] paused` when paused, and `[<cycle>]` followed by the remaining duration at the account precision when running, ending with a newline.
+`TimerOutput` SHALL carry the timer's `schedule`, `state`, `cycle`, `startedAt` and `elapsed`, as the wire's timer does. Its text SHALL be one line: `OFF` when stopped, `[<cycle>] paused` when paused, and `[<cycle>]` followed by the remaining duration at the account precision when running, ending with a newline.
 
 ## Requirement: A duration prints in jiff's friendly form
 
@@ -39,6 +39,14 @@ On a stopped timer, `comodoro start --json` prints one object whose `state` is `
 
 `comodoro watch --json` piped on a stopped timer prints `{"event":"timer-changed",...,"state":"stopped",...}`, then a `timer-changed` line per change; on SIGTERM it prints `{"stoppedBy":"signal"}` and exits 0.
 
+## Requirement: `server start` stops on a signal
+
+`server start` SHALL run until a termination signal (SIGINT, SIGTERM, SIGHUP, Ctrl-C) stops it through pimalaya-cli's `signal::Shutdown`: it SHALL then stop running hooks, remove the socket files it bound, print one result, `{"stoppedBy": "signal"}` (`Server stopped` as text), and exit 0; a second signal ends it at once with 130. It prints nothing before that result, its listening addresses going to the logs.
+
+### Scenario: A service manager stops the server
+
+`comodoro --json server start`, stopped by SIGTERM, prints `{"stoppedBy":"signal"}`, exits 0, and its comodoro.sock is gone.
+
 ## Requirement: Shared shapes and spellings
 
 `startedAt` SHALL print as an RFC 3339 instant in UTC with `Z`, `null` unless the timer runs, and no output type SHALL print an epoch number. Values SHALL be kebab-case (cairn/spec/protocol.md, "Values are kebab-case").
@@ -57,7 +65,7 @@ A failure a caller is expected to act on SHALL carry a stable code, printed unde
 
 | Code | Raised when |
 |---|---|
-| `usage-invalid` | the command line, a REPL line or an MCP tool call's arguments do not match the grammar, raised by pimalaya-cli; nothing ran |
+| `usage-invalid` | the command line, a REPL line or an MCP tool call's arguments do not match the grammar, raised by pimalaya-cli, or a REPL line runs `watch` or `server start`; nothing ran |
 | `account-missing` | no account has the name `-a` gave |
 | `account-default-missing` | no account is marked `default = true` and `-a` named none |
 | `account-default-several` | several accounts are marked `default = true` and `-a` named none |
@@ -65,6 +73,10 @@ A failure a caller is expected to act on SHALL carry a stable code, printed unde
 | `server-closed` | the server closed the connection before answering |
 | `server-error` | the server answered a JSON-RPC error |
 | `server-mismatch` | the server's answer cannot be read, as from a server of another Comodoro version; restarting it with this version fixes it |
+| `address-busy` | `server start` cannot bind an address something already listens at: a live server on the socket, any program on the TCP port |
+| `socket-path-invalid` | the platform refuses the socket path, as one longer than a socket address holds, binding or connecting; a shorter `socket.path` fixes it |
+
+Every failure message Comodoro writes SHALL read as the family's, a capitalized sentence without trailing punctuation, a context naming what could not be done starting `Cannot` (`Cannot listen at <address>`, `Cannot connect to the timer server at <address>`, `Cannot watch the timer`).
 
 ### Scenario: No server is running
 
@@ -72,7 +84,7 @@ With an account whose socket nobody listens on, `comodoro get --json` prints the
 
 ## Requirement: A refused command line exits 2
 
-The command line SHALL be parsed through pimalaya-cli's `clap::parse`: help and version print as clap prints them, and a command line the grammar refuses (an unknown flag or command, a missing argument, a bad value) SHALL exit 2 before any configuration is read. With a `--json` word before any `--`, it SHALL print on stdout the failure object coded `usage-invalid`, its `error` clap's message without its `error: ` prefix nor styles, `sources` empty and `backtrace` null, and nothing on stderr; otherwise clap's rendering on stderr and nothing on stdout. Exit 1 stays the failure object; Comodoro has no partial outcome, which the family numbers from 3.
+The command line SHALL be parsed through pimalaya-cli's `clap::parse`: help and version print as clap prints them, and a command line the grammar refuses (an unknown flag or command, a missing argument, a bad value) SHALL exit 2 before any configuration is read. With a `--json` word before any `--`, it SHALL print on stdout the failure object coded `usage-invalid`, its `error` clap's message without its `error: ` prefix nor styles, `sources` empty and `backtrace` null, and nothing on stderr; otherwise clap's rendering on stderr and nothing on stdout. Exit 1 stays the failure object, and 3 is the partial outcome of `account check` printing a failed row (cairn/spec/commands.md), the one partial outcome Comodoro has.
 
 ### Scenario: An unknown flag under JSON
 
@@ -80,7 +92,7 @@ The command line SHALL be parsed through pimalaya-cli's `clap::parse`: help and 
 
 ## Requirement: The JSON contract is described and versioned
 
-`json-schema` SHALL describe the payload of every command printing data, and the failure object every command prints instead under the key `comodoro-error`, checked by a test walking the command tree: only a bare `comodoro` (the help), `server start` (printing nothing), `repl` and `mcp` are left out. Every generated schema SHALL carry an `$id` naming the contract version, the major version of Comodoro, reading `https://pimalaya.org/schemas/comodoro/v<major>/<key>.json`. Every registered payload SHALL be a JSON object, checked by a test. The keys are `comodoro-get`, `comodoro-watch`, `comodoro-start`, `comodoro-pause`, `comodoro-resume`, `comodoro-stop`, `comodoro-set` and `comodoro-error`, and `watch`'s events are described apart as `comodoro-watch.events`, written to `comodoro-watch.events.json`, every alternative carrying `event`, checked by the same test.
+`json-schema` SHALL describe the payload of every command printing data, and the failure object every command prints instead under the key `comodoro-error`, checked by a test walking the command tree: only a bare `comodoro` (the help), `repl` and `mcp` are left out. Every generated schema SHALL carry an `$id` naming the contract version, the major version of Comodoro, reading `https://pimalaya.org/schemas/comodoro/v<major>/<key>.json`. Every registered payload SHALL be a JSON object, checked by a test. The keys are `comodoro-account-list`, `comodoro-account-check`, `comodoro-server-start`, `comodoro-get`, `comodoro-watch`, `comodoro-start`, `comodoro-pause`, `comodoro-resume`, `comodoro-stop`, `comodoro-set` and `comodoro-error`, and `watch`'s events are described apart as `comodoro-watch.events`, written to `comodoro-watch.events.json`, every alternative carrying `event`, checked by the same test.
 
 ### Scenario: `--json` output is piped
 

@@ -20,7 +20,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 default = ["client", "server", "cli", "notify"]
 client = ["dep:anyhow"]
 server = ["dep:anyhow"]
-cli = ["client", "server", "schemars", "dep:clap", "dep:convert_case", "dep:jiff", "dep:pimalaya-cli", "dep:pimalaya-config"]
+cli = ["client", "server", "schemars", "dep:clap", "dep:convert_case", "dep:pimalaya-cli", "dep:pimalaya-config"]
 schemars = ["dep:schemars"]
 notify = ["pimalaya-config?/notify"]
 vendored = ["pimalaya-config?/vendored"]
@@ -75,6 +75,16 @@ name = "watch"
 path = "tests/watch.rs"
 required-features = ["cli"]
 
+[[test]]
+name = "account"
+path = "tests/account.rs"
+required-features = ["cli"]
+
+[[test]]
+name = "server"
+path = "tests/server.rs"
+required-features = ["cli"]
+
 [[example]]
 name = "timer"
 path = "examples/timer.rs"
@@ -91,7 +101,7 @@ strip = "symbols"
 panic = "abort"
 
 [build-dependencies]
-pimalaya-cli = { version = "0.7.1", default-features = false, features = ["build"], optional = true }
+pimalaya-cli = { version = "0.8.0", default-features = false, features = ["build"], optional = true }
 
 [dev-dependencies]
 pimalaya-config = { version = "0.6", default-features = false, features = ["sample"] }
@@ -102,9 +112,8 @@ toml = { version = "1.1", default-features = false, features = ["parse", "serde"
 anyhow = { version = "1", default-features = false, features = ["std"], optional = true }
 clap = { version = "4.4", default-features = false, features = ["derive", "error-context", "help", "std", "suggestions", "usage"], optional = true }
 convert_case = { version = "0.12", default-features = false, optional = true }
-jiff = { version = "1", default-features = false, features = ["std"], optional = true }
 log = { version = "0.4", default-features = false }
-pimalaya-cli = { version = "0.7.1", default-features = false, features = ["duration", "mcp", "repl", "signal", "terminal"], optional = true }
+pimalaya-cli = { version = "0.8.0", default-features = false, features = ["duration", "mcp", "repl", "signal", "terminal"], optional = true }
 pimalaya-config = { version = "0.6", default-features = false, features = ["toml", "secret"], optional = true }
 schemars = { version = "1", default-features = false, features = ["derive"], optional = true }
 serde = { version = "1", default-features = false, features = ["derive", "alloc"] }
@@ -112,3 +121,4 @@ serde_json = { version = "1", default-features = false, features = ["alloc"] }
 
 [target.'cfg(windows)'.dependencies]
 uds_windows = { version = "1", default-features = false }
+

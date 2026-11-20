@@ -33,7 +33,7 @@ A `get` call on an account whose socket nobody listens on answers `isError` with
 
 ## Requirement: Writing is opt-in
 
-Without flags the server SHALL list `get` only. `--allow-write` SHALL add `start`, `pause`, `resume`, `set` and `stop`. `watch`, `server start` and the meta commands SHALL NOT be tools.
+Without flags the server SHALL list `get` only. `--allow-write` SHALL add `start`, `pause`, `resume`, `set` and `stop`. `watch`, `server start`, the `account` commands and the meta commands SHALL NOT be tools: the `account` commands describe the configuration rather than the timer, and no binary of the family lists them as tools.
 
 ## Requirement: Tool annotations
 

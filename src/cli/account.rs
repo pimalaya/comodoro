@@ -1,6 +1,8 @@
 //! # Account
 //!
-//! The merged runtime account, the view every command consumes.
+//! The `account` subcommand tree, listing the accounts a configuration
+//! declares and checking one, and the merged runtime account, the view
+//! every command consumes.
 //!
 //! [`Account`] is what the configuration becomes once resolved: the
 //! addresses the two sides meet on, the timer the server runs, the
@@ -17,21 +19,60 @@
 //!
 //! [`Config`]: crate::cli::config::Config
 
-use alloc::{string::String, vec, vec::Vec};
+pub mod check;
+pub mod list;
+
+use alloc::{format, string::String, vec, vec::Vec};
 
 use std::collections::HashMap;
 
-use anyhow::{Error, Result, bail};
+use anyhow::{Result, bail};
+use clap::Subcommand;
+use pimalaya_cli::printer::Printer;
 
 use crate::{
-    cli::{config::AccountConfig, hook::TimerHook, transport::Transport},
+    cli::{
+        Session,
+        account::{check::AccountCheckCommand, list::AccountListCommand},
+        config::AccountConfig,
+        hook::TimerHook,
+        transport::Transport,
+    },
     timer::{TimerCycle, TimerLoop, TimerPrecision, TimerSchedule},
     transport::TimerAddress,
 };
 
+/// Manage the accounts of the configuration.
+///
+/// An account is a timer: its cycles, the transports its server and
+/// clients meet on, and its hooks. These subcommands list the accounts
+/// and check one; creating one means adding an `[accounts.<name>]`
+/// table, as config.sample.toml shows.
+#[derive(Debug, Subcommand)]
+pub enum AccountCommand {
+    /// List the accounts of the configuration.
+    List(AccountListCommand),
+    /// Check that a timer server answers on every transport the account
+    /// declares.
+    Check(AccountCheckCommand),
+}
+
+impl AccountCommand {
+    /// Dispatches the account leaf: the list reads the configuration, the
+    /// check runs over the session's account.
+    pub fn execute(self, printer: &mut impl Printer, session: &mut Session) -> Result<()> {
+        match self {
+            Self::List(cmd) => cmd.execute(printer, session.config_paths),
+            Self::Check(cmd) => cmd.execute(printer, session.account()?),
+        }
+    }
+}
+
 /// One account, resolved for the commands to run against.
 #[derive(Debug)]
 pub struct Account {
+    /// The name of its `[accounts.<name>]` table.
+    pub name: String,
     /// What the server runs: the cycles, and how many loops.
     pub schedule: TimerSchedule,
     /// How precisely a client renders the remaining duration.
@@ -44,9 +85,57 @@ pub struct Account {
     pub tcp: TimerAddress,
     /// The transport a command talks over when it names none.
     pub default_transport: Transport,
+    /// The transports the account declares, the socket first, which
+    /// `account check` reaches.
+    pub transports: Vec<Transport>,
 }
 
 impl Account {
+    /// Resolves the account `name` from its configuration, refusing one
+    /// with no cycle and one whose hooks no event fires or name a
+    /// variable their event does not fill.
+    pub fn new(name: String, config: AccountConfig) -> Result<Self> {
+        let default_transport = config.default_transport();
+        let transports = config.transports();
+
+        let AccountConfig {
+            default: _,
+            socket,
+            tcp,
+            cycles,
+            cycles_count,
+            precision,
+            hooks,
+        } = config;
+
+        let cycles: Vec<TimerCycle> = cycles.into_iter().map(TimerCycle::from).collect();
+
+        if cycles.is_empty() {
+            bail!("The account has no cycle, give `cycles` at least one");
+        }
+
+        for (hook_name, hook) in &hooks {
+            hook.validate(hook_name, &cycles)?;
+        }
+
+        Ok(Self {
+            name,
+            schedule: TimerSchedule {
+                cycles,
+                loops: match cycles_count {
+                    Some(count) => TimerLoop::Fixed(count),
+                    None => TimerLoop::Infinite,
+                },
+            },
+            precision,
+            hooks,
+            socket: socket.unwrap_or_default().address(),
+            tcp: tcp.unwrap_or_default().address(),
+            default_transport,
+            transports,
+        })
+    }
+
     /// The address of the given transport, or of the default one when the
     /// command names none.
     ///
@@ -74,59 +163,5 @@ impl Account {
             .iter()
             .map(|transport| self.address(Some(*transport)))
             .collect()
-    }
-}
-
-/// Resolves an account, refusing one with no cycle and one whose hooks
-/// no event fires or name a variable their event does not fill.
-impl TryFrom<AccountConfig> for Account {
-    type Error = Error;
-
-    fn try_from(config: AccountConfig) -> Result<Self> {
-        let AccountConfig {
-            default: _,
-            socket,
-            tcp,
-            cycles,
-            cycles_count,
-            precision,
-            hooks,
-            preset: _,
-            timer_precision: _,
-        } = config;
-
-        let cycles: Vec<TimerCycle> = cycles.into_iter().map(TimerCycle::from).collect();
-
-        if cycles.is_empty() {
-            bail!("The account has no cycle, give `cycles` at least one");
-        }
-
-        for (name, hook) in &hooks {
-            hook.validate(name, &cycles)?;
-        }
-
-        // NOTE: the local socket wins the tie, since it is the transport
-        // that opens no port: `tcp.default` is honoured only when the
-        // socket does not claim the default itself.
-        let default_transport = if tcp.default && !socket.default {
-            Transport::Tcp
-        } else {
-            Transport::UnixSocket
-        };
-
-        Ok(Self {
-            schedule: TimerSchedule {
-                cycles,
-                loops: match cycles_count {
-                    Some(count) => TimerLoop::Fixed(count),
-                    None => TimerLoop::Infinite,
-                },
-            },
-            precision,
-            hooks,
-            socket: socket.address(),
-            tcp: tcp.address(),
-            default_transport,
-        })
     }
 }

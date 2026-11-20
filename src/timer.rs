@@ -7,6 +7,8 @@
 //! This is the whole of Comodoro's logic, and it knows nothing about
 //! sockets, JSON-RPC or configuration.
 
+pub(crate) mod rfc3339;
+
 use alloc::{
     string::{String, ToString},
     vec::Vec,
@@ -190,6 +192,10 @@ pub struct Timer {
     pub cycle: TimerCycle,
     /// Unix epoch seconds of the last start or resume, `None` when the
     /// timer is stopped or paused.
+    ///
+    /// Travels as an RFC 3339 instant in UTC, `2026-11-20T09:00:00Z`.
+    #[cfg_attr(feature = "schemars", schemars(with = "Option<String>"))]
+    #[serde(with = "rfc3339")]
     pub started_at: Option<u64>,
     /// Accumulated elapsed seconds from before the last pause or stop.
     pub elapsed: usize,
@@ -794,5 +800,23 @@ mod tests {
 
         let read: Vec<TimerLoop> = serde_json::from_str(&json).unwrap();
         assert_eq!(read, loops);
+    }
+
+    /// The instant a timer started at travels as RFC 3339 in UTC, never as
+    /// the epoch seconds it holds.
+    #[test]
+    fn the_start_travels_as_an_rfc3339_instant() {
+        let mut timer = testing_timer();
+        timer.started_at = Some(1_786_711_298);
+
+        let json = serde_json::to_value(&timer).unwrap();
+        assert_eq!(json["startedAt"], "2026-08-14T12:41:38Z", "{json}");
+
+        let read: Timer = serde_json::from_value(json.clone()).unwrap();
+        assert_eq!(read.started_at, Some(1_786_711_298));
+
+        let mut epoch = json;
+        epoch["startedAt"] = serde_json::json!(1_786_711_298);
+        assert!(serde_json::from_value::<Timer>(epoch).is_err());
     }
 }

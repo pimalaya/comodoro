@@ -157,5 +157,5 @@ fn read_changes(mut client: TimerClient, timers: Sender<Result<Timer>>) {
 
 /// The failure of a watch whose server closed the connection.
 fn closed() -> Error {
-    Error::new(TimerClientError::Closed).context("Watch timer error")
+    Error::new(TimerClientError::Closed).context("Cannot watch the timer")
 }

@@ -10,14 +10,19 @@
 //! Every client command but `watch` prints the same [`TimerOutput`], the
 //! controls the timer after their change. `watch` streams it as
 //! `timer-changed` events, described apart as `comodoro-watch.events`,
-//! then prints what stopped it. The one key naming no command is
-//! `comodoro-error`, the failure object any command prints instead of
-//! its payload.
+//! then prints what stopped it, as `server start` does. The `account`
+//! commands print pimalaya-cli's shared account list and check. The one
+//! key naming no command is `comodoro-error`, the failure object any
+//! command prints instead of its payload.
 //!
 //! [`JsonSchemaCommand`]: pimalaya_cli::clap::commands::json_schema::JsonSchemaCommand
 //! [`TimerOutput`]: crate::cli::client::timer::TimerOutput
 
-use pimalaya_cli::{clap::commands::json_schema::JsonSchemaRegistry, error::ErrorReport};
+use pimalaya_cli::{
+    account::{AccountCheckOutput, AccountListOutput},
+    clap::commands::json_schema::JsonSchemaRegistry,
+    error::ErrorReport,
+};
 
 use crate::cli::{
     client::{
@@ -25,6 +30,7 @@ use crate::cli::{
         watch::{TimerWatchEvent, TimerWatchOutput},
     },
     error::ErrorCode,
+    server::start::TimerServerStartOutput,
 };
 
 /// Builds the command-to-schema registry consumed by `json-schema`.
@@ -35,6 +41,9 @@ use crate::cli::{
 pub fn registry() -> JsonSchemaRegistry {
     let mut registry = JsonSchemaRegistry::new("comodoro", env!("CARGO_PKG_VERSION"));
 
+    registry.insert::<AccountListOutput>("comodoro-account-list");
+    registry.insert::<AccountCheckOutput<ErrorCode>>("comodoro-account-check");
+    registry.insert::<TimerServerStartOutput>("comodoro-server-start");
     registry.insert::<TimerOutput>("comodoro-get");
     registry.insert::<TimerWatchOutput>("comodoro-watch");
     registry.insert_events::<TimerWatchEvent>("comodoro-watch");
@@ -60,15 +69,9 @@ mod tests {
     use crate::cli::{Cli, json_schema::registry};
 
     /// The commands printing nothing a schema could describe: a bare
-    /// `comodoro` shows the help, a server prints nothing while it runs,
-    /// and the REPL and the MCP server print the payloads of the commands
-    /// they run.
-    const SILENT: &[&str] = &[
-        "comodoro",
-        "comodoro-server-start",
-        "comodoro-repl",
-        "comodoro-mcp",
-    ];
+    /// `comodoro` shows the help, and the REPL and the MCP server print
+    /// the payloads of the commands they run.
+    const SILENT: &[&str] = &["comodoro", "comodoro-repl", "comodoro-mcp"];
 
     /// Every runnable command is described, and every key names one: a
     /// renamed subcommand cannot leave a schema nobody can ask for, nor a

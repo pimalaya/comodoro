@@ -37,7 +37,11 @@ The `socket` table is also spelled `unix-socket`, the name Comodoro 1.x used, so
 
 ### Scenario: A stale socket file is left by a crashed server
 
-Binding first tries to connect to the existing path. A refused connection means the file is stale, so it is removed and binding proceeds. A successful connection means a live server owns it, so binding fails.
+Binding first tries to connect to the existing path. A refused connection means the file is stale, so it is removed and binding proceeds. A successful connection means a live server owns it, so binding fails, as binding a TCP port something already listens on does: `comodoro server start` codes both `address-busy` under `--json`. A path the platform refuses, as one longer than a socket address holds, fails binding and connecting alike, coded `socket-path-invalid`, and no file is removed for it.
+
+### Scenario: A server stopped by a signal
+
+`comodoro server start` removes the socket files it bound before it exits (cairn/spec/output.md, *`server start` stops on a signal*), so no stale file is left for the next server to clear.
 
 ### Scenario: A command names no transport
 
@@ -73,12 +77,12 @@ A timer carries its `schedule`, its `state`, its current `cycle`, the `startedAt
   },
   "state": "running",
   "cycle": { "name": "Work", "duration": 1493 },
-  "startedAt": 1786711298,
+  "startedAt": "2026-08-14T12:41:38Z",
   "elapsed": 0
 }
 ```
 
-The schedule is what the timer was given and never changes: its `cycles` in the order they run, each with its configured duration, and its `loops`, the number of full loops through those cycles, `null` when unbounded. The `cycle` is where the timer is now, and its `duration` is the time remaining rather than the configured one, so it is the field a status bar reads. `state` is `running`, `paused` or `stopped`, and `startedAt` is null unless the state is `running`. `startedAt` is in seconds since the Unix epoch, the value a peer computes the remaining time from.
+The schedule is what the timer was given and never changes: its `cycles` in the order they run, each with its configured duration, and its `loops`, the number of full loops through those cycles, `null` when unbounded. The `cycle` is where the timer is now, and its `duration` is the time remaining rather than the configured one, so it is the field a status bar reads. `state` is `running`, `paused` or `stopped`, and `startedAt` is null unless the state is `running`, and otherwise the instant a peer computes the remaining time from: an RFC 3339 instant in UTC in whole seconds, written `YYYY-MM-DDTHH:MM:SSZ` (`T` and `Z` upper case, no fraction, no offset), the one spelling an instant has under `--json` too. A peer SHALL refuse any other form of it, epoch seconds included, as another version (*A peer speaking another version is named*).
 
 The remaining duration is derived from `startedAt` and `elapsed` rather than stored, which is why nothing in the object counts down loops or cycles: an elapsed time names both.
 

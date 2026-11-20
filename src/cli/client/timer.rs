@@ -5,15 +5,14 @@
 //!
 //! [`TimerOutput`] carries the account precision beside the timer, since
 //! how coarsely a duration reads is an account setting, and prints the
-//! start as an instant rather than as the epoch seconds the wire carries.
+//! start as the RFC 3339 instant the wire carries.
 
 use alloc::string::String;
 use core::fmt;
 
-use jiff::{SignedDuration, civil};
 use pimalaya_cli::{duration::friendly, sanitize};
 use schemars::JsonSchema;
-use serde::{Serialize, Serializer, ser::Error as _};
+use serde::Serialize;
 
 use crate::timer::{Timer, TimerCycle, TimerPrecision, TimerSchedule, TimerState};
 
@@ -32,7 +31,7 @@ pub struct TimerOutput {
     pub cycle: TimerCycle,
     /// When the timer was last started or resumed, an RFC 3339 instant
     /// in UTC, `null` unless the timer runs.
-    #[serde(serialize_with = "serialize_rfc3339")]
+    #[serde(serialize_with = "crate::timer::rfc3339::serialize")]
     #[schemars(with = "Option<String>")]
     pub started_at: Option<u64>,
     /// Seconds accumulated before the last pause or stop.
@@ -93,27 +92,6 @@ impl fmt::Display for TimerOutput {
         // NOTE: the newline is what flushes the line-buffered stdout,
         // without which `watch` would print nothing until it exits.
         writeln!(f)
-    }
-}
-
-/// The last second RFC 3339 can write, 9999-12-31T23:59:59Z, in Unix
-/// epoch seconds.
-const RFC3339_MAX_SECS: u64 = 253_402_300_799;
-
-/// Serializes Unix epoch seconds as an RFC 3339 instant in UTC, clamped
-/// to the last instant RFC 3339 can write.
-fn serialize_rfc3339<S: Serializer>(secs: &Option<u64>, s: S) -> Result<S::Ok, S::Error> {
-    match secs {
-        Some(secs) => {
-            let secs = (*secs).min(RFC3339_MAX_SECS) as i64;
-            let epoch = civil::date(1970, 1, 1).at(0, 0, 0, 0);
-            let instant = epoch
-                .checked_add(SignedDuration::from_secs(secs))
-                .map_err(S::Error::custom)?;
-
-            s.collect_str(&format_args!("{instant}Z"))
-        }
-        None => s.serialize_none(),
     }
 }
 

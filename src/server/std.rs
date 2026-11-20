@@ -197,7 +197,7 @@ fn serve_connection(
     });
 
     for line in reader.lines() {
-        let line = line.context("Read request error")?;
+        let line = line.context("Cannot read the request")?;
 
         if line.trim().is_empty() {
             continue;

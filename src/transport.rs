@@ -7,13 +7,14 @@
 //!
 //! [`TimerAddress`] says where a server listens, [`TimerListener`]
 //! accepts connections there, and [`TimerStream`] is one connection,
-//! whichever transport carries it.
+//! whichever transport carries it. [`TimerTransportError`] tags the
+//! failures a caller acts on: a busy address, a refused socket path.
 //!
 //! Windows has supported `AF_UNIX` stream sockets since build 1803,
 //! reached here through the uds_windows shim, so the same path-based
 //! addressing works on every supported platform.
 
-use core::fmt;
+use core::{error, fmt};
 
 use alloc::{format, string::String};
 
@@ -21,12 +22,12 @@ use alloc::{format, string::String};
 use std::os::unix::net::{UnixListener, UnixStream};
 use std::{
     env, fs,
-    io::{self, Read, Write},
+    io::{self, ErrorKind, Read, Write},
     net::{TcpListener, TcpStream},
     path::PathBuf,
 };
 
-use anyhow::{Context, Result, bail};
+use anyhow::{Context, Error, Result};
 use log::{debug, warn};
 #[cfg(windows)]
 use uds_windows::{UnixListener, UnixStream};
@@ -68,6 +69,29 @@ impl fmt::Display for TimerAddress {
     }
 }
 
+/// Why a transport could not be bound or connected, attached to the
+/// error so a caller tells the causes apart with `downcast_ref`.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum TimerTransportError {
+    /// Something already listens at the address: another timer server
+    /// on a socket, any program on a TCP port.
+    AddressBusy,
+    /// The platform refuses the socket path, as one longer than a socket
+    /// address holds.
+    SocketPathInvalid,
+}
+
+impl fmt::Display for TimerTransportError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(match self {
+            Self::AddressBusy => "The address is already in use",
+            Self::SocketPathInvalid => "The platform refuses the socket path",
+        })
+    }
+}
+
+impl error::Error for TimerTransportError {}
+
 /// One connection carrying the timer protocol.
 ///
 /// Both variants are plain blocking byte streams, and the protocol above
@@ -88,12 +112,13 @@ impl TimerStream {
         match address {
             TimerAddress::UnixSocket(path) => {
                 let stream = UnixStream::connect(path)
-                    .with_context(|| format!("Connect to timer server at {address} error"))?;
+                    .map_err(|err| tag(err, address))
+                    .with_context(|| format!("Cannot connect to the timer server at {address}"))?;
                 Ok(Self::UnixSocket(stream))
             }
             TimerAddress::Tcp { host, port } => {
                 let stream = TcpStream::connect((host.as_str(), *port))
-                    .with_context(|| format!("Connect to timer server at {address} error"))?;
+                    .with_context(|| format!("Cannot connect to the timer server at {address}"))?;
                 Ok(Self::Tcp(stream))
             }
         }
@@ -103,10 +128,14 @@ impl TimerStream {
     pub fn try_clone(&self) -> Result<Self> {
         match self {
             Self::UnixSocket(stream) => Ok(Self::UnixSocket(
-                stream.try_clone().context("Clone timer socket error")?,
+                stream
+                    .try_clone()
+                    .context("Cannot clone the timer connection")?,
             )),
             Self::Tcp(stream) => Ok(Self::Tcp(
-                stream.try_clone().context("Clone timer socket error")?,
+                stream
+                    .try_clone()
+                    .context("Cannot clone the timer connection")?,
             )),
         }
     }
@@ -151,29 +180,41 @@ impl TimerListener {
     ///
     /// A socket file outlives its process, so its presence proves
     /// nothing. Connecting does: a refused connection means the file can
-    /// go, a successful one that a live server owns the address.
+    /// go, a successful one that a live server owns the address, a busy
+    /// one as [`TimerTransportError::AddressBusy`] says.
     pub fn bind(address: &TimerAddress) -> Result<Self> {
         debug!("listen at {address}");
 
         match address {
             TimerAddress::UnixSocket(path) => {
                 if path.exists() {
-                    if UnixStream::connect(path).is_ok() {
-                        bail!("Socket {address} is already in use");
+                    match UnixStream::connect(path) {
+                        Ok(_) => {
+                            let err = Error::new(TimerTransportError::AddressBusy);
+                            return Err(err.context(format!("Cannot listen at {address}")));
+                        }
+                        Err(err) if err.kind() == ErrorKind::InvalidInput => {
+                            let err = tag(err, address);
+                            return Err(err.context(format!("Cannot listen at {address}")));
+                        }
+                        Err(_) => {
+                            warn!("remove stale socket at {address}");
+                            fs::remove_file(path).with_context(|| {
+                                format!("Cannot remove the stale socket {address}")
+                            })?;
+                        }
                     }
-
-                    warn!("remove stale socket at {address}");
-                    fs::remove_file(path)
-                        .with_context(|| format!("Remove stale socket {address} error"))?;
                 }
 
                 let listener = UnixListener::bind(path)
-                    .with_context(|| format!("Bind socket {address} error"))?;
+                    .map_err(|err| tag(err, address))
+                    .with_context(|| format!("Cannot listen at {address}"))?;
                 Ok(Self::UnixSocket(listener))
             }
             TimerAddress::Tcp { host, port } => {
                 let listener = TcpListener::bind((host.as_str(), *port))
-                    .with_context(|| format!("Bind socket {address} error"))?;
+                    .map_err(|err| tag(err, address))
+                    .with_context(|| format!("Cannot listen at {address}"))?;
                 Ok(Self::Tcp(listener))
             }
         }
@@ -183,13 +224,29 @@ impl TimerListener {
     pub fn accept(&self) -> Result<TimerStream> {
         match self {
             Self::UnixSocket(listener) => {
-                let (stream, _) = listener.accept().context("Accept connection error")?;
+                let (stream, _) = listener.accept().context("Cannot accept a connection")?;
                 Ok(TimerStream::UnixSocket(stream))
             }
             Self::Tcp(listener) => {
-                let (stream, _) = listener.accept().context("Accept connection error")?;
+                let (stream, _) = listener.accept().context("Cannot accept a connection")?;
                 Ok(TimerStream::Tcp(stream))
             }
         }
+    }
+}
+
+/// Tags an I/O error of a transport with the [`TimerTransportError`] it
+/// means, when it means one: a busy address, or a socket path the
+/// platform refuses.
+fn tag(err: io::Error, address: &TimerAddress) -> Error {
+    let kind = err.kind();
+    let err = Error::new(err);
+
+    match (address, kind) {
+        (_, ErrorKind::AddrInUse) => err.context(TimerTransportError::AddressBusy),
+        (TimerAddress::UnixSocket(_), ErrorKind::InvalidInput) => {
+            err.context(TimerTransportError::SocketPathInvalid)
+        }
+        _ => err,
     }
 }

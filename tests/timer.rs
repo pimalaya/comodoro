@@ -16,7 +16,7 @@ use comodoro::{
     client::std::TimerClient,
     server::std::TimerServer,
     timer::{TimerCycle, TimerEvent, TimerLoop, TimerSchedule, TimerState},
-    transport::TimerAddress,
+    transport::{TimerAddress, TimerTransportError},
 };
 
 static NEXT_SOCKET: AtomicUsize = AtomicUsize::new(0);
@@ -223,7 +223,11 @@ fn a_second_server_refuses_a_socket_in_use() {
     .serve()
     .unwrap_err();
 
-    assert!(err.to_string().contains("already in use"), "{err}");
+    assert_eq!(
+        err.downcast_ref::<TimerTransportError>(),
+        Some(&TimerTransportError::AddressBusy),
+        "{err:#}"
+    );
     let _ = fs::remove_file(path);
 }
 
@@ -288,9 +292,11 @@ fn a_second_server_refuses_a_port_in_use() {
     .serve()
     .unwrap_err();
 
-    assert!(
-        err.to_string().contains("Bind socket 127.0.0.1:47822"),
-        "{err}"
+    assert!(err.to_string().contains("127.0.0.1:47822"), "{err:#}");
+    assert_eq!(
+        err.downcast_ref::<TimerTransportError>(),
+        Some(&TimerTransportError::AddressBusy),
+        "{err:#}"
     );
 }
 

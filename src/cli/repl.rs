@@ -17,9 +17,15 @@
 //! interrupted, `watch` and `server start`, are refused: interrupting
 //! them would end the session with them.
 
-use anyhow::{Result, anyhow};
+use alloc::format;
+
+use anyhow::{Error, Result};
 use clap::Parser;
-use pimalaya_cli::{printer::Printer, repl::Repl};
+use pimalaya_cli::{
+    error::{CodedError, CommonCode},
+    printer::Printer,
+    repl::Repl,
+};
 
 use crate::cli::{Command, Session, error::ErrorCode};
 
@@ -52,7 +58,9 @@ impl ReplCommand {
     }
 }
 
-/// The refusal of a command running until interrupted.
-fn until_interrupted(cmd: &str) -> anyhow::Error {
-    anyhow!("`{cmd}` runs until interrupted, run it outside a session")
+/// The refusal of a command running until interrupted, coded
+/// `usage-invalid` as a nested session is, nothing having run.
+fn until_interrupted(cmd: &str) -> Error {
+    let message = format!("`{cmd}` runs until interrupted, run it outside a session");
+    CodedError::new(CommonCode::UsageInvalid, message).into()
 }

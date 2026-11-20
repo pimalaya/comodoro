@@ -18,8 +18,8 @@ use pimalaya_config::toml::TomlConfig;
 /// the dispatch layer does.
 fn account(toml: &str) -> Account {
     let mut config: Config = toml::from_str(toml).expect("deserialize config");
-    let (_, account) = config.take_account(Some("example")).expect("take account");
-    account.try_into().expect("resolve account")
+    let (name, account) = config.take_account(Some("example")).expect("take account");
+    Account::new(name, account).expect("resolve account")
 }
 
 #[test]
@@ -226,10 +226,10 @@ fn an_unknown_key_is_refused_at_every_level() {
     }
 }
 
-/// The per-second hook of 2.x is refused naming its new name and the
-/// migration guide, rather than as a name no event fires.
+/// The per-second hook of 2.x is refused as any name no event fires,
+/// never by name.
 #[test]
-fn the_running_hook_of_v2_is_refused_by_name() {
+fn the_running_hook_of_v2_is_a_name_no_event_fires() {
     let failure = refusal(
         r#"
         [accounts.example]
@@ -239,8 +239,8 @@ fn the_running_hook_of_v2_is_refused_by_name() {
         "#,
     );
 
-    assert!(failure.contains("on-work-tick"), "{failure}");
-    assert!(failure.contains("MIGRATION.md"), "{failure}");
+    assert!(failure.contains("matches no event"), "{failure}");
+    assert!(!failure.contains("MIGRATION.md"), "{failure}");
 }
 
 /// `cmd`, the 1.x spelling, reads as the alias of `command`, as wherever
@@ -264,27 +264,28 @@ fn the_cmd_hook_key_reads_as_command() {
     );
 }
 
-/// The 0.x keys are refused naming what replaced them and the migration
-/// guide, rather than as any unknown key.
+/// The 0.x keys are refused as any unknown key, by serde alone, never by
+/// name.
 #[test]
-fn the_keys_of_v0_are_refused_by_name() {
+fn the_keys_of_v0_are_refused_as_unknown_keys() {
     let cycles = r#"cycles = [{ name = "Work", duration = 1500 }]"#;
 
     let cases = [
-        (format!("[presets.example]\n{cycles}"), "`accounts`"),
+        (format!("[presets.example]\n{cycles}"), "`presets`"),
         (
             format!("[accounts.example]\ndefault = true\n{cycles}\npreset = \"pomodoro\""),
-            "config.sample.toml",
+            "`preset`",
         ),
         (
             format!("[accounts.example]\ndefault = true\n{cycles}\ntimer-precision = \"minute\""),
-            "`precision`",
+            "`timer-precision`",
         ),
     ];
 
-    for (toml, replacement) in cases {
+    for (toml, key) in cases {
         let failure = refusal(&toml);
-        assert!(failure.contains(replacement), "{toml}\n{failure}");
-        assert!(failure.contains("MIGRATION.md"), "{toml}\n{failure}");
+        assert!(failure.contains("unknown field"), "{toml}\n{failure}");
+        assert!(failure.contains(key), "{toml}\n{failure}");
+        assert!(!failure.contains("MIGRATION.md"), "{toml}\n{failure}");
     }
 }

@@ -112,8 +112,9 @@ fn the_help_goes_to_stderr_in_a_json_session() {
 }
 
 /// A command running until interrupted would end the session with it,
-/// and a session holds no other one: each is refused by name, a nested
-/// session coded `usage-invalid` by pimalaya-cli, by name or prefix.
+/// and a session holds no other one: each is refused coded
+/// `usage-invalid`, nothing having run, a nested session by pimalaya-cli,
+/// by name or prefix.
 #[test]
 fn sessions_and_commands_running_until_interrupted_are_refused() {
     let scratch = serve();
@@ -124,6 +125,11 @@ fn sessions_and_commands_running_until_interrupted_are_refused() {
 
     let lines = json_lines(&out.stdout);
     assert_eq!(lines.len(), 6, "{lines:?}");
+
+    for line in &lines[..5] {
+        assert_eq!(line["code"], "usage-invalid", "{lines:?}");
+    }
+
     assert_eq!(
         lines[0]["error"],
         "`watch` runs until interrupted, run it outside a session"
@@ -134,7 +140,6 @@ fn sessions_and_commands_running_until_interrupted_are_refused() {
     );
 
     for line in &lines[2..5] {
-        assert_eq!(line["code"], "usage-invalid", "{lines:?}");
         assert_eq!(line["error"], "Cannot start a session inside a session");
     }
 

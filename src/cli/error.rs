@@ -8,17 +8,18 @@
 //! mechanism (`CodedError`, `code_of`, `with_code`, the report) lives in
 //! `pimalaya_cli::error`; only the vocabulary is Comodoro's.
 //!
-//! The client is library code free of pimalaya-cli, so it attaches a
-//! [`TimerClientError`] to its failures, and pimalaya-config fails the
-//! account resolution with an [`AccountError`]: [`code`] reads the code
-//! off either, for `pimalaya_cli::error::with_code` to give the chain.
+//! The client and the transports are library code free of pimalaya-cli,
+//! so they attach a [`TimerClientError`] or a [`TimerTransportError`] to
+//! their failures, and pimalaya-config fails the account resolution with
+//! an [`AccountError`]: [`code`] reads the code off any of them, for
+//! `pimalaya_cli::error::with_code` to give the chain.
 
 use anyhow::Error;
 use pimalaya_config::toml::AccountError;
 use schemars::JsonSchema;
 use serde::Serialize;
 
-use crate::client::std::TimerClientError;
+use crate::{client::std::TimerClientError, transport::TimerTransportError};
 
 /// The stable codes, each serialised in kebab-case.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, JsonSchema)]
@@ -40,6 +41,12 @@ pub enum ErrorCode {
     /// The server's answer cannot be read, as from a server of another
     /// Comodoro version: restarting it with this version fixes it.
     ServerMismatch,
+    /// Something already listens at the address `server start` binds:
+    /// another timer server on a socket, any program on a TCP port.
+    AddressBusy,
+    /// The platform refuses the socket path, as one longer than a socket
+    /// address holds: a shorter `socket.path` fixes it.
+    SocketPathInvalid,
 }
 
 impl From<TimerClientError> for ErrorCode {
@@ -49,6 +56,15 @@ impl From<TimerClientError> for ErrorCode {
             TimerClientError::Closed => Self::ServerClosed,
             TimerClientError::Server => Self::ServerError,
             TimerClientError::Mismatch => Self::ServerMismatch,
+        }
+    }
+}
+
+impl From<TimerTransportError> for ErrorCode {
+    fn from(err: TimerTransportError) -> Self {
+        match err {
+            TimerTransportError::AddressBusy => Self::AddressBusy,
+            TimerTransportError::SocketPathInvalid => Self::SocketPathInvalid,
         }
     }
 }
@@ -63,8 +79,13 @@ impl From<&AccountError> for ErrorCode {
     }
 }
 
-/// The code of the client or account cause a failure carries, if any.
+/// The code of the transport, client or account cause a failure
+/// carries, if any.
 pub fn code(err: &Error) -> Option<ErrorCode> {
+    if let Some(cause) = err.downcast_ref::<TimerTransportError>() {
+        return Some(ErrorCode::from(*cause));
+    }
+
     if let Some(cause) = err.downcast_ref::<TimerClientError>() {
         return Some(ErrorCode::from(*cause));
     }
@@ -85,9 +106,9 @@ mod tests {
     #[test]
     fn a_client_cause_under_context_is_coded() {
         let err = Err::<(), _>(anyhow!("Connection refused"))
-            .context("Connect to timer server at /tmp/c.sock error")
+            .context("Cannot connect to the timer server at /tmp/c.sock")
             .context(TimerClientError::Unreachable)
-            .context("Get timer error")
+            .context("Cannot get the timer")
             .unwrap_err();
 
         let err = with_code(err, code);

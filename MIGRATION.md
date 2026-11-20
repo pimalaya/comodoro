@@ -10,7 +10,8 @@ v3 brings Comodoro onto the standard the Pimalaya CLIs share: no configuration w
 
 - **Restart the server after upgrading**, and any status bar running `comodoro watch`. The wire values changed (below), so a v3 client and a v2 server cannot read each other: a v3 command meeting a v2 server fails with "Cannot read the timer server's answer, it may run another Comodoro version: restart it with this one", coded `server-mismatch` under `--json`. A remote server reached over TCP needs upgrading too.
 - **The per-second notification is `timer.ticked`**, where v2 sent `timer.running`: a client of your own subscribing over JSON-RPC renames it. The timer's `state` still reads `running`.
-- **The `timer.get` result spells `startedAt`**, where v2 spelled `started_at`, and its values are kebab-case: `state` is `running`, `paused` or `stopped`, and the schedule's `loops` is a number of loops or `null`, where v2 sent `"Running"` and `"Infinite"` or `{"Fixed": 4}`. The protocol keeps epoch seconds for `startedAt`.
+- **The `timer.get` result spells `startedAt`**, where v2 spelled `started_at`, and its values are kebab-case: `state` is `running`, `paused` or `stopped`, and the schedule's `loops` is a number of loops or `null`, where v2 sent `"Running"` and `"Infinite"` or `{"Fixed": 4}`.
+- **`startedAt` on the wire is an RFC 3339 instant in UTC**, `2026-08-14T12:41:38Z`, whole seconds, where v2 sent epoch seconds: a client of your own parses the instant (or sends it, for a server of your own) and refuses any other form, as a v3 client does.
 - **Every object on the wire refuses a key it does not read**: the timer, its schedule, a cycle and an event inside a result, as the parameters and results around them already did. A server of your own sends only the documented keys: a v3 client meeting a result with an unknown key fails as `server-mismatch`, and ignores a notification whose cycle carries one.
 
 A client of your own, reading over JSON-RPC:
@@ -21,7 +22,7 @@ A client of your own, reading over JSON-RPC:
 {"jsonrpc":"2.0","id":1,"result":{"schedule":{"cycles":[{"name":"Work","duration":1500}],"loops":"Infinite"},"state":"Running","cycle":{"name":"Work","duration":1499},"started_at":1786711298,"elapsed":0}}
 // v3
 {"jsonrpc":"2.0","method":"timer.ticked","params":{"cycle":{"name":"Work","duration":1499}}}
-{"jsonrpc":"2.0","id":1,"result":{"schedule":{"cycles":[{"name":"Work","duration":1500}],"loops":null},"state":"running","cycle":{"name":"Work","duration":1499},"startedAt":1786711298,"elapsed":0}}
+{"jsonrpc":"2.0","id":1,"result":{"schedule":{"cycles":[{"name":"Work","duration":1500}],"loops":null},"state":"running","cycle":{"name":"Work","duration":1499},"startedAt":"2026-08-14T12:41:38Z","elapsed":0}}
 ```
 
 ### Configuration and first run
@@ -34,7 +35,6 @@ A client of your own, reading over JSON-RPC:
 - **Several `default = true` accounts are refused**, naming them, where v2 picked one at random. Keep it on one account.
 - **An account with no cycle is refused** when a command resolves it, where v2 loaded it and the server failed once started.
 - **A cycle key other than `name` and `duration` is refused**, naming it, where v2 ignored it; every other table already refused a key it does not read.
-- **The 0.x keys are refused by name**: `presets`, `preset` and `timer-precision`, which v2 refused as any unknown key. See "From v0.1 to v1" below.
 
 ```sh
 # v2
@@ -65,7 +65,7 @@ cycles = [{ name = "Study", duration = 3120 }, { name = "Rest", duration = 1020 
 
 ### Hooks
 
-- **`on-<cycle>-running` is now `on-<cycle>-tick`**, the hook firing every second a cycle runs: rename it. The old name is refused naming the new one.
+- **`on-<cycle>-running` is now `on-<cycle>-tick`**, the hook firing every second a cycle runs: rename it. The old name is refused as any hook name no event fires.
 - **A 1.x `cmd` key reads again**, as the alias of `command` wherever the family configures a command, where v2 refused it as an unknown key: nothing to change, write `command` in a new hook.
 - **A hook name no event fires is refused**, naming the account's cycles and the events, where v2 loaded it and never ran it. A typo like `on-wrok-end` now fails every command: fix it.
 - **A hook with neither `command` nor `notify` is refused**, where v2 loaded it and did nothing: give it one, or delete it.
@@ -92,6 +92,15 @@ hooks.on-work-begin.notify.summary = "Earn $$5 an hour"
 - **`completion`, `manual` and `json-schema` print to stdout**, or write into the directory `--dir` names, where v2's `manual` and `json-schema` took the directory as a positional argument and `completion` wrote its file to the working directory. Each takes a list of what to generate (shells, or command names such as `comodoro-get`), every item when given none, which requires `--dir`.
 - **A refused command line still exits 2**, and under `--json` now prints the failure object coded `usage-invalid` on stdout, where v2 printed clap's text on stderr (below).
 - **`-a default` names the account called `default`**, where v2 took the account marked `default = true` whatever its name: omit `-a` to take that one. With no account called `default`, `-a default` fails saying to omit `-a`.
+- **`server start` stops cleanly on a signal** (SIGINT, SIGTERM, SIGHUP, Ctrl-C): it removes its socket, prints `Server stopped` (`{"stoppedBy":"signal"}` under `--json`) and exits 0, where v2 died with 130 or 143 and left the socket behind. A service unit or script treating 143 as a clean stop treats 0 as one instead, and one capturing the server's stdout reads that line once it stops.
+- **A server finding its address busy fails coded `address-busy`**, and a socket path the platform refuses (one longer than a socket address holds) fails `server start` and every client command coded `socket-path-invalid`, where v2 printed no code: shorten `socket.path`.
+
+```sh
+# v2
+comodoro server start; [ $? -eq 143 ] && echo stopped
+# v3
+comodoro server start && echo stopped
+```
 
 ```sh
 # v2
@@ -110,11 +119,11 @@ comodoro completion bash > comodoro.bash
 
 ### JSON output
 
-- **`startedAt` is an RFC 3339 instant** under `--json`, in UTC (`2026-08-14T12:41:38Z`), where v2 printed epoch seconds under `started_at`. The JSON-RPC protocol keeps epoch seconds.
+- **`startedAt` is an RFC 3339 instant** under `--json`, in UTC (`2026-08-14T12:41:38Z`), where v2 printed epoch seconds under `started_at`, as the JSON-RPC protocol now carries it too.
 - **Values are kebab-case**, on the wire and under `--json` alike: `state` is `running`, `paused` or `stopped`, and the schedule's `loops` is a number of loops, or `null` when the timer loops forever, where v2 printed `"Infinite"` or `{"Fixed": 4}`.
 - **`watch` streams events**: each change is one `timer-changed` event line, the timer's keys beside `"event": "timer-changed"`, flushed as it comes, where v2 printed bare timer objects glued together and held in the buffer. A status bar script selects `.event == "timer-changed"` lines. A signal (SIGINT, SIGTERM, Ctrl-C) now ends it with one last line, `{"stoppedBy":"signal"}` (`Watch stopped` as text), and exit 0, where v2 died silently; the server going away fails coded `server-closed` and exits 1, where v2 exited 0. The text lines reach a pipe too, as before.
-- **A failure names its cause** in the `--json` failure object: `code` is `server-unreachable` when no server listens, `server-closed`, `server-error` or `server-mismatch`, and `account-missing`, `account-default-missing` or `account-default-several` when `-a` names no account, no account is marked default or several are, where v2 printed `null`; a `watch` whose server goes away fails coded `server-closed`.
-- **A refused command line is a failure object** under `--json`: an unknown flag or command, a missing argument or a bad value prints the failure object coded `usage-invalid` on stdout and exits 2, where v2 printed clap's text on stderr; a refused REPL line and a refused MCP tool call carry the same code.
+- **A failure names its cause** in the `--json` failure object: `code` is `server-unreachable` when no server listens, `server-closed`, `server-error` or `server-mismatch`, and `account-missing`, `account-default-missing` or `account-default-several` when `-a` names no account, no account is marked default or several are, `address-busy` and `socket-path-invalid` (above), where v2 printed `null`; a `watch` whose server goes away fails coded `server-closed`.
+- **A refused command line is a failure object** under `--json`: an unknown flag or command, a missing argument or a bad value prints the failure object coded `usage-invalid` on stdout and exits 2, where v2 printed clap's text on stderr; a refused REPL line and a refused MCP tool call carry the same code. A bare `comodoro --json` is one too, ``A command is required, see --help``, where it printed the help's text.
 - **The JSON Schemas carry an `$id`** naming the contract version, and the schedule and the cycle say `additionalProperties: false`.
 
 ```jsonc
@@ -154,21 +163,27 @@ comodoro --json get; [ $? -eq 2 ] && echo "bad command line"
 
 - **`TimerEvent::Running` is `TimerEvent::Ticked`**, and `TimerEvent::RUNNING` is `TimerEvent::TICKED` (`"timer.ticked"`).
 - **`AccountConfig::cycles` is a `Vec<CycleConfig>`**, the configuration's own cycle, where it was a `Vec<TimerCycle>`; `TimerCycle::from` converts one.
-- **`Config` and `AccountConfig` gain fields** refusing the 0.x keys (`presets`, `preset`, `timer_precision`), typed so they never hold a value: a pattern destructuring them names them or ends in `..`.
+- **`AccountConfig::socket` and `AccountConfig::tcp` are `Option`s**, `None` when the account holds no such table: `unwrap_or_default()` gives the v2 value, and `AccountConfig::transports` the transports the account declares.
+- **`Account::from(config)` is `Account::new(name, config)`**, returning a `Result` refusing an account the resolution refuses, the `Account` carrying its `name` and the `transports` it declares.
+- **`Timer` serializes `started_at` as an RFC 3339 string** and deserializes only that form, the field staying epoch seconds in Rust.
 - **`TimerCycle`, `TimerSchedule`, `Timer` and `TimerEvent` refuse unknown keys** when deserialized.
 - **`cli::Command::execute` takes a `cli::Session`**, built by `Session::new(config_paths, account_name)`, where it took the two.
+- **`cli::server::TimerServerCommand::execute` and `TimerServerStartCommand::execute` take the printer** the result goes to, before the account.
 
 ```rust
 // v2
 let cycles: Vec<TimerCycle> = account_config.cycles;
+let account = Account::from(config);
 if let TimerEvent::Running(cycle) = event {}
 // v3
 let cycles: Vec<TimerCycle> = account_config.cycles.into_iter().map(TimerCycle::from).collect();
+let account = Account::new(name, config)?;
 if let TimerEvent::Ticked(cycle) = event {}
 ```
 
 ### New commands
 
+- **`comodoro account list`** lists the accounts of the configuration with the transports each declares, and **`comodoro account check`** reads the timer over each of them, one row each, exiting 3 when one fails, as the other Pimalaya CLIs' account group does.
 - **`comodoro repl`** runs commands over one account, one per stdin line, as the other Pimalaya CLIs do; `watch` and `server start` are refused in it.
 - **`comodoro mcp`** serves the timer to an agent over the Model Context Protocol, `get` always and the controls under `--allow-write`.
 
@@ -219,45 +234,4 @@ comodoro --log-level debug start socket
 {"config":{"cycles":[{"name":"Work","duration":1500}],"cycles-count":"infinite"},"state":"running","cycle":{"name":"Work","duration":1493},"cycles-count":"infinite","elapsed":7}
 // v2: comodoro get --json
 {"schedule":{"cycles":[{"name":"Work","duration":1500}],"loops":"Infinite"},"state":"Running","cycle":{"name":"Work","duration":1493},"started_at":1786711298,"elapsed":0}
-```
-
-## From v0.1 to v1
-
-v1 renamed the configuration's presets to accounts, picked by `-a` rather than by a positional argument.
-
-- **`[presets.<name>]` is `[accounts.<name>]`**, and `default = true` marks the account a command takes when `-a` names none. v3 refuses `presets` naming `accounts`.
-- **`preset = "pomodoro"` or `"52/17"` is gone**: write the cycles out in `cycles`. config.sample.toml holds Pomodoro, 52/17 and 112/26 as sections to copy. v3 refuses `preset` naming them.
-- **`timer-precision` is `precision`**, taking the same values. v3 refuses `timer-precision` naming `precision`.
-- **A hook's `cmd` is `command`**; v1 still read `cmd`, v2 stopped, and v3 reads it again as the alias of `command`.
-- **The `timer` subcommand is gone**: the controls are top-level and take the account through `-a`, the transport as an optional argument. The server takes the account the same way.
-- **The cargo features `hook-command` and `hook-notify` are `command` and `notify`**, and `hooks` and `tcp` are gone.
-
-```toml
-# v0.1
-[presets.pomodoro]
-preset = "pomodoro"
-timer-precision = "second"
-tcp.host = "localhost"
-tcp.port = 1234
-hooks.on-work-begin.cmd = "notify-send 'Work started'"
-
-# v1
-[accounts.pomodoro]
-default = true
-cycles = [{ name = "Work", duration = 1500 }, { name = "Rest", duration = 300 }, { name = "Work", duration = 1500 }, { name = "Rest", duration = 300 }, { name = "Work", duration = 1500 }, { name = "Long rest", duration = 1800 }]
-precision = "second"
-tcp.host = "localhost"
-tcp.port = 1234
-hooks.on-work-begin.command = "notify-send 'Work started'"
-```
-
-```sh
-# v0.1
-comodoro server start pomodoro tcp
-comodoro timer start pomodoro tcp
-comodoro timer get pomodoro tcp
-# v1
-comodoro -a pomodoro server start tcp
-comodoro -a pomodoro start tcp
-comodoro -a pomodoro get tcp
 ```

@@ -18,6 +18,16 @@ pub enum Transport {
     Tcp,
 }
 
+impl Transport {
+    /// The name the command line and the configuration give it.
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::UnixSocket => "socket",
+            Self::Tcp => "tcp",
+        }
+    }
+}
+
 /// The transport argument the client commands share.
 #[derive(Debug, Parser)]
 pub struct TransportArg {

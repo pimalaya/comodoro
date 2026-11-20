@@ -47,8 +47,9 @@ failure when it has one: server-unreachable means no timer server runs.";
 /// The commands exposed as tools, with what each may do.
 ///
 /// A command missing here is not exposed: `watch` prints until
-/// interrupted, `server start` runs until interrupted, and the meta
-/// commands write files or print documentation.
+/// interrupted, `server start` runs until interrupted, the `account`
+/// commands describe the configuration rather than the timer, as across
+/// the family, and the meta commands write files or print documentation.
 const TOOLS: &[McpTool] = &[
     McpTool::read("get"),
     McpTool::write("start", false),

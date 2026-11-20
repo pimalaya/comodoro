@@ -3,7 +3,8 @@
 //! Binary entry point of the Comodoro CLI. It parses the command-line
 //! interface defined in [`comodoro::cli`], wires the logger and the
 //! printer from the shared pimalaya-cli toolkit, then hands control to
-//! the parsed command, or meets a bare invocation.
+//! the parsed command, or meets a bare invocation through pimalaya-cli,
+//! a refused command line under `--json`.
 //!
 //! A person missing a configuration meets the welcome on stderr, a
 //! script or a JSON caller the error. A failure prints the failure object
@@ -16,15 +17,16 @@
 
 use std::process;
 
-use comodoro::cli::{self, Cli, Command, Session, error::ErrorCode};
+use clap::CommandFactory;
+use comodoro::cli::{self, Cli, Command, Session, config::Config, error::ErrorCode};
 use pimalaya_cli::{
-    clap::parse,
+    clap::{meet_bare_invocation, parse},
     error::ErrorReport,
     log::Logger,
     printer::StdoutPrinter,
     welcome::{is_wanted, shipped_sample},
 };
-use pimalaya_config::toml::ConfigMissingError;
+use pimalaya_config::toml::{ConfigMissingError, TomlConfig};
 
 fn main() {
     let cli = parse::<Cli>();
@@ -45,7 +47,10 @@ fn main() {
             let mut session = Session::new(config_paths, account_name);
             cmd.execute(&mut printer, &mut session)
         }
-        None => cli::meet_bare_invocation(config_paths),
+        None => meet_bare_invocation(&printer, Cli::command(), || {
+            let missing = Config::load(config_paths).err();
+            missing.filter(|err| err.is::<ConfigMissingError>())
+        }),
     };
 
     if let Err(err) = &result
