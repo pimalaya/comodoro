@@ -1,8 +1,6 @@
 //! # Blocking server
 //!
 //! Blocking timer server speaking JSON-RPC 2.0 over its transports.
-//! Written against the standard library, hence the module name: an
-//! asynchronous server would be a sibling rather than a replacement.
 //!
 //! One thread accepts connections per bound address, one ticks the timer
 //! every second, and every connection gets a reader thread and a writer

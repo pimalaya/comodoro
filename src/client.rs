@@ -1,8 +1,6 @@
 //! # Blocking client
 //!
 //! Blocking timer client speaking JSON-RPC 2.0 over one connection.
-//! Written against the standard library, hence the module name: an
-//! asynchronous client would be a sibling rather than a replacement.
 
 use std::{
     collections::VecDeque,

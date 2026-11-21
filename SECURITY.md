@@ -11,4 +11,6 @@
 
 ## Reporting a Vulnerability
 
-https://github.com/pimalaya/comodoro/issues
+Please report security issues privately by opening a confidential issue at <https://github.com/pimalaya/comodoro/issues> or by sending an email to <pimalaya.org@posteo.net>.
+
+You can expect an acknowledgment within a few working days. Once the vulnerability is confirmed, a patch release will be cut and credited disclosure coordinated with you before the fix is announced publicly.
