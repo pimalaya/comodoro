@@ -92,10 +92,10 @@ rustPlatform.buildRustPackage (finalAttrs: {
     '';
 
   # disable impure integration tests: they bind sockets and spawn processes
-  cargoTestFlags = [
-    "--bins"
-    "--lib"
-  ];
+  cargoTestFlags = [ "--bins" ];
+
+  # the unit tests bind a loopback socket
+  __darwinAllowLocalNetworking = true;
 
   meta = {
     description = "CLI to manage timers";
