@@ -3,11 +3,11 @@
 //! Streams the timer on every change the server pushes, as events, until
 //! a termination signal stops it with one result.
 
-use core::{fmt, time::Duration};
-
 use std::{
+    fmt,
     sync::mpsc::{self, RecvTimeoutError, Sender},
     thread,
+    time::Duration,
 };
 
 use anyhow::{Error, Result};
@@ -18,7 +18,7 @@ use serde::Serialize;
 
 use crate::{
     cli::{account::Account, client::timer::TimerOutput, transport::TransportArg},
-    client::std::{TimerClient, TimerClientError},
+    client::{TimerClient, TimerClientError},
     timer::{Timer, TimerPrecision},
 };
 

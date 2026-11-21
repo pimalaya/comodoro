@@ -5,8 +5,6 @@
 
 pub mod start;
 
-use alloc::format;
-
 use anyhow::Result;
 use clap::Subcommand;
 use pimalaya_cli::printer::Printer;

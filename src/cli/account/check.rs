@@ -4,8 +4,6 @@
 //! each transport the account declares, one row each, on pimalaya-cli's
 //! shared [`AccountCheckOutput`].
 
-use alloc::{vec, vec::Vec};
-
 use anyhow::Result;
 use clap::Parser;
 use pimalaya_cli::{
@@ -19,7 +17,7 @@ use crate::{
         account::Account,
         error::{self, ErrorCode},
     },
-    client::std::TimerClient,
+    client::TimerClient,
 };
 
 /// Check that a timer server answers on the account's transports.

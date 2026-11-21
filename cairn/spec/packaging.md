@@ -25,12 +25,12 @@ Every dependency SHALL come from its registry at a released version. A git or pa
 
 ## Requirement: Feature layers
 
-The library SHALL build without the standard library with no feature, the timer and the protocol being free of I/O. `client` SHALL add the blocking client, `server` the server, `cli` the binary over both, and `notify`, on by default, the desktop notifications of the hooks.
+Comodoro SHALL ship a binary and no library. `notify`, on by default, SHALL add the desktop notifications of the hooks, and `vendored` SHALL forward to the vendored builds of its dependencies; no other feature SHALL exist.
 
 ## Requirement: Every feature set builds clean
 
-`cargo clippy --all-targets -- -D warnings` SHALL pass with the default features; with `--all-features`; with `--no-default-features`; with `--no-default-features` and `client`, `server`, or both; and with `--no-default-features --features cli`, notifications left out. Code only some feature sets use SHALL be gated on the item with exactly those features, never allowed crate-wide. CI SHALL run every set, and the tests of a build without notifications.
+`cargo clippy --all-targets -- -D warnings` SHALL pass with the default features, with `--all-features` and with `--no-default-features`, notifications left out. CI SHALL run every set, and the tests of a build without notifications.
 
-### Scenario: A client-only build
+### Scenario: A build without notifications
 
-`cargo clippy --all-targets --no-default-features --features client -- -D warnings` passes.
+`cargo clippy --all-targets --no-default-features -- -D warnings` passes.

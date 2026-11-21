@@ -14,8 +14,6 @@
 //!
 //! [`mcp`]: pimalaya_cli::mcp
 
-use alloc::{format, string::ToString, vec::Vec};
-
 use anyhow::{Result, anyhow};
 use clap::{CommandFactory, Parser};
 use pimalaya_cli::{

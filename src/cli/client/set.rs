@@ -2,17 +2,13 @@
 //!
 //! Overrides the remaining duration of the cycle the timer is running.
 
-// NOTE: the clap derive expands to `format!` when parsing the duration
-// value, which no_std does not put in scope.
-use alloc::format;
-
 use anyhow::Result;
 use clap::Parser;
 use pimalaya_cli::printer::Printer;
 
 use crate::{
     cli::{account::Account, client::timer::TimerOutput, transport::TransportArg},
-    client::std::TimerClient,
+    client::TimerClient,
 };
 
 /// Set the remaining duration of the current cycle.

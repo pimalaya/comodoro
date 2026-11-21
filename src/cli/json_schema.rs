@@ -59,10 +59,6 @@ pub fn registry() -> JsonSchemaRegistry {
 
 #[cfg(test)]
 mod tests {
-    use alloc::{
-        string::{String, ToString},
-        vec::Vec,
-    };
 
     use clap::CommandFactory;
 

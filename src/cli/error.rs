@@ -19,7 +19,7 @@ use pimalaya_config::toml::AccountError;
 use schemars::JsonSchema;
 use serde::Serialize;
 
-use crate::{client::std::TimerClientError, transport::TimerTransportError};
+use crate::{client::TimerClientError, transport::TimerTransportError};
 
 /// The stable codes, each serialised in kebab-case.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, JsonSchema)]
@@ -100,7 +100,7 @@ mod tests {
 
     use crate::{
         cli::error::{ErrorCode, code},
-        client::std::TimerClientError,
+        client::TimerClientError,
     };
 
     #[test]

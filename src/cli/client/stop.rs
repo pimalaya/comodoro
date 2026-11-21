@@ -8,7 +8,7 @@ use pimalaya_cli::printer::Printer;
 
 use crate::{
     cli::{account::Account, client::timer::TimerOutput, transport::TransportArg},
-    client::std::TimerClient,
+    client::TimerClient,
 };
 
 /// Stop the timer.

@@ -16,11 +16,6 @@
 //!
 //! [`Account`]: crate::cli::account::Account
 
-use alloc::{
-    string::{String, ToString},
-    vec::Vec,
-};
-
 use std::{collections::HashMap, path::PathBuf};
 
 use pimalaya_config::toml::TomlConfig;
@@ -236,10 +231,7 @@ fn tcp_port() -> u16 {
 
 #[cfg(test)]
 mod tests {
-    use alloc::vec::Vec;
-    use core::slice;
-
-    use std::{fs, path::PathBuf};
+    use std::{fs, path::PathBuf, slice};
 
     use pimalaya_config::{sample::variants, toml::TomlConfig};
     use tempfile::TempDir;

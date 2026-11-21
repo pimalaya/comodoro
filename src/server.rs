@@ -12,8 +12,6 @@
 //! Every line leaving the server therefore goes through one channel per
 //! connection, which also serializes writes without locking the socket.
 
-use alloc::{string::String, vec::Vec};
-
 use std::{
     io::{BufRead, BufReader, Write},
     sync::{

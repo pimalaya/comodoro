@@ -37,8 +37,6 @@ pub mod repl;
 pub mod server;
 pub mod transport;
 
-use alloc::format;
-
 use std::path::{Path, PathBuf};
 
 use anyhow::Result;
@@ -256,10 +254,6 @@ pub fn welcome<'a>(
 
 #[cfg(test)]
 mod tests {
-    use alloc::{
-        format,
-        string::{String, ToString},
-    };
 
     use std::{fs, path::PathBuf};
 

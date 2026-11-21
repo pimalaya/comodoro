@@ -8,8 +8,6 @@ jobs:
     uses: pimalaya/nix/.github/workflows/tests.yml@master
     secrets: inherit
   features:
-    # The library layers build alone, so clippy runs over every feature
-    # set a consumer or a packager may pick, one cache for all.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -29,10 +27,6 @@ jobs:
             ""
             "--all-features"
             "--no-default-features"
-            "--no-default-features --features client"
-            "--no-default-features --features server"
-            "--no-default-features --features client,server"
-            "--no-default-features --features cli"
           )
           for set in "${sets[@]}"; do
             echo "::group::clippy $set"
@@ -41,4 +35,4 @@ jobs:
             echo "::endgroup::"
           done
       - name: Test a build without notifications
-        run: nix develop -c cargo test --locked --no-default-features --features cli
+        run: nix develop -c cargo test --locked --no-default-features

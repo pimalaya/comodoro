@@ -7,8 +7,7 @@
 //! how coarsely a duration reads is an account setting, and prints the
 //! start as the RFC 3339 instant the wire carries.
 
-use alloc::string::String;
-use core::fmt;
+use std::fmt;
 
 use pimalaya_cli::{duration::friendly, sanitize};
 use schemars::JsonSchema;

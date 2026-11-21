@@ -1,154 +1,30 @@
-//! # Account configuration tests
+//! # Configuration refusal tests
 //!
-//! Coverage of the account configuration, from the TOML shapes
-//! config.sample.toml documents to the addresses they resolve a command
-//! to once folded into an account.
+//! The account files the binary refuses, read through `get` under
+//! `--json`, and the old spellings it still reads.
 
-use comodoro::{
-    cli::{
-        account::Account,
-        config::{Config, LOCALHOST, TCP_PORT},
-        transport::Transport,
-    },
-    transport::TimerAddress,
-};
-use pimalaya_config::toml::TomlConfig;
+use std::{fs, process::Command};
 
-/// Deserializes `toml`, takes its only account and resolves it the way
-/// the dispatch layer does.
-fn account(toml: &str) -> Account {
-    let mut config: Config = toml::from_str(toml).expect("deserialize config");
-    let (name, account) = config.take_account(Some("example")).expect("take account");
-    Account::new(name, account).expect("resolve account")
-}
-
-#[test]
-fn a_v1_account_file_loads_unchanged() {
-    let account = account(
-        r#"
-        [accounts.example]
-        default = true
-        unix-socket.path = "/tmp/comodoro.sock"
-        unix-socket.default = true
-        tcp.host = "127.0.0.1"
-        tcp.port = 9999
-        cycles = [{ name = "Work", duration = 1500 }]
-        "#,
-    );
-
-    assert_eq!(
-        account.address(None),
-        TimerAddress::UnixSocket("/tmp/comodoro.sock".into())
-    );
-    assert_eq!(
-        account.address(Some(Transport::Tcp)),
-        TimerAddress::Tcp {
-            host: "127.0.0.1".into(),
-            port: 9999
-        }
-    );
-}
-
-/// Every transport field has a default, so an account holding only its
-/// cycles reaches both transports, and the socket wins the tie.
-#[test]
-fn an_account_naming_no_transport_takes_every_default() {
-    let account = account(
-        r#"
-        [accounts.example]
-        cycles = [{ name = "Work", duration = 1500 }]
-        "#,
-    );
-
-    assert!(matches!(account.address(None), TimerAddress::UnixSocket(_)));
-    assert!(matches!(
-        account.address(Some(Transport::UnixSocket)),
-        TimerAddress::UnixSocket(_)
-    ));
-    assert_eq!(
-        account.address(Some(Transport::Tcp)),
-        TimerAddress::Tcp {
-            host: LOCALHOST.into(),
-            port: TCP_PORT
-        }
-    );
-}
-
-#[test]
-fn tcp_takes_the_default_only_when_the_socket_leaves_it() {
-    let untied = account(
-        r#"
-        [accounts.example]
-        tcp.default = true
-        cycles = [{ name = "Work", duration = 1500 }]
-        "#,
-    );
-
-    assert_eq!(
-        untied.address(None),
-        TimerAddress::Tcp {
-            host: LOCALHOST.into(),
-            port: TCP_PORT
-        }
-    );
-
-    let tied = account(
-        r#"
-        [accounts.example]
-        socket.default = true
-        tcp.default = true
-        cycles = [{ name = "Work", duration = 1500 }]
-        "#,
-    );
-
-    assert!(matches!(tied.address(None), TimerAddress::UnixSocket(_)));
-}
-
-/// Given no transport a server binds the default one alone, so no port
-/// opens under an account nobody asked to expose. Given some, it binds
-/// those, whatever the account marks default.
-#[test]
-fn a_server_binds_the_transports_it_is_given() {
-    let account = account(
-        r#"
-        [accounts.example]
-        socket.path = "/tmp/comodoro.sock"
-        tcp.port = 19999
-        cycles = [{ name = "Work", duration = 1500 }]
-        "#,
-    );
-
-    let tcp = TimerAddress::Tcp {
-        host: LOCALHOST.into(),
-        port: 19999,
-    };
-    let socket = TimerAddress::UnixSocket("/tmp/comodoro.sock".into());
-
-    assert_eq!(account.addresses(&[]), vec![socket.clone()]);
-    assert_eq!(account.addresses(&[Transport::Tcp]), vec![tcp.clone()]);
-    assert_eq!(
-        account.addresses(&[Transport::UnixSocket, Transport::Tcp]),
-        vec![socket, tcp]
-    );
-}
+use serde_json::Value;
+use tempfile::TempDir;
 
 /// Runs the binary's `get` on an account file holding `toml`, and returns
 /// the failure it prints under `--json`.
 fn refusal(toml: &str) -> String {
-    let dir = tempfile::TempDir::new().unwrap();
+    let dir = TempDir::new().unwrap();
     let path = dir.path().join("config.toml");
     let socket = dir.path().join("none.sock");
     let toml = format!("{toml}\nsocket.path = {:?}\n", socket.display().to_string());
-    std::fs::write(&path, toml).unwrap();
+    fs::write(&path, toml).unwrap();
 
-    let output = std::process::Command::new(env!("CARGO_BIN_EXE_comodoro"))
+    let output = Command::new(env!("CARGO_BIN_EXE_comodoro"))
         .arg("-c")
         .arg(&path)
         .args(["--json", "get"])
         .output()
         .unwrap();
 
-    let failure: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    let failure: Value = serde_json::from_slice(&output.stdout).unwrap();
     failure.to_string()
 }
 
@@ -209,8 +85,8 @@ fn an_unknown_key_is_refused_at_every_level() {
         format!("{account}\ntcp.wrong-key = true"),
         format!("{account}\nsocket.wrong-key = true"),
         format!("{account}\nhooks.on-work-end.command = \"true\"\nhooks.on-work-end.wrong-key = 1"),
-        format!(
-            "[accounts.example]\ndefault = true\ncycles = [{{ name = \"Work\", duration = 1500, wrong-key = 1 }}]"
+        String::from(
+            "[accounts.example]\ndefault = true\ncycles = [{ name = \"Work\", duration = 1500, wrong-key = 1 }]",
         ),
     ];
 

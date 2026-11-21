@@ -7,10 +7,11 @@
 use std::{
     env, fs,
     path::PathBuf,
+    process,
     sync::atomic::{AtomicUsize, Ordering},
 };
 
-use comodoro::{
+use crate::{
     cli::hook::TimerHook,
     timer::{TimerCycle, TimerEvent},
 };
@@ -25,7 +26,7 @@ fn hook(toml: &str) -> TimerHook {
 /// A path unique to this test, under the platform temporary directory.
 fn path(name: &str) -> PathBuf {
     let id = NEXT_PATH.fetch_add(1, Ordering::Relaxed);
-    let path = env::temp_dir().join(format!("comodoro-hook-{}-{id}-{name}", std::process::id()));
+    let path = env::temp_dir().join(format!("comodoro-hook-{}-{id}-{name}", process::id()));
     let _ = fs::remove_file(&path);
     path
 }

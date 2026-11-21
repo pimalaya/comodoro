@@ -12,13 +12,7 @@
 //!
 //! [specification]: https://www.jsonrpc.org/specification
 
-use core::fmt;
-
-use alloc::{
-    format,
-    string::{String, ToString},
-    vec::Vec,
-};
+use std::fmt;
 
 use serde::{
     Deserialize, Deserializer, Serialize, Serializer,
@@ -201,12 +195,6 @@ impl Jsonrpc20Error {
     pub const METHOD_NOT_FOUND: i64 = -32601;
     /// The parameters do not match the method signature.
     pub const INVALID_PARAMS: i64 = -32602;
-    /// The server failed for an internal reason.
-    pub const INTERNAL: i64 = -32603;
-    /// The first code of the range reserved for server-defined errors.
-    pub const SERVER_MIN: i64 = -32099;
-    /// The last code of the range reserved for server-defined errors.
-    pub const SERVER_MAX: i64 = -32000;
 
     /// Builds an error with an arbitrary code and message.
     pub fn new(code: i64, message: impl ToString) -> Self {
@@ -242,11 +230,6 @@ impl Jsonrpc20Error {
     pub fn invalid_params(message: impl ToString) -> Self {
         Self::new(Self::INVALID_PARAMS, message)
     }
-
-    /// Builds an [`Self::INTERNAL`] error.
-    pub fn internal(message: impl ToString) -> Self {
-        Self::new(Self::INTERNAL, message)
-    }
 }
 
 impl fmt::Display for Jsonrpc20Error {
@@ -281,7 +264,6 @@ pub enum Jsonrpc20Outgoing {
 
 #[cfg(test)]
 mod tests {
-    use alloc::vec;
 
     use serde_json::json;
 
@@ -362,10 +344,10 @@ mod tests {
 
     #[test]
     fn error_data_is_optional() {
-        let bare = Jsonrpc20Error::internal("boom");
+        let bare = Jsonrpc20Error::parse("boom");
         assert_eq!(
             serde_json::to_string(&bare).unwrap(),
-            r#"{"code":-32603,"message":"boom"}"#
+            r#"{"code":-32700,"message":"boom"}"#
         );
 
         let detailed = Jsonrpc20Error::invalid_params("bad").with_data(json!(["duration"]));

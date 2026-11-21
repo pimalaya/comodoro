@@ -7,14 +7,16 @@
 use std::{
     env, fs,
     path::PathBuf,
+    process,
     sync::atomic::{AtomicUsize, Ordering},
     thread,
     time::Duration,
 };
 
-use comodoro::{
-    client::std::TimerClient,
-    server::std::TimerServer,
+use crate::{
+    client::TimerClient,
+    protocol::{TimerRequest, TimerResponse},
+    server::TimerServer,
     timer::{TimerCycle, TimerEvent, TimerLoop, TimerSchedule, TimerState},
     transport::{TimerAddress, TimerTransportError},
 };
@@ -33,7 +35,7 @@ fn schedule() -> TimerSchedule {
 /// client connected to it.
 fn serve() -> (TimerClient, PathBuf) {
     let id = NEXT_SOCKET.fetch_add(1, Ordering::Relaxed);
-    let path = env::temp_dir().join(format!("comodoro-test-{}-{id}.sock", std::process::id()));
+    let path = env::temp_dir().join(format!("comodoro-test-{}-{id}.sock", process::id()));
     let _ = fs::remove_file(&path);
 
     let address = TimerAddress::UnixSocket(path.clone());
@@ -204,7 +206,8 @@ fn unsubscribing_stops_the_notifications_but_not_the_requests() {
     client.next_event().unwrap();
     client.next_event().unwrap();
 
-    client.unsubscribe().unwrap();
+    let unsubscribed = client.send(TimerRequest::Unsubscribe).unwrap();
+    assert!(matches!(unsubscribed, TimerResponse::Subscription(false)));
 
     let events = client.stop().unwrap();
     assert_eq!(events.len(), 2);
@@ -236,7 +239,7 @@ fn a_second_server_refuses_a_socket_in_use() {
 #[test]
 fn both_transports_serve_the_same_timer() {
     let id = NEXT_SOCKET.fetch_add(1, Ordering::Relaxed);
-    let path = env::temp_dir().join(format!("comodoro-test-{}-{id}.sock", std::process::id()));
+    let path = env::temp_dir().join(format!("comodoro-test-{}-{id}.sock", process::id()));
     let _ = fs::remove_file(&path);
 
     let socket = TimerAddress::UnixSocket(path.clone());
@@ -309,7 +312,7 @@ fn a_server_of_another_version_is_named() {
     };
 
     let id = NEXT_SOCKET.fetch_add(1, Ordering::Relaxed);
-    let path = env::temp_dir().join(format!("comodoro-test-{}-{id}.sock", std::process::id()));
+    let path = env::temp_dir().join(format!("comodoro-test-{}-{id}.sock", process::id()));
     let _ = fs::remove_file(&path);
     let listener = UnixListener::bind(&path).expect("bind fake server");
 

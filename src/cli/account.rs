@@ -22,8 +22,6 @@
 pub mod check;
 pub mod list;
 
-use alloc::{format, string::String, vec, vec::Vec};
-
 use std::collections::HashMap;
 
 use anyhow::{Result, bail};
@@ -165,3 +163,6 @@ impl Account {
             .collect()
     }
 }
+
+#[cfg(test)]
+mod tests;

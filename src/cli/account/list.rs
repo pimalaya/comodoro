@@ -3,8 +3,6 @@
 //! The `account list` subcommand, listing the accounts a configuration
 //! declares as pimalaya-cli's shared [`AccountListOutput`] prints them.
 
-use alloc::vec::Vec;
-
 use std::path::PathBuf;
 
 use anyhow::Result;

@@ -4,11 +4,9 @@
 //! Written against the standard library, hence the module name: an
 //! asynchronous client would be a sibling rather than a replacement.
 
-use alloc::{string::String, vec::Vec};
-use core::{error, fmt};
-
 use std::{
     collections::VecDeque,
+    error, fmt,
     io::{BufRead, BufReader, Write},
 };
 
@@ -138,17 +136,6 @@ impl TimerClient {
         }
     }
 
-    /// Stops sending timer notifications on this connection.
-    pub fn unsubscribe(&mut self) -> Result<()> {
-        match self.send(TimerRequest::Unsubscribe)? {
-            TimerResponse::Subscription(false) => Ok(()),
-            other => Err(
-                anyhow!("Invalid response {other:?}, expected a subscription")
-                    .context(TimerClientError::Mismatch),
-            ),
-        }
-    }
-
     /// Blocks until the next event, or returns `None` at end of stream.
     ///
     /// Requires a prior [`Self::subscribe`], since a server pushes
@@ -250,3 +237,6 @@ impl TimerClient {
         Ok(Some(line))
     }
 }
+
+#[cfg(test)]
+mod tests;

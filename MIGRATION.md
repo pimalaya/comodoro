@@ -161,25 +161,7 @@ comodoro --json get; [ $? -eq 2 ] && echo "bad command line"
 
 ### Library
 
-- **`TimerEvent::Running` is `TimerEvent::Ticked`**, and `TimerEvent::RUNNING` is `TimerEvent::TICKED` (`"timer.ticked"`).
-- **`AccountConfig::cycles` is a `Vec<CycleConfig>`**, the configuration's own cycle, where it was a `Vec<TimerCycle>`; `TimerCycle::from` converts one.
-- **`AccountConfig::socket` and `AccountConfig::tcp` are `Option`s**, `None` when the account holds no such table: `unwrap_or_default()` gives the v2 value, and `AccountConfig::transports` the transports the account declares.
-- **`Account::from(config)` is `Account::new(name, config)`**, returning a `Result` refusing an account the resolution refuses, the `Account` carrying its `name` and the `transports` it declares.
-- **`Timer` serializes `started_at` as an RFC 3339 string** and deserializes only that form, the field staying epoch seconds in Rust.
-- **`TimerCycle`, `TimerSchedule`, `Timer` and `TimerEvent` refuse unknown keys** when deserialized.
-- **`cli::Command::execute` takes a `cli::Session`**, built by `Session::new(config_paths, account_name)`, where it took the two.
-- **`cli::server::TimerServerCommand::execute` and `TimerServerStartCommand::execute` take the printer** the result goes to, before the account.
-
-```rust
-// v2
-let cycles: Vec<TimerCycle> = account_config.cycles;
-let account = Account::from(config);
-if let TimerEvent::Running(cycle) = event {}
-// v3
-let cycles: Vec<TimerCycle> = account_config.cycles.into_iter().map(TimerCycle::from).collect();
-let account = Account::new(name, config)?;
-if let TimerEvent::Ticked(cycle) = event {}
-```
+- **The library is gone**: Comodoro ships a binary only, and the `client`, `server`, `cli` and `schemars` features are gone with it. A program of your own talks JSON-RPC 2.0 to `comodoro server start`, as cairn/spec/protocol.md documents, in Rust or any other language; `--features cli` builds become plain builds, `--no-default-features` still leaves the notifications out.
 
 ### New commands
 

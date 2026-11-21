@@ -23,8 +23,6 @@
 //! server-defined errors. Comodoro defines none today: every failure it
 //! can report is one of the standard codes.
 
-use alloc::vec::Vec;
-
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
@@ -288,7 +286,6 @@ impl TimerEvent {
 
 #[cfg(test)]
 mod tests {
-    use alloc::{format, string::ToString, vec};
 
     use crate::{
         protocol::*,

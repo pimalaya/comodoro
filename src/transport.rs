@@ -14,14 +14,10 @@
 //! reached here through the uds_windows shim, so the same path-based
 //! addressing works on every supported platform.
 
-use core::{error, fmt};
-
-use alloc::{format, string::String};
-
 #[cfg(unix)]
 use std::os::unix::net::{UnixListener, UnixStream};
 use std::{
-    env, fs,
+    env, error, fmt, fs,
     io::{self, ErrorKind, Read, Write},
     net::{TcpListener, TcpStream},
     path::PathBuf,

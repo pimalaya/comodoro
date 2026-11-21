@@ -3,10 +3,7 @@
 //! Binds the account transports and runs the timer until a termination
 //! signal stops it with one result, its sockets removed.
 
-use alloc::vec::Vec;
-use core::{fmt, time::Duration};
-
-use std::{fs, io::ErrorKind, sync::mpsc::RecvTimeoutError};
+use std::{fmt, fs, io::ErrorKind, sync::mpsc::RecvTimeoutError, time::Duration};
 
 use anyhow::{Result, bail};
 use clap::Parser;
@@ -17,7 +14,7 @@ use serde::Serialize;
 
 use crate::{
     cli::{account::Account, transport::Transport},
-    server::std::TimerServer,
+    server::TimerServer,
     transport::TimerAddress,
 };
 

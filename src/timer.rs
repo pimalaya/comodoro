@@ -9,19 +9,14 @@
 
 pub(crate) mod rfc3339;
 
-use alloc::{
-    string::{String, ToString},
-    vec::Vec,
-};
-
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 /// Controls how many full loops the timer runs before stopping.
 ///
 /// Travels as the number of loops, `null` when unbounded.
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-#[cfg_attr(feature = "schemars", schemars(with = "Option<usize>"))]
-#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Eq, JsonSchema, PartialEq, Serialize)]
+#[schemars(with = "Option<usize>")]
 #[serde(from = "Option<usize>", into = "Option<usize>")]
 pub enum TimerLoop {
     /// The timer loops indefinitely, stopping only through [`Timer::stop`].
@@ -57,8 +52,7 @@ impl From<TimerLoop> for Option<usize> {
 }
 
 /// A single step in the timer lifecycle: a name and a duration in seconds.
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Eq, JsonSchema, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct TimerCycle {
     /// The name of this cycle.
@@ -81,8 +75,7 @@ impl TimerCycle {
 }
 
 /// The current state of a timer.
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Eq, JsonSchema, PartialEq, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum TimerState {
     /// The timer is running.
@@ -132,8 +125,7 @@ pub enum TimerEvent {
 ///
 /// Named after what it describes rather than after where it comes from,
 /// since a CLI has a configuration of its own and this is not it.
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, JsonSchema, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct TimerSchedule {
     /// The ordered list of timer cycles.
@@ -179,9 +171,8 @@ impl TimerSchedule {
 ///
 /// Methods depending on the current time take `now: u64`, seconds since
 /// the Unix epoch, rather than reading the clock, which keeps the timer
-/// testable without a clock and usable under no_std.
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+/// testable without a clock.
+#[derive(Clone, Debug, Default, Deserialize, JsonSchema, Serialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Timer {
     /// What the timer runs: its cycles, and how many loops of them.
@@ -194,7 +185,7 @@ pub struct Timer {
     /// timer is stopped or paused.
     ///
     /// Travels as an RFC 3339 instant in UTC, `2026-11-20T09:00:00Z`.
-    #[cfg_attr(feature = "schemars", schemars(with = "Option<String>"))]
+    #[schemars(with = "Option<String>")]
     #[serde(with = "rfc3339")]
     pub started_at: Option<u64>,
     /// Accumulated elapsed seconds from before the last pause or stop.
@@ -434,7 +425,6 @@ pub enum TimerPrecision {
 
 #[cfg(test)]
 mod tests {
-    use alloc::vec;
 
     use crate::timer::*;
 

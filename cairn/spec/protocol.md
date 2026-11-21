@@ -11,7 +11,7 @@ How a Comodoro client and a Comodoro server talk to each other. This is the cont
 
 Client and server exchange [JSON-RPC 2.0](https://www.jsonrpc.org/specification) messages. The specification defines the payload and explicitly leaves the transport to the application, which is why it was chosen: the method surface is implementable in any language without reading the Rust.
 
-The envelope lives in src/jsonrpc20.rs and the Comodoro method surface in src/protocol.rs. Both are no_std and free of I/O.
+The envelope lives in src/jsonrpc20.rs and the Comodoro method surface in src/protocol.rs. Both are free of I/O.
 
 ### Scenario: A peer announces another version
 

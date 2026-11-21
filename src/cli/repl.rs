@@ -17,8 +17,6 @@
 //! interrupted, `watch` and `server start`, are refused: interrupting
 //! them would end the session with them.
 
-use alloc::format;
-
 use anyhow::{Error, Result};
 use clap::Parser;
 use pimalaya_cli::{

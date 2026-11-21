@@ -3,13 +3,12 @@
 //! The instants the timer carries, Unix epoch seconds in memory, written
 //! on the wire and under `--json` as an RFC 3339 instant in UTC,
 //! `2026-11-20T09:00:00Z`. The calendar arithmetic is Howard Hinnant's
-//! `civil_from_days` and `days_from_civil`, so the core needs no clock
-//! nor calendar crate and stays no_std.
+//! `civil_from_days` and `days_from_civil`, so the timer needs no clock
+//! nor calendar crate.
 //!
 //! Refs: <https://datatracker.ietf.org/doc/html/rfc3339#section-5.6>
 
-use alloc::{format, string::String};
-use core::fmt;
+use std::fmt;
 
 use serde::{Deserialize, Deserializer, Serializer, de::Error};
 
@@ -123,7 +122,6 @@ fn parse(text: &str) -> Option<u64> {
 
 #[cfg(test)]
 mod tests {
-    use alloc::string::ToString;
 
     use crate::timer::rfc3339::*;
 

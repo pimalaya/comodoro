@@ -6,93 +6,15 @@ authors = ["Clément DOUIN (soywod) <pimalaya.org@posteo.net>"]
 rust-version = "1.89"
 edition = "2024"
 license = "MIT OR Apache-2.0"
-categories = ["command-line-utilities", "date-and-time", "no-std"]
-keywords = ["pomodoro", "timer", "jsonrpc", "no-std", "cli"]
+categories = ["command-line-utilities", "date-and-time"]
+keywords = ["pomodoro", "timer", "jsonrpc", "cli"]
 homepage = "https://pimalaya.org"
-documentation = "https://docs.rs/comodoro/latest/comodoro"
 repository = "https://github.com/pimalaya/comodoro"
 
-[package.metadata.docs.rs]
-all-features = true
-rustdoc-args = ["--cfg", "docsrs"]
-
 [features]
-default = ["client", "server", "cli", "notify"]
-client = ["dep:anyhow"]
-server = ["dep:anyhow"]
-cli = ["client", "server", "schemars", "dep:clap", "dep:convert_case", "dep:pimalaya-cli", "dep:pimalaya-config"]
-schemars = ["dep:schemars"]
-notify = ["pimalaya-config?/notify"]
-vendored = ["pimalaya-config?/vendored"]
-
-[[bin]]
-name = "comodoro"
-path = "src/main.rs"
-required-features = ["cli"]
-
-[[test]]
-name = "timer"
-path = "tests/timer.rs"
-required-features = ["client", "server"]
-
-[[test]]
-name = "config"
-path = "tests/config.rs"
-required-features = ["cli"]
-
-[[test]]
-name = "first_run"
-path = "tests/first_run.rs"
-required-features = ["cli"]
-
-[[test]]
-name = "repl"
-path = "tests/repl.rs"
-required-features = ["cli"]
-
-[[test]]
-name = "mcp"
-path = "tests/mcp.rs"
-required-features = ["cli"]
-
-[[test]]
-name = "output"
-path = "tests/output.rs"
-required-features = ["cli"]
-
-[[test]]
-name = "hook"
-path = "tests/hook.rs"
-required-features = ["cli"]
-
-[[test]]
-name = "exit"
-path = "tests/exit.rs"
-required-features = ["cli"]
-
-[[test]]
-name = "watch"
-path = "tests/watch.rs"
-required-features = ["cli"]
-
-[[test]]
-name = "account"
-path = "tests/account.rs"
-required-features = ["cli"]
-
-[[test]]
-name = "server"
-path = "tests/server.rs"
-required-features = ["cli"]
-
-[[example]]
-name = "timer"
-path = "examples/timer.rs"
-
-[[example]]
-name = "client-server"
-path = "examples/client_server.rs"
-required-features = ["client", "server"]
+default = ["notify"]
+notify = ["pimalaya-config/notify"]
+vendored = ["pimalaya-config/vendored"]
 
 [profile.release]
 lto = "fat"
@@ -101,7 +23,7 @@ strip = "symbols"
 panic = "abort"
 
 [build-dependencies]
-pimalaya-cli = { version = "0.8.0", default-features = false, features = ["build"], optional = true }
+pimalaya-cli = { version = "0.8.0", default-features = false, features = ["build"] }
 
 [dev-dependencies]
 pimalaya-config = { version = "0.6", default-features = false, features = ["sample"] }
@@ -109,16 +31,15 @@ tempfile = { version = "3", default-features = false }
 toml = { version = "1.1", default-features = false, features = ["parse", "serde", "std"] }
 
 [dependencies]
-anyhow = { version = "1", default-features = false, features = ["std"], optional = true }
-clap = { version = "4.4", default-features = false, features = ["derive", "error-context", "help", "std", "suggestions", "usage"], optional = true }
-convert_case = { version = "0.12", default-features = false, optional = true }
+anyhow = { version = "1", default-features = false, features = ["std"] }
+clap = { version = "4.4", default-features = false, features = ["derive", "error-context", "help", "std", "suggestions", "usage"] }
+convert_case = { version = "0.12", default-features = false }
 log = { version = "0.4", default-features = false }
-pimalaya-cli = { version = "0.8.0", default-features = false, features = ["duration", "mcp", "repl", "signal", "terminal"], optional = true }
-pimalaya-config = { version = "0.6", default-features = false, features = ["toml", "secret"], optional = true }
-schemars = { version = "1", default-features = false, features = ["derive"], optional = true }
-serde = { version = "1", default-features = false, features = ["derive", "alloc"] }
-serde_json = { version = "1", default-features = false, features = ["alloc"] }
+pimalaya-cli = { version = "0.8.0", default-features = false, features = ["duration", "mcp", "repl", "signal", "terminal"] }
+pimalaya-config = { version = "0.6", default-features = false, features = ["toml", "secret"] }
+schemars = { version = "1", default-features = false, features = ["derive"] }
+serde = { version = "1", default-features = false, features = ["derive", "std"] }
+serde_json = { version = "1", default-features = false, features = ["std"] }
 
 [target.'cfg(windows)'.dependencies]
 uds_windows = { version = "1", default-features = false }
-

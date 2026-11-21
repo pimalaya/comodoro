@@ -3,6 +3,8 @@
 //! What the binary prints under `--json`, run against a server owning a
 //! timer on a scratch socket.
 
+mod common;
+
 use std::{
     env, fs,
     path::PathBuf,
@@ -11,34 +13,11 @@ use std::{
     thread,
 };
 
-use comodoro::{
-    server::std::TimerServer,
-    timer::{TimerCycle, TimerLoop, TimerSchedule},
-    transport::TimerAddress,
-};
 use serde_json::Value;
 
+use crate::common::serve;
+
 static NEXT_SOCKET: AtomicUsize = AtomicUsize::new(0);
-
-/// Starts a server on a socket unique to this test, and returns the
-/// configuration file pointing at it.
-fn serve() -> PathBuf {
-    let (config, socket) = config_at("output");
-
-    let events = TimerServer {
-        schedule: TimerSchedule {
-            cycles: vec![TimerCycle::new("Work", 1500)],
-            loops: TimerLoop::Infinite,
-        },
-        addresses: vec![TimerAddress::UnixSocket(socket)],
-    }
-    .serve()
-    .expect("serve timer");
-
-    thread::spawn(move || while events.recv().is_ok() {});
-
-    config
-}
 
 /// Runs the binary with the given arguments under `--json`, and parses
 /// the one value it prints.
@@ -65,8 +44,9 @@ fn is_rfc3339_utc(value: &Value) -> bool {
 
 #[test]
 fn a_started_timer_answers_the_timer() {
-    let config = serve();
-    let timer = json(&config, &["start"]);
+    let scratch = serve();
+    let config = &scratch.config;
+    let timer = json(config, &["start"]);
 
     assert_eq!(timer["state"], "running", "{timer}");
     assert_eq!(timer["cycle"]["name"], "Work", "{timer}");
@@ -75,24 +55,26 @@ fn a_started_timer_answers_the_timer() {
 
 #[test]
 fn every_control_answers_the_timer_after_it() {
-    let config = serve();
+    let scratch = serve();
+    let config = &scratch.config;
 
-    json(&config, &["start"]);
-    assert_eq!(json(&config, &["pause"])["state"], "paused");
-    assert_eq!(json(&config, &["resume"])["state"], "running");
-    assert_eq!(json(&config, &["set", "60"])["cycle"]["duration"], 60);
+    json(config, &["start"]);
+    assert_eq!(json(config, &["pause"])["state"], "paused");
+    assert_eq!(json(config, &["resume"])["state"], "running");
+    assert_eq!(json(config, &["set", "60"])["cycle"]["duration"], 60);
 
-    let stopped = json(&config, &["stop"]);
+    let stopped = json(config, &["stop"]);
     assert_eq!(stopped["state"], "stopped", "{stopped}");
     assert_eq!(stopped["startedAt"], Value::Null, "{stopped}");
 }
 
 #[test]
 fn get_prints_the_start_as_an_instant() {
-    let config = serve();
+    let scratch = serve();
+    let config = &scratch.config;
 
-    json(&config, &["start"]);
-    let timer = json(&config, &["get"]);
+    json(config, &["start"]);
+    let timer = json(config, &["get"]);
     assert!(is_rfc3339_utc(&timer["startedAt"]), "{timer}");
 }
 

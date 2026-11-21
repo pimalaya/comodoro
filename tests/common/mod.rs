@@ -1,7 +1,7 @@
 //! # Common test helpers
 //!
-//! A scratch account, optionally served by an in-process timer server on
-//! its own socket, and the binary run against it.
+//! A scratch account, optionally served by a `comodoro server start`
+//! child on its own socket, and the binary run against it.
 
 #![allow(dead_code)]
 
@@ -11,20 +11,27 @@ use std::{
     path::PathBuf,
     process::{Child, Command, Output, Stdio},
     thread,
+    time::{Duration, Instant},
 };
 
-use comodoro::{
-    server::std::TimerServer,
-    timer::{TimerCycle, TimerLoop, TimerSchedule},
-    transport::TimerAddress,
-};
 use tempfile::TempDir;
 
-/// A scratch directory holding an account file whose socket is in it.
+/// A scratch directory holding an account file whose socket is in it,
+/// and the server serving it, killed on drop.
 pub struct Scratch {
     pub dir: TempDir,
     pub config: PathBuf,
     pub socket: PathBuf,
+    pub server: Option<Child>,
+}
+
+impl Drop for Scratch {
+    fn drop(&mut self) {
+        if let Some(server) = &mut self.server {
+            let _ = server.kill();
+            let _ = server.wait();
+        }
+    }
 }
 
 /// An account no server answers for.
@@ -43,24 +50,35 @@ pub fn scratch() -> Scratch {
         dir,
         config,
         socket,
+        server: None,
     }
 }
 
-/// An account served by a timer server running in this process.
+/// An account served by `comodoro server start`, once its socket exists.
 pub fn serve() -> Scratch {
-    let scratch = scratch();
+    let mut scratch = scratch();
 
-    let events = TimerServer {
-        schedule: TimerSchedule {
-            cycles: vec![TimerCycle::new("Work", 1500), TimerCycle::new("Rest", 300)],
-            loops: TimerLoop::Infinite,
-        },
-        addresses: vec![TimerAddress::UnixSocket(scratch.socket.clone())],
+    let server = Command::new(env!("CARGO_BIN_EXE_comodoro"))
+        .arg("-c")
+        .arg(&scratch.config)
+        .args(["server", "start"])
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+        .unwrap();
+    scratch.server = Some(server);
+
+    let deadline = Instant::now() + Duration::from_secs(10);
+
+    while !scratch.socket.exists() {
+        assert!(
+            Instant::now() < deadline,
+            "no socket at {:?}",
+            scratch.socket
+        );
+        thread::sleep(Duration::from_millis(20));
     }
-    .serve()
-    .unwrap();
-
-    thread::spawn(move || while events.recv().is_ok() {});
 
     scratch
 }

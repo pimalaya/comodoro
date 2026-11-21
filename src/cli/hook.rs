@@ -22,12 +22,6 @@
 //! an account carrying one is refused as it loads, naming the cargo
 //! feature to rebuild with.
 
-use alloc::{
-    format,
-    string::{String, ToString},
-    vec::Vec,
-};
-
 use anyhow::{Result, bail};
 use convert_case::{Case, Casing};
 use log::{debug, error, warn};
@@ -201,3 +195,6 @@ impl TimerHook {
         }
     }
 }
+
+#[cfg(test)]
+mod tests;
