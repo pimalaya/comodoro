@@ -1,14 +1,21 @@
 //! # Documentation tests
 //!
-//! The documentation ceilings of the guidelines, checked over src/: a
-//! `//!` paragraph of four lines at most (inline-001), and a `///` block
-//! of one line plus three after a blank (inline-002, src/cli/ aside for
-//! clap's help).
+//! The documentation ceilings of the guidelines, checked over src/ and the
+//! README: a `//!` paragraph of four lines at most (inline-001), a `///`
+//! block of one line plus three after a blank (inline-002, src/cli/ aside
+//! for clap's help), the README's Features and section order, and its
+//! terminal block printing what it shows (readme-006).
+
+mod common;
 
 use std::{
     fs,
     path::{Path, PathBuf},
 };
+
+use serde_json::Value;
+
+use crate::common::{comodoro, serve};
 
 /// Every Rust file under `dir`, in path order.
 fn sources(dir: &Path) -> Vec<PathBuf> {
@@ -127,4 +134,91 @@ fn an_item_doc_holds_a_summary_and_three_lines_at_most() {
     }
 
     assert!(long.is_empty(), "{} docs:\n{}", long.len(), long.join("\n"));
+}
+/// The README's `## ` sections, in order.
+fn readme_sections(readme: &str) -> Vec<&str> {
+    readme
+        .lines()
+        .filter_map(|line| line.strip_prefix("## "))
+        .collect()
+}
+
+#[test]
+fn the_readme_features_are_eight_short_bullets_at_most() {
+    let readme = fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/README.md")).unwrap();
+    let features: Vec<&str> = readme
+        .split("\n## Features\n")
+        .nth(1)
+        .expect("a Features section")
+        .split("\n## ")
+        .next()
+        .unwrap()
+        .lines()
+        .filter(|line| line.starts_with("- "))
+        .collect();
+
+    assert!(!features.is_empty() && features.len() <= 8, "{features:#?}");
+    for feature in features {
+        assert!(feature.chars().count() <= 120, "{feature}");
+    }
+}
+
+#[test]
+fn the_readme_sections_follow_the_cli_order() {
+    let readme = fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/README.md")).unwrap();
+
+    assert_eq!(
+        readme_sections(&readme),
+        [
+            "Table of contents",
+            "Features",
+            "Installation",
+            "Configuration",
+            "Usage",
+            "License",
+            "Social",
+            "Sponsoring",
+        ]
+    );
+}
+
+/// The content of the first fenced block of `lang` in `text`, and the
+/// rest of `text` after it.
+fn fenced<'a>(text: &'a str, lang: &str) -> (&'a str, &'a str) {
+    let open = format!("```{lang}\n");
+    let start = text.find(&open).expect("a fenced block") + open.len();
+    let end = start + text[start..].find("\n```").expect("a closing fence");
+    (&text[start..end], &text[end + 4..])
+}
+
+/// The command line under the description prints the JSON shown after
+/// it, but for `startedAt`, an instant of the run.
+#[test]
+fn the_readme_header_block_prints_what_it_shows() {
+    let readme = fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/README.md")).unwrap();
+    let (command, rest) = fenced(&readme, "sh");
+    let (shown, _) = fenced(rest, "json");
+    let args: Vec<&str> = command
+        .strip_prefix("$ comodoro ")
+        .expect("a comodoro command line")
+        .split_whitespace()
+        .collect();
+
+    let scratch = serve();
+    let out = comodoro(&scratch.config, &args, b"");
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    assert!(out.status.success(), "{stdout}");
+
+    let mut printed: Value = serde_json::from_slice(&out.stdout).unwrap();
+    let mut shown: Value = serde_json::from_str(shown).unwrap();
+
+    let started_at = printed["startedAt"].take();
+    let started_at = started_at.as_str().expect("a start instant");
+    assert!(
+        started_at.len() == 20 && started_at.ends_with('Z'),
+        "{started_at}"
+    );
+    shown["startedAt"].take();
+
+    assert_eq!(printed, shown);
 }

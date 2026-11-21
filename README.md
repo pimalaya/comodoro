@@ -1,12 +1,26 @@
-# :timer_clock: Comodoro [![Documentation](https://img.shields.io/docsrs/comodoro?style=flat&logo=docs.rs&logoColor=white)](https://docs.rs/comodoro/latest/comodoro) [![Matrix](https://img.shields.io/badge/chat-%23pimalaya-blue?style=flat&logo=matrix&logoColor=white)](https://matrix.to/#/#pimalaya:matrix.org) [![Mastodon](https://img.shields.io/badge/news-%40pimalaya-blue?style=flat&logo=mastodon&logoColor=white)](https://fosstodon.org/@pimalaya) [![Sponsor](https://img.shields.io/badge/sponsor-pink?style=flat&logo=github-sponsors&logoColor=white)](https://pimalaya.org/sponsor/)
+# :timer_clock: Comodoro [![Matrix](https://img.shields.io/badge/chat-%23pimalaya-blue?style=flat&logo=matrix&logoColor=white)](https://matrix.to/#/#pimalaya:matrix.org) [![Mastodon](https://img.shields.io/badge/news-%40pimalaya-blue?style=flat&logo=mastodon&logoColor=white)](https://fosstodon.org/@pimalaya) [![Sponsor](https://img.shields.io/badge/sponsor-pink?style=flat&logo=github-sponsors&logoColor=white)](https://pimalaya.org/sponsor/)
 
 CLI to manage timers
 
-One server owns a timer, any number of clients drive it and watch it. This project is composed of 3 feature-gated layers:
+```sh
+$ comodoro start --json
+```
 
-- Low-level **contract**: the pure timer state machine and the JSON-RPC 2.0 method surface, no_std-compatible and free of any I/O
-- Mid-level **client and server**: a blocking client over one connection, and a server owning the timer behind the listeners it binds
-- High-level **CLI**: the client and the server behind a flat command grammar, a TOML configuration and per-event hooks
+```json
+{
+  "schedule": {
+    "cycles": [
+      { "name": "Work", "duration": 1500 },
+      { "name": "Rest", "duration": 300 }
+    ],
+    "loops": null
+  },
+  "state": "running",
+  "cycle": { "name": "Work", "duration": 1500 },
+  "startedAt": "2026-11-21T09:00:00Z",
+  "elapsed": 0
+}
+```
 
 ## Table of contents
 
@@ -22,182 +36,180 @@ One server owns a timer, any number of clients drive it and watch it. This proje
 
 ## Features
 
-- **Shared timer**: one server owns it, any number of clients drive it.
-- **Push notifications**: `comodoro watch` subscribes, the server pushes, nothing polls.
-- **Local socket and TCP**: either transport, or both at once.
-- **Standard protocol**: plain [JSON-RPC 2.0](https://www.jsonrpc.org/specification), drivable from any language.
-- **Pomodoro-style cycles**: any named durations, looping forever or a fixed number of times.
-- **Per-event hooks**: a shell command, a desktop notification or both on any timer event, given the cycle name and its remaining time as variables.
-- **Status-bar friendly**: second, minute or hour precision, plus `--json` for scripts, its schema given by `comodoro json-schema`.
-- **Session**: `comodoro repl` answers commands over stdin, one per line.
-- **MCP server**: an agent reads the timer through `comodoro mcp`, and drives it with `--allow-write`.
-
-> [!TIP]
-> Comodoro is written in [Rust](https://www.rust-lang.org/) and uses [cargo features](https://doc.rust-lang.org/cargo/reference/features.html) to gate its layers. The default feature set is declared in [Cargo.toml](./Cargo.toml).
+- **Shared timer**: one server owns it, any number of clients drive it and watch it
+- **Status bars without polling**: `comodoro watch` prints the timer on every change the server pushes
+- **Local socket and TCP**: either transport, or both at once
+- **Open protocol**: plain JSON-RPC 2.0, drivable from any language
+- **Any cycles**: Pomodoro or any named durations, looping forever or a fixed number of times
+- **Hooks**: a command, a desktop notification or both on any timer event, the cycle given as variables
+- **REPL** running commands one per line, and **MCP server** serving the timer to an AI agent
+- **JSON output** of every command, described by `comodoro json-schema`
 
 ## Installation
 
-### Pre-built binary
+<details>
+  <summary>Debian, Ubuntu</summary>
 
-Comodoro can be installed with the install.sh installer:
+  Comodoro is not in the official repositories yet, but the signed APT repository of [pkg.pimalaya.org](https://pkg.pimalaya.org) ships the latest release with its man pages and shell completions. Add the repository once:
 
-*As root:*
+  ```sh
+  sudo install -d -m 0755 /etc/apt/keyrings
+  curl -fsSL https://pkg.pimalaya.org/pimalaya.asc | sudo tee /etc/apt/keyrings/pimalaya.asc >/dev/null
+  sudo tee /etc/apt/sources.list.d/pimalaya.sources >/dev/null <<EOF
+  Types: deb
+  URIs: https://pkg.pimalaya.org/apt
+  Suites: stable
+  Components: main
+  Signed-By: /etc/apt/keyrings/pimalaya.asc
+  EOF
+  sudo apt update
+  ```
 
-```sh
-curl -sSL https://raw.githubusercontent.com/pimalaya/comodoro/master/install.sh | sudo sh
-```
+  Then install Comodoro:
 
-*As a regular user:*
+  ```sh
+  sudo apt install comodoro
+  ```
+</details>
 
-```sh
-curl -sSL https://raw.githubusercontent.com/pimalaya/comodoro/master/install.sh | PREFIX=~/.local sh
-```
+<details>
+  <summary>Fedora, RHEL, Rocky Linux, AlmaLinux</summary>
 
-These commands install the latest binary from the GitHub [releases](https://github.com/pimalaya/comodoro/releases) section.
+  Comodoro is not in the official repositories yet, but the signed DNF repository of [pkg.pimalaya.org](https://pkg.pimalaya.org) ships the latest release with its man pages and shell completions:
 
-For a more up-to-date version than the latest release, check out the [releases](https://github.com/pimalaya/comodoro/actions/workflows/releases.yml) GitHub workflow and look for the *Artifacts* section. These pre-built binaries are built from the `master` branch.
+  ```sh
+  sudo curl -fsSL -o /etc/yum.repos.d/pimalaya.repo https://pkg.pimalaya.org/pimalaya.repo
+  sudo dnf install comodoro
+  ```
+</details>
 
-> [!NOTE]
-> Such binaries are built with the default cargo features. If you need specific features, please use another installation method.
+<details>
+  <summary>Homebrew (macOS, Linux)</summary>
 
-### Cargo
+  Comodoro is not in homebrew-core yet, but the [pimalaya/tap](https://github.com/pimalaya/homebrew-tap) formula installs the latest release with its man pages and shell completions:
 
-```sh
-cargo install comodoro --locked
-```
+  ```sh
+  brew install pimalaya/tap/comodoro
+  ```
+</details>
 
-For a more up-to-date version than the latest release:
+<details>
+  <summary>Pre-built binary</summary>
 
-```sh
-cargo install --locked --git https://github.com/pimalaya/comodoro.git
-```
+  For other systems, Comodoro can be installed with the installer:
 
-Without desktop notifications, which drops the D-Bus system dependency:
+  *As root:*
 
-```sh
-cargo install comodoro --locked \
-  --no-default-features \
-  --features cli
-```
+  ```sh
+  curl -sSL https://raw.githubusercontent.com/pimalaya/comodoro/master/install.sh | sudo sh
+  ```
 
-### Nix
+  *As a regular user:*
 
-If you have the [Flakes](https://nixos.wiki/wiki/Flakes) feature enabled:
+  ```sh
+  curl -sSL https://raw.githubusercontent.com/pimalaya/comodoro/master/install.sh | PREFIX=~/.local sh
+  ```
 
-```sh
-nix profile install github:pimalaya/comodoro
-```
+  These commands install the latest [release](https://github.com/pimalaya/comodoro/releases), built with the default cargo features. For a build of `master`, check out the [releases](https://github.com/pimalaya/comodoro/actions/workflows/releases.yml) GitHub workflow and look for the *Artifacts* section.
+</details>
 
-Or run without installing:
+<details>
+  <summary>Cargo</summary>
 
-```sh
-nix run github:pimalaya/comodoro
-```
+  ```sh
+  cargo install --locked comodoro
+  ```
 
-### Sources
+  For a build of `master`:
 
-```sh
-git clone https://github.com/pimalaya/comodoro
-cd comodoro
-nix run
-```
+  ```sh
+  cargo install --locked --git https://github.com/pimalaya/comodoro.git
+  ```
+</details>
+
+<details>
+  <summary>Nix</summary>
+
+  ```sh
+  nix profile install github:pimalaya/comodoro
+  ```
+</details>
+
+<details>
+  <summary>Sources</summary>
+
+  Requires [Rust](https://www.rust-lang.org/tools/install) 1.89 or later:
+
+  ```sh
+  git clone https://github.com/pimalaya/comodoro
+  cd comodoro
+  cargo build --release --locked
+  ```
+
+  The binary lands at target/release/comodoro.
+</details>
 
 ## Configuration
 
-Comodoro writes no configuration: start from [config.sample.toml](./config.sample.toml), which the first-run welcome copies from share/doc/comodoro/ when the package ships it, uncomment one of its cycle presets (Pomodoro, 52/17 or 112/26), then the options you need.
+A TOML configuration is loaded from every existing path among the following, each one deep-merged on top of the ones before:
 
-A configuration is loaded from every existing path among `$XDG_CONFIG_HOME/comodoro/config.toml`, `$HOME/.config/comodoro/config.toml` and `$HOME/.comodororc`, each deep-merged on top of the ones before. `-c <PATH>` replaces them, repeated once per file: the first is the base and the next ones merge on top. Run without a configuration, Comodoro prints the commands creating one from the sample.
+- `$XDG_CONFIG_HOME/comodoro/config.toml`
+- `$HOME/.config/comodoro/config.toml`
+- `$HOME/.comodororc`
 
-An account only needs its `cycles`. Everything else defaults: a socket under `$XDG_RUNTIME_DIR`, TCP on loopback port 9999, an endless loop, a precision of one minute.
+Override the path with `-c <PATH>`, repeated to merge several files.
 
-Which transport a server binds is what `comodoro server start [TRANSPORTS]` says, and which one a client talks over is what `socket.default` or `tcp.default` says. The TCP listener is unauthenticated, so keep it on loopback unless you mean otherwise.
+> [!TIP]
+> See [config.sample.toml](./config.sample.toml) for a complete configuration of one example account with commented fields; rename the account and uncomment what you need.
+
+An account only needs its `cycles`: uncomment one of the sample's presets (Pomodoro, 52/17 or 112/26). The TCP listener is unauthenticated, so keep it on loopback.
 
 ## Usage
 
-Start the server, which owns the timer and stays in the foreground until a signal (Ctrl-C, SIGTERM) stops it with `Server stopped` and exit 0, its socket removed:
+**Step 1**: once your first account is configured, start the server, which owns the timer until a signal stops it:
 
 ```sh
 comodoro server start
 ```
 
-List the accounts of the configuration, and check that a server answers on each transport an account declares (one row each, exit 3 when one fails):
+**Step 2**: from another terminal, check that the server answers on every transport of the account:
 
 ```sh
-comodoro account list
 comodoro account check
 ```
 
-Then drive the timer from anywhere:
+**Step 3**: start the timer:
 
 ```sh
 comodoro start
-comodoro get
-comodoro pause
-comodoro resume
-comodoro set 300
-comodoro stop
 ```
 
-Feed a status bar without polling, which prints the timer once and then on every change, piped or not, until a signal (Ctrl-C, SIGTERM) stops it with `Watch stopped` and exit 0:
+**Step 4**: follow it, for a status bar for example:
 
 ```sh
 comodoro watch
 ```
 
-Every command prints the timer, the controls as it is after their change. With `--json` it prints the timer object instead, and `watch --json` one `timer-changed` event per line as each change happens, the timer's keys beside `"event": "timer-changed"`, then `{"stoppedBy":"signal"}` once stopped:
+Every command runs on the default account unless `-a` names another, and its `--help` details its flags, exit codes and JSON output. More use cases:
 
 ```sh
-comodoro watch --json | jq -r --unbuffered 'select(.event == "timer-changed") | "\(.cycle.name) \(.cycle.duration)s"'
-```
+# Pause, resume or stop the timer
+comodoro pause
+comodoro resume
+comodoro stop
 
-The exit status tells the outcome: 0 on success, 1 on a failure, printed as the failure object under `--json` (its `code` naming the cause, `server-unreachable` when no server runs, `server-closed` when the server a `watch` follows goes away, `address-busy` when `server start` meets a server already running there), 2 when the command line itself is refused (an unknown flag or command, a missing argument, a bad value), coded `usage-invalid` on stdout under `--json` and clap's text on stderr otherwise, and 3 when `account check` printed a failed row.
+# Leave five minutes in the current cycle
+comodoro set 300
 
-Every command takes an optional transport, `socket` or `tcp`, and falls back to the one the configuration marks as default. The server takes the list of transports to bind, and binds the default one when given none:
-
-```sh
+# Serve both transports, then read the timer over TCP
 comodoro server start socket tcp
 comodoro get tcp
-```
 
-Every command and every flag is documented behind `--help`. The library API is documented on [docs.rs](https://docs.rs/comodoro/latest/comodoro), and complete runnable programs live in [./examples](./examples).
+# Feed a status bar with the cycle name and its remaining seconds
+comodoro watch --json | jq -r --unbuffered 'select(.event == "timer-changed") | "\(.cycle.name) \(.cycle.duration)s"'
 
-Logs go to stderr, so they can be redirected to a file while the command output stays on stdout:
-
-```sh
-comodoro server start --log-level debug 2>/tmp/comodoro.log
-```
-
-Use `--log-file <PATH>` to append them to a file directly. When `--log-level` is omitted the `RUST_LOG` environment variable is consulted, and `RUST_BACKTRACE=1` adds the full error backtrace.
-
-### REPL
-
-`comodoro repl` holds one account and answers commands, one per line, until `exit` or EOF. Each line connects to the server on its own:
-
-```
-$ comodoro repl
-comodoro> start
-comodoro> set 300
-comodoro> get
-comodoro> exit
-```
-
-Non-interactively, a program spawns `comodoro repl --json` and talks to it over stdio: it writes one command per line on stdin and reads one JSON value per line on stdout, failures included. `watch` and `server start` run until interrupted, so they are refused inside a session.
-
-### MCP
-
-`comodoro mcp` also talks over stdio, but speaks the [Model Context Protocol](https://modelcontextprotocol.io) so an agent can read the timer with the `get` tool. The controls (`start`, `pause`, `resume`, `set` and `stop`) need `--allow-write`. The timer still belongs to a `comodoro server start` process.
-
-MCP clients start the servers declared in their configuration, most of them under an `mcpServers` object:
-
-```json
-{
-  "mcpServers": {
-    "comodoro": {
-      "command": "comodoro",
-      "args": ["mcp", "--allow-write"]
-    }
-  }
-}
+# Drive the timer from an AI agent
+comodoro mcp --allow-write
 ```
 
 ## License
