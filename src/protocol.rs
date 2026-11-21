@@ -352,9 +352,10 @@ mod tests {
         }
     }
 
-    /// A JSON object built through serde_json::Value comes out in
-    /// alphabetical order, its maps being BTreeMaps. Member order carries
-    /// no meaning in JSON, so this shape is stable, not canonical.
+    /// A JSON object built through serde_json::Value comes out sorted.
+    ///
+    /// Its maps are BTreeMaps. Member order carries no meaning in JSON, so
+    /// this shape is stable, not canonical.
     #[test]
     fn notification_wire_shape_is_stable() {
         let began = TimerEvent::Began(TimerCycle::new("Work", 1500)).into_notification();

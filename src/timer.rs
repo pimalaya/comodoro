@@ -220,14 +220,9 @@ impl Timer {
 
     /// Advances the timer by one tick and returns the events that fired.
     ///
-    /// Reports the cycle just computed: [`TimerEvent::Ticked`] inside a
-    /// cycle, [`TimerEvent::Ended`] then [`TimerEvent::Began`] across a
-    /// boundary, [`TimerEvent::Stopped`] and a reset on the last loop.
-    ///
-    /// Emits nothing on a paused or stopped timer, on a tick changing
-    /// nothing, and on cycles adding up to no time, since no elapsed time
-    /// can name a cycle in that configuration. A boundary also shows as
-    /// remaining time going back up, as across a repeated name.
+    /// Reports `Ticked` in a cycle, `Ended` then `Began` across a boundary
+    /// (a repeated name showing as time going back up), `Stopped` at the
+    /// end; nothing when paused, stopped, unchanged or of zero total time.
     pub fn update(&mut self, now: u64) -> impl IntoIterator<Item = TimerEvent> {
         let mut events = Vec::with_capacity(3);
 
@@ -304,14 +299,9 @@ impl Timer {
     /// Sets the remaining duration of the current cycle to
     /// `duration_secs`, clamped to that cycle's configured length.
     ///
-    /// The cycle is derived from the elapsed time rather than stored, so
-    /// this moves the elapsed time to the point leaving `duration_secs`
-    /// remaining. A longer one would rename the cycle under the caller,
-    /// hence the clamp, whose effective value the returned event carries.
-    /// The cycle is found by position, since a name may run twice.
-    ///
-    /// Has no effect on a stopped timer, whose elapsed time
-    /// [`Self::start`] resets anyway.
+    /// The cycle, found by position since a name may run twice, derives
+    /// from the elapsed time, which this moves; a longer one would rename
+    /// the cycle, hence the clamp. A stopped timer ignores it.
     pub fn set(&mut self, now: u64, duration_secs: usize) -> impl IntoIterator<Item = TimerEvent> {
         if matches!(self.state, TimerState::Stopped) {
             return None;
@@ -466,9 +456,10 @@ mod tests {
         assert_eq!(timer.cycle, TimerCycle::new("a", 3));
     }
 
-    /// Each tick reports what it just computed, so the durations go down
-    /// without repeating, and the tick ending a cycle says so rather than
-    /// announcing the cycle it is leaving.
+    /// Each tick reports what it just computed.
+    ///
+    /// The durations go down without repeating, and the tick ending a
+    /// cycle says so rather than announcing the cycle it is leaving.
     #[test]
     fn running_timer_events() {
         let mut timer = testing_timer();

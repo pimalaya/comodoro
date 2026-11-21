@@ -4,23 +4,18 @@
 //! parsed by main, and [`Command`] the flat grammar it dispatches to.
 //!
 //! Every command taking an account takes it through the [`Session`],
-//! which resolves it from the TOML configuration on first use and keeps
-//! it for the lines of a REPL, then hands it to the client or the server.
+//! which resolves it on first use and keeps it for the lines of a REPL.
 //! The loading and the selection are pimalaya-config's, so a missing
-//! configuration, an unknown account and several defaults fail the way
-//! they fail across the family.
+//! configuration or account fails the way it fails across the family.
 //!
-//! Comodoro writes no configuration. A bare `comodoro` shows the help
-//! when one exists and is a refused command line under `--json`, main
-//! meeting it through pimalaya-cli. A person running Comodoro without a
-//! configuration meets the welcome ([`welcome`], the shared one in
-//! Comodoro's words), which copies config.sample.toml from the release
-//! or the package, or downloads it.
+//! Comodoro writes no configuration. A bare `comodoro` shows the help,
+//! or is a refused command line under `--json`. A person without a
+//! configuration meets the [`welcome`], which copies config.sample.toml
+//! from the release or the package, or downloads it.
 //!
-//! Everything the CLI needs lives here, so the `cli` feature gates one
-//! subtree: [`config`] holds the TOML document, [`account`] the account
-//! commands and the resolved view a command runs against, [`transport`]
-//! the selection of the one a command talks over.
+//! [`config`] holds the TOML document, [`account`] the account commands
+//! and the resolved view a command runs against, [`transport`] the
+//! selection of the one a command talks over.
 //!
 //! [`hook`] holds the reactions bound to timer events, [`json_schema`]
 //! the schemas of what the commands print, and [`client`] and [`server`]
@@ -187,9 +182,10 @@ impl Command {
     }
 }
 
-/// What the commands of one run share: the configuration paths, the
-/// account `-a` names, and that account once taken, which a REPL session
-/// keeps across its lines.
+/// What the commands of one run share.
+///
+/// The configuration paths, the account `-a` names, and that account once
+/// taken, which a REPL session keeps across its lines.
 pub struct Session<'a> {
     /// The configuration paths, `-c` or the default ones.
     pub config_paths: &'a [PathBuf],
@@ -221,10 +217,11 @@ impl<'a> Session<'a> {
     }
 }
 
-/// Takes the account `-a` names, or the one marked default without `-a`,
-/// out of the configuration at `config_paths`, resolved into the
-/// [`Account`] a command runs against. An account that cannot be taken
-/// fails coded, `default` being a name like any other.
+/// Takes the [`Account`] a command runs against out of `config_paths`.
+///
+/// The account is the one `-a` names, or the one marked default without
+/// `-a`. One that cannot be taken fails coded, `default` being a name
+/// like any other.
 pub fn take_account(config_paths: &[PathBuf], account_name: Option<&str>) -> Result<Account> {
     let (name, account) = Config::load(config_paths)?
         .take_account(account_name)
@@ -232,8 +229,9 @@ pub fn take_account(config_paths: &[PathBuf], account_name: Option<&str>) -> Res
     Account::new(name, account)
 }
 
-/// The welcome a person meets when no configuration exists at `path`:
-/// the commands creating it from `sample`, the shipped sample
+/// The welcome a person meets when no configuration exists at `path`.
+///
+/// It gives the commands creating it from `sample`, the shipped sample
 /// configuration, or downloading it without one, then `server start`.
 pub fn welcome<'a>(
     path: &'a Path,

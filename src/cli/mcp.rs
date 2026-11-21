@@ -5,12 +5,12 @@
 //!
 //! pimalaya-cli's [`mcp`] module answers the protocol and checks each
 //! call against its tool's input schema; this one lists the tools and
-//! runs the calls. A tool's input is its clap command's [`Grammar`], and
-//! a call turns back into an argv parsed by that same command, so the
-//! CLI, the [`crate::cli::repl`] and MCP share one grammar. Commands run
-//! against the account the server resolved once, each connecting to the
-//! timer server anew, and print into a [`CapturePrinter`], whose one JSON
-//! value becomes the call's structured result.
+//! runs the calls. A tool's input is its clap command's [`Grammar`], so
+//! the CLI, the [`crate::cli::repl`] and MCP share one grammar.
+//!
+//! Commands run against the account the server resolved once, each
+//! connecting to the timer server anew, and print into a
+//! [`CapturePrinter`], whose one JSON value becomes the call's result.
 //!
 //! [`mcp`]: pimalaya_cli::mcp
 

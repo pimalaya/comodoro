@@ -174,10 +174,9 @@ pub enum TimerListener {
 impl TimerListener {
     /// Binds `address`, clearing a stale socket left by a crashed server.
     ///
-    /// A socket file outlives its process, so its presence proves
-    /// nothing. Connecting does: a refused connection means the file can
-    /// go, a successful one that a live server owns the address, a busy
-    /// one as [`TimerTransportError::AddressBusy`] says.
+    /// A socket file outlives its process, so connecting decides: refused,
+    /// the file goes; accepted, a live server owns the address, reported
+    /// as [`TimerTransportError::AddressBusy`].
     pub fn bind(address: &TimerAddress) -> Result<Self> {
         debug!("listen at {address}");
 
@@ -231,9 +230,9 @@ impl TimerListener {
     }
 }
 
-/// Tags an I/O error of a transport with the [`TimerTransportError`] it
-/// means, when it means one: a busy address, or a socket path the
-/// platform refuses.
+/// Tags an I/O error of a transport with its [`TimerTransportError`].
+///
+/// Only a busy address and a socket path the platform refuses mean one.
 fn tag(err: io::Error, address: &TimerAddress) -> Error {
     let kind = err.kind();
     let err = Error::new(err);

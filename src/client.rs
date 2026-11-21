@@ -20,9 +20,10 @@ use crate::{
     transport::{TimerAddress, TimerStream, TimerTransportError},
 };
 
-/// Why a call to a timer server failed, attached to the error a
-/// [`TimerClient`] method returns so a caller tells the causes apart
-/// with `downcast_ref`.
+/// Why a call to a timer server failed.
+///
+/// Attached to the error a [`TimerClient`] method returns, so a caller
+/// tells the causes apart with `downcast_ref`.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum TimerClientError {
     /// No server answers at the address: none runs, or it listens

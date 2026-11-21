@@ -126,9 +126,10 @@ fn pause_then_resume_round_trips_the_state() {
     let _ = fs::remove_file(path);
 }
 
+/// A set duration survives the next tick.
+///
 /// The server ticks every second, and a tick recomputes the cycle from
-/// the elapsed time, so reading a set duration across one is the whole
-/// point of the last assertion.
+/// the elapsed time, which the last assertion reads across.
 #[test]
 fn set_overrides_the_remaining_duration() {
     let (mut client, path) = serve();

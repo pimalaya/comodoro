@@ -126,10 +126,9 @@ impl Jsonrpc20Request {
 
 /// The outcome of a call, either a result or an error but never both.
 ///
-/// Flattened into [`Jsonrpc20Response`], so the variant name becomes the
-/// `result` or `error` member and the exclusivity rule is enforced by the
-/// type. Reading stays lenient: a response carrying both parses as its
-/// `result`, since refusing a peer's answer helps nobody.
+/// Flattened into [`Jsonrpc20Response`], the variant naming the `result`
+/// or `error` member, so the type enforces the exclusivity. Reading stays
+/// lenient: a response carrying both parses as its `result`.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Jsonrpc20Outcome {

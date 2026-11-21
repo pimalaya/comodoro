@@ -4,16 +4,14 @@
 //! in the account configuration.
 //!
 //! A hook runs a command, shows a desktop notification, or both, and
-//! performs its I/O directly, neither the process nor the notification
-//! backend having anything to resume. Both are read through
-//! pimalaya-config: a shell line or an argument list becomes a
-//! [`CommandConfig`], a summary and a body a [`NotificationTemplate`].
+//! performs its I/O directly. Both are read through pimalaya-config: a
+//! shell line or an argument list becomes a [`CommandConfig`], a summary
+//! and a body a [`NotificationTemplate`].
 //!
-//! A cycle hook fills the variables `cycleName` and `cycleDuration`,
-//! expanded in its notification and handed to its command as environment
-//! variables of the same names, so one spelling serves both. The timer
-//! hooks fill none. [`TimerHook::validate`] refuses a notification naming
-//! a variable its hook does not fill, as the account is resolved.
+//! A cycle hook fills `cycleName` and `cycleDuration`, expanded in its
+//! notification and handed to its command as environment variables of
+//! the same names; the timer hooks fill none. [`TimerHook::validate`]
+//! refuses a notification naming a variable its hook does not fill.
 //!
 //! `cmd` reads as the alias of `command`, as wherever the family
 //! configures a command.

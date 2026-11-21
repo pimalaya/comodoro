@@ -6,12 +6,12 @@
 //!
 //! pimalaya-cli's [`Repl`] runs the loop: each line split as a shell
 //! splits it, parsed with the one-shot grammar plus `--json` and run over
-//! the [`Session`] holding the account, every answer on stdout, the
-//! session flags refused by name, a nested `repl` or `mcp` line refused
+//! the [`Session`] holding the account, every answer on stdout.
+//!
+//! The session flags are refused by name, a nested `repl` or `mcp` line
 //! coded `usage-invalid` before it reaches this crate, and a `--version`
-//! line answered with the version [`Command`] carries. Each line connects
-//! to the server anew, so a server restarted between two lines is met by
-//! the next as a one-shot run meets it.
+//! line answers with the version [`Command`] carries. Each line connects
+//! to the server anew, so a restarted server is met as a one-shot run.
 //!
 //! pimalaya-cli installs no Ctrl-C handler, so the commands running until
 //! interrupted, `watch` and `server start`, are refused: interrupting

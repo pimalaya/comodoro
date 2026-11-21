@@ -39,9 +39,7 @@ use crate::{
 ///
 /// Owns the [`Timer`] behind a mutex, answers requests on every bound
 /// address, and pushes every [`TimerEvent`] to the subscribed connections
-/// and to the receiver [`serve`] returns, which the CLI fires hooks from.
-///
-/// [`serve`]: TimerServer::serve
+/// and to the receiver `serve` returns, which the CLI fires hooks from.
 pub struct TimerServer {
     /// What the timer it owns runs: its cycles, and how many loops.
     pub schedule: TimerSchedule,

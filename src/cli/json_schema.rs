@@ -9,11 +9,12 @@
 //!
 //! Every client command but `watch` prints the same [`TimerOutput`], the
 //! controls the timer after their change. `watch` streams it as
-//! `timer-changed` events, described apart as `comodoro-watch.events`,
-//! then prints what stopped it, as `server start` does. The `account`
-//! commands print pimalaya-cli's shared account list and check. The one
-//! key naming no command is `comodoro-error`, the failure object any
-//! command prints instead of its payload.
+//! `timer-changed` events (`comodoro-watch.events`), then prints what
+//! stopped it, as `server start` does.
+//!
+//! The `account` commands print pimalaya-cli's shared account list and
+//! check. The one key naming no command is `comodoro-error`, the failure
+//! object any command prints instead of its payload.
 //!
 //! [`JsonSchemaCommand`]: pimalaya_cli::clap::commands::json_schema::JsonSchemaCommand
 //! [`TimerOutput`]: crate::cli::client::timer::TimerOutput

@@ -23,9 +23,8 @@
 //!
 //! [`cli::error`] holds the codes of the failures. [`cli::repl`] runs the
 //! commands over one account in a session, and [`cli::mcp`] serves them
-//! to an agent as Model Context Protocol tools, both on pimalaya-cli's
-//! shared core. One module per command sits under [`cli::client`] and
-//! [`cli::server`].
+//! to an agent as Model Context Protocol tools, both on pimalaya-cli.
+//! One module per command sits under [`cli::client`] and [`cli::server`].
 //!
 //! The configuration belongs to the user: Comodoro never writes it, and
 //! an account starts from config.sample.toml, one of whose cycle presets

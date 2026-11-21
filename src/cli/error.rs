@@ -5,14 +5,13 @@
 //!
 //! The message stays for humans and may be reworded at any time; the
 //! code is the contract. A failure with no code prints `code: null`. The
-//! mechanism (`CodedError`, `code_of`, `with_code`, the report) lives in
-//! `pimalaya_cli::error`; only the vocabulary is Comodoro's.
+//! mechanism lives in `pimalaya_cli::error`; only the vocabulary is
+//! Comodoro's.
 //!
-//! The client and the transports are library code free of pimalaya-cli,
-//! so they attach a [`TimerClientError`] or a [`TimerTransportError`] to
-//! their failures, and pimalaya-config fails the account resolution with
-//! an [`AccountError`]: [`code`] reads the code off any of them, for
-//! `pimalaya_cli::error::with_code` to give the chain.
+//! The client and the transports stay free of pimalaya-cli and attach a
+//! [`TimerClientError`] or a [`TimerTransportError`] to their failures,
+//! pimalaya-config an [`AccountError`]: [`code`] reads the code off any
+//! of them, for `pimalaya_cli::error::with_code` to give the chain.
 
 use anyhow::Error;
 use pimalaya_config::toml::AccountError;
