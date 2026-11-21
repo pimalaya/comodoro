@@ -12,7 +12,7 @@ homepage = "https://pimalaya.org"
 repository = "https://github.com/pimalaya/comodoro"
 
 [features]
-default = ["notify"]
+default = ["notify", "vendored"]
 notify = ["pimalaya-config/notify"]
 vendored = ["pimalaya-config/vendored"]
 
