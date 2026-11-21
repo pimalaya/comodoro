@@ -93,7 +93,10 @@ impl TimerWatchCommand {
     /// Prints the timer as an event on start and on every change the
     /// server pushes, then the result once a signal stops it.
     ///
-    /// The server closing the connection fails coded `server-closed`.
+    /// The server closing the connection fails coded `server-closed`. The
+    /// client blocks on the socket, so it reads on a thread of its own,
+    /// and an unchanged timer prints nothing, since a cycle boundary emits
+    /// several events in one tick.
     pub fn execute(self, printer: &mut impl Printer, account: &Account) -> Result<()> {
         let shutdown = Shutdown::install()?;
 
@@ -105,8 +108,6 @@ impl TimerWatchCommand {
         let precision = &account.precision;
         printer.event(TimerWatchEvent::changed(last.clone(), precision.clone()))?;
 
-        // NOTE: the client blocks on the socket, so it reads on a thread
-        // of its own while this one polls the shutdown.
         let (timers, changes) = mpsc::channel();
         thread::spawn(move || read_changes(client, timers));
 
@@ -124,9 +125,6 @@ impl TimerWatchCommand {
                 Err(RecvTimeoutError::Disconnected) => return Err(closed()),
             };
 
-            // NOTE: a cycle transition emits several events in the same
-            // tick, all rendering the same line, so comparing the timer
-            // keeps the output at one line per visible change.
             if timer == last {
                 continue;
             }

@@ -236,6 +236,9 @@ fn a_second_server_refuses_a_socket_in_use() {
 
 /// The events a TCP client emits reach a subscriber connected over the
 /// socket, and both connections read the same timer.
+///
+/// The port is fixed and owned by this test alone: the one the OS picks
+/// cannot be read back from a listener the server keeps.
 #[test]
 fn both_transports_serve_the_same_timer() {
     let id = NEXT_SOCKET.fetch_add(1, Ordering::Relaxed);
@@ -245,9 +248,6 @@ fn both_transports_serve_the_same_timer() {
     let socket = TimerAddress::UnixSocket(path.clone());
     let tcp = TimerAddress::Tcp {
         host: "127.0.0.1".into(),
-        // NOTE: the port the OS picks cannot be read back, since a bound
-        // listener stays inside the server, so this one is fixed and
-        // owned by this test alone.
         port: 47821,
     };
 
@@ -303,6 +303,8 @@ fn a_second_server_refuses_a_port_in_use() {
     );
 }
 
+/// A 2.x server, answering `timer.get` with PascalCase values, is named
+/// as another version.
 #[cfg(unix)]
 #[test]
 fn a_server_of_another_version_is_named() {
@@ -316,7 +318,6 @@ fn a_server_of_another_version_is_named() {
     let _ = fs::remove_file(&path);
     let listener = UnixListener::bind(&path).expect("bind fake server");
 
-    // NOTE: a 2.x server answers `timer.get` with PascalCase values.
     thread::spawn(move || {
         let (stream, _) = listener.accept().expect("accept");
         let mut reader = BufReader::new(stream.try_clone().expect("clone"));

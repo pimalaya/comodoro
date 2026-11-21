@@ -148,6 +148,9 @@ pub enum Command {
 impl Command {
     /// Runs the command over `session`, which takes the account on first
     /// use, a client failure carrying its code.
+    ///
+    /// `mcp` reports a failure to take its account on stderr, its stdout
+    /// carrying protocol messages only.
     pub fn execute(self, printer: &mut impl Printer, session: &mut Session) -> Result<()> {
         trace!("config paths: {:?}", session.config_paths);
         trace!("account name: {:?}", session.account_name);
@@ -164,9 +167,6 @@ impl Command {
             Self::Stop(cmd) => cmd.execute(printer, session.account()?),
             Self::Repl(cmd) => cmd.execute(&*printer, session),
             Self::Mcp(cmd) => {
-                // NOTE: stdout carries protocol messages only, so a
-                // failure goes to stderr, a person missing a
-                // configuration aside.
                 if let Err(err) = session.account() {
                     if err.is::<ConfigMissingError>() && is_wanted(&*printer) {
                         return Err(err);

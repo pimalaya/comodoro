@@ -41,9 +41,10 @@ impl ReplCommand {
     /// Runs the read-eval-print loop until EOF or a quit command, keeping
     /// the session's account across lines, each line printing as
     /// `printer` does unless it asks for JSON.
+    ///
+    /// The account is taken up front, so a missing one fails the session
+    /// rather than its first line.
     pub fn execute(self, printer: &impl Printer, session: &mut Session) -> Result<()> {
-        // NOTE: taken up front, so a missing configuration or account
-        // fails the session rather than its first line.
         session.account()?;
 
         let repl = Repl::new("comodoro", printer.is_json());

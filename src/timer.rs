@@ -226,7 +226,8 @@ impl Timer {
     ///
     /// Emits nothing on a paused or stopped timer, on a tick changing
     /// nothing, and on cycles adding up to no time, since no elapsed time
-    /// can name a cycle in that configuration.
+    /// can name a cycle in that configuration. A boundary also shows as
+    /// remaining time going back up, as across a repeated name.
     pub fn update(&mut self, now: u64) -> impl IntoIterator<Item = TimerEvent> {
         let mut events = Vec::with_capacity(3);
 
@@ -264,9 +265,6 @@ impl Timer {
                 })
                 .unwrap_or(last_cycle);
 
-            // NOTE: a boundary also shows as remaining time going back
-            // up, which is what a cycle repeating its predecessor's name
-            // and a single looping cycle both look like.
             let began_cycle =
                 self.cycle.name != next_cycle.name || next_cycle.duration > self.cycle.duration;
 
@@ -310,6 +308,7 @@ impl Timer {
     /// this moves the elapsed time to the point leaving `duration_secs`
     /// remaining. A longer one would rename the cycle under the caller,
     /// hence the clamp, whose effective value the returned event carries.
+    /// The cycle is found by position, since a name may run twice.
     ///
     /// Has no effect on a stopped timer, whose elapsed time
     /// [`Self::start`] resets anyway.
@@ -325,8 +324,6 @@ impl Timer {
         let loops = elapsed / total_duration;
         let elapsed_in_loop = elapsed % total_duration;
 
-        // NOTE: the cycle is found by position rather than by name,
-        // since a configuration is free to run the same name twice.
         let index = cycles
             .iter()
             .position(|cycle| elapsed_in_loop < cycle.duration)

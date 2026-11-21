@@ -21,9 +21,6 @@ pub struct TimerSetCommand {
     /// The new remaining duration, in seconds.
     #[arg(name = "duration", value_name = "SECONDS")]
     pub duration: usize,
-    // NOTE: the transport comes last here, unlike in the other client
-    // commands: clap refuses an optional positional standing before a
-    // required one.
     /// The transport used to reach the server.
     #[command(flatten)]
     pub transport: TransportArg,

@@ -48,13 +48,13 @@ failure when it has one: server-unreachable means no timer server runs.";
 /// interrupted, `server start` runs until interrupted, the `account`
 /// commands describe the configuration rather than the timer, as across
 /// the family, and the meta commands write files or print documentation.
+/// `stop` alone is destructive: it drops the elapsed time for good.
 const TOOLS: &[McpTool] = &[
     McpTool::read("get"),
     McpTool::write("start", false),
     McpTool::write("pause", false),
     McpTool::write("resume", false),
     McpTool::write("set", false),
-    // NOTE: stopping drops the elapsed time, which nothing gives back.
     McpTool::write("stop", true),
 ];
 
@@ -119,6 +119,9 @@ struct McpToolSpec {
 
 impl McpToolSpec {
     /// The tools the gate allows.
+    ///
+    /// None is open-world: no timer control reaches anyone beyond the
+    /// user, the one meaning `openWorldHint` carries across the family.
     fn all(allow_write: bool) -> Vec<Self> {
         let mut cli = Cli::command();
         cli.build();
@@ -143,8 +146,6 @@ impl McpToolSpec {
                 .map(ToString::to_string)
                 .unwrap_or_default();
 
-            // NOTE: no timer control reaches anyone beyond the user, the
-            // one meaning `openWorldHint` carries across the family.
             let mut definition = json!({
                 "name": tool.name,
                 "description": description,

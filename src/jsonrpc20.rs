@@ -297,6 +297,8 @@ mod tests {
         assert!(err.to_string().contains("2.0"), "{err}");
     }
 
+    /// Writing both members is unrepresentable, but reading one that does
+    /// resolves to the result rather than failing.
     #[test]
     fn result_and_error_are_exclusive() {
         let ok = Jsonrpc20Response::result(json!("pong"), Some(1.into()));
@@ -311,8 +313,6 @@ mod tests {
             r#"{"jsonrpc":"2.0","error":{"code":-32601,"message":"Unknown method `nope`"},"id":null}"#
         );
 
-        // NOTE: writing both members is unrepresentable, but reading
-        // one that does resolves to the result rather than failing.
         let both = r#"{"jsonrpc":"2.0","result":1,"error":{"code":-1,"message":"x"},"id":1}"#;
         let lenient: Jsonrpc20Response = serde_json::from_str(both).unwrap();
         assert!(matches!(lenient.outcome, Jsonrpc20Outcome::Result(_)));

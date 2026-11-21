@@ -54,9 +54,9 @@ impl TimerOutput {
         }
     }
 
+    /// Writes the state line, the cycle name sanitized since a remote TCP
+    /// server could otherwise drive the terminal through it.
     fn fmt_state(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // NOTE: a TCP server may be remote, so its cycle name could drive
-        // the terminal.
         let cycle = sanitize::text(&self.cycle.name);
 
         match self.state {
@@ -85,11 +85,10 @@ fn truncate(secs: u64, precision: &TimerPrecision) -> u64 {
 }
 
 impl fmt::Display for TimerOutput {
+    /// Ends with the newline flushing the line-buffered stdout, without
+    /// which `watch` would print nothing until it exits.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.fmt_state(f)?;
-
-        // NOTE: the newline is what flushes the line-buffered stdout,
-        // without which `watch` would print nothing until it exits.
         writeln!(f)
     }
 }

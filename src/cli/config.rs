@@ -244,6 +244,9 @@ mod tests {
     /// Checks config.sample.toml: one `[accounts.example]` table and no
     /// other, its preset sections each read through the loader `-c` uses
     /// with every variant on top.
+    ///
+    /// A build without notifications skips the notification variants,
+    /// which it refuses as it should.
     #[test]
     fn the_sample_configuration_parses_with_each_variant() {
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("config.sample.toml");
@@ -257,8 +260,6 @@ mod tests {
         for variant in variants(&text, &SECTIONS) {
             let name = variant.name;
 
-            // NOTE: a build without notifications refuses them, as it
-            // should.
             if cfg!(not(feature = "notify")) && name.contains("notify") {
                 continue;
             }
