@@ -11,55 +11,54 @@ Comodoro joins the standard the Pimalaya CLIs share. MIGRATION.md lists what to 
 
 ### Added
 
-- Added the first-run welcome: run in a terminal with no configuration, `comodoro` and every command needing an account print the commands creating one from config.sample.toml, copied from share/doc/comodoro/ beside the binary when it ships there and downloaded otherwise, then exit 1. Scripts and `--json` callers keep getting the error.
-- Added config.sample.toml to the Nix package and the release archives as share/doc/comodoro/config.sample.toml, which install.sh copies too.
-- Added `comodoro account list` and `comodoro account check`, the account group every Pimalaya CLI carries, printing the shared `AccountListOutput` and `AccountCheckOutput`: `list` reads the configuration alone, its `backends` the transports each account declares (`socket`, `tcp`), and `check` reads the timer over each of them, one row each, a failed row exiting 3. Described by `comodoro-account-list` and `comodoro-account-check`, run in a REPL session, not listed as MCP tools.
-- Added `comodoro repl`, a session running the CLI's commands over one account, one per stdin line, on the REPL Himalaya and Ortie share; `watch` and `server start` are refused in it, since they run until interrupted, and a `repl` or `mcp` line, by name, alias or prefix, is refused by pimalaya-cli, each refusal coded `usage-invalid`. A `-V` or `--version` line prints the version the command line prints.
-- Added `comodoro mcp`, a Model Context Protocol server over stdio exposing `get` to an agent, and with `--allow-write` the timer controls, each answering the timer as `structuredContent`. A call missing an argument or giving a value the command refuses names the argument as the tool's input does (``Invalid value `-1` for `seconds`: invalid digit found in string``), coded `usage-invalid`, rather than clap's usage text.
-- **Breaking:** added hook variables, after GUIDELINES cli-008: a cycle hook fills `cycleName` and `cycleDuration` (the remaining seconds), expanded in its notification (`$cycleName`, `${cycleName}`, `${cycleName:-default}`) and handed to its command as environment variables of the same names. A notification is now a template, so a literal `$` in it is written `$$`. A hook can now run a command and show a notification both, the command first.
-- Added a stable `code` to the `--json` failure object of the client commands: `server-unreachable`, `server-closed`, `server-error` and `server-mismatch`, of an account `-a` cannot take: `account-missing`, `account-default-missing` and `account-default-several`, of an address `server start` finds busy: `address-busy`, and of a socket path the platform refuses, binding or connecting: `socket-path-invalid`, described by `comodoro-error`.
-- Added the plural aliases `completions`, `manuals` and `json-schemas`, hidden from `--help`.
-- Added `cmd` as the alias of a hook's `command`, as wherever the family configures a command: a 1.x hook spelling `cmd` loads again, where 2.x refused it as an unknown key.
+- Added the first-run welcome, printing the commands that create a configuration from config.sample.toml.
+- Added config.sample.toml to the Nix package, the release archives and install.sh, as share/doc/comodoro/config.sample.toml.
+- Added `account list` and `account check`, the account group every Pimalaya CLI carries.
+- Added `repl`, running commands over one account, one per stdin line.
+- Added `mcp`, a Model Context Protocol server exposing `get`, and the timer controls with `--allow-write`.
+- Added the hook variables `cycleName` and `cycleDuration`, for notifications and commands alike.
+- Added a stable `code` to the `--json` failure object, described by `comodoro-error`.
+- Added the hidden plural aliases `completions`, `manuals` and `json-schemas`.
+- Added `cmd` as the alias of a hook's `command`.
 
 ### Changed
 
-- Changed the pimalaya-cli dependency to 0.8.0, with its `signal` feature, and pimalaya-config to 0.6.
-- **Breaking:** changed the timer's values to kebab-case, both in the `--json` output and in the JSON-RPC protocol: `state` reads `running`, `paused` or `stopped` instead of `Running`, `Paused` or `Stopped`, and the schedule's `loops` is the number of loops or `null` when unbounded instead of `"Infinite"` or `{"Fixed": n}`. A client meeting a server of the previous version fails saying it may run another Comodoro version: restart the server, and any `watch` still running, after upgrading.
-- **Breaking:** renamed the timer's `started_at` key to `startedAt`, both in the `--json` output and in the JSON-RPC protocol (the `timer.get` result), so every JSON key Comodoro emits is camelCase.
-- **Breaking:** changed `startedAt` to an RFC 3339 instant in UTC (`2026-11-12T09:00:00Z`) instead of epoch seconds, both under `--json` and in the JSON-RPC protocol (the `timer.get` result), a client refusing any other form as another version.
-- **Breaking:** changed `server start` to stop cleanly on a termination signal (SIGINT, SIGTERM, SIGHUP, Ctrl-C): it removes the socket files it bound, prints one result, `{"stoppedBy":"signal"}` (`Server stopped` as text), described by `comodoro-server-start`, and exits 0, where the signal killed it (exit 130 or 143) and left its socket behind.
-- **Breaking:** changed `start`, `pause`, `resume`, `stop` and `set` to print the timer after their change, as `get` does, instead of a confirmation sentence: the one-line status as text, and the timer object under `--json`, each described in `json-schema` (`comodoro-start` and the others).
-- **Breaking:** changed `-c` to take one path per flag, repeated to merge several files, and removed the `COMODORO_CONFIG` environment variable and the `:` delimiter, since `:` belongs to paths (`C:\` on Windows): use `-c "$VAR"`. Without `-c`, every existing default path now loads, each merged on top of the ones before, `$HOME/.comodororc` last.
-- **Breaking:** renamed the per-second cycle hook `on-<cycle>-running` to `on-<cycle>-tick`, the event being a bare verb as GUIDELINES cli-008 asks.
-- **Breaking:** renamed the per-second JSON-RPC notification `timer.running` to `timer.ticked`, past tense as every other notification is and in step with the `on-<cycle>-tick` hook; the timer state keeps its `running` value.
-- **Breaking:** changed account resolution to refuse a hook name no event of the account fires (such as a mistyped `on-wrok-end`, which used to load and stay silent), a hook with neither `command` nor `notify`, a notification naming a variable its hook does not fill, and an account with no cycle, which used to load and fail once the server started.
-- **Breaking:** changed a cycle to refuse a key other than `name` and `duration`, which it ignored, as every other configuration table already refused a key it does not read.
-- **Breaking:** changed the JSON-RPC protocol to refuse a key an object does not read in the timer, its schedule, a cycle and an event inside a result, as the parameters and results around them already did: a client meeting a result with an unknown key fails saying the server may run another Comodoro version, and ignores a notification whose cycle carries one. The schedule and the cycle say `additionalProperties: false` in the `json-schema` schemas and the MCP `outputSchema`.
-- **Breaking:** changed `watch` to stream the timer as events: each change is a `timer-changed` event, the timer's keys beside `"event": "timer-changed"` under `--json`, where it printed a bare timer object per change; a script selects `.event == "timer-changed"` lines. A termination signal (SIGINT, SIGTERM, SIGHUP, Ctrl-C) stops it cleanly with one result, `{"stoppedBy":"signal"}` (`Watch stopped` as text), and exit 0, where the signal killed it; the server closing the connection fails coded `server-closed`, exit 1, where it exited 0. Its events are described apart as `comodoro-watch.events` by `json-schema`, its result by `comodoro-watch`.
-- **Breaking:** changed `-a default` to name the account called `default`, as any other name, where it took the account marked `default = true`: omit `-a` to take that one. With no account called `default`, it fails saying so, coded `account-missing`.
-- **Breaking:** changed a command line the grammar refuses under `--json` to print the failure object coded `usage-invalid` on stdout, where clap printed its text on stderr; it still exits 2, the family keeping 2 for a refused line and 3 for a partial outcome. A refused REPL line and an MCP tool call whose arguments the grammar refuses carry `usage-invalid` too.
-- **Breaking:** changed a bare `comodoro --json` to be a refused command line through pimalaya-cli's `clap::meet_bare_invocation`: the failure object coded `usage-invalid`, ``A command is required, see --help``, exit 2, its configuration left unread, where it printed the help's text or the missing configuration. A bare `comodoro` without `--json` is unchanged.
-- Changed config.sample.toml to one `[accounts.example]` table of dotted keys, each line ending in a tab-aligned comment, and the cycle presets to sections to uncomment, Pomodoro, 52/17 and 112/26: a copied sample holds no active `cycles` until one is uncommented. A test parses it with every section and option uncommented.
-- Changed piped `--json` output to print one value per line, flushed, so `watch --json` streams newline-delimited JSON instead of values glued together and held in the buffer; each schema of `json-schema` now carries an `$id` naming the contract version, the major version of Comodoro.
+- Changed the pimalaya-cli dependency to 0.8.0 and pimalaya-config to 0.6.
+- **Breaking:** changed the timer's values to kebab-case, in the `--json` output and on the wire.
+- **Breaking:** renamed `started_at` to `startedAt`, an RFC 3339 instant in UTC instead of epoch seconds.
+- **Breaking:** renamed the `timer.running` notification to `timer.ticked`, and the `on-<cycle>-running` hook to `on-<cycle>-tick`.
+- **Breaking:** changed the wire objects to refuse unknown keys, a client reading one as another Comodoro version.
+- **Breaking:** changed `server start` and `watch` to stop cleanly on a termination signal, printing their result and exiting 0.
+- **Breaking:** changed `watch --json` to stream `timer-changed` events, one per line.
+- **Breaking:** changed `start`, `pause`, `resume`, `stop` and `set` to print the timer, as `get` does.
+- **Breaking:** changed `-c` to take one path per flag, repeated to merge files, and removed `COMODORO_CONFIG`.
+- **Breaking:** changed `-a default` to name the account called `default`, as any other name.
+- **Breaking:** changed the account resolution to refuse hooks no event fires, empty hooks, unfilled variables, empty `cycles` and unknown cycle keys.
+- **Breaking:** changed a hook notification into a template, a literal `$` being written `$$`.
+- **Breaking:** changed a refused command line under `--json`, a bare `comodoro --json` included, to print a `usage-invalid` failure object, exit 2.
+- **Breaking:** changed the remaining duration to jiff's friendly form (`25m`, `1h 30m 5s`).
+- Changed config.sample.toml to one `[accounts.example]` table, its cycle presets to uncomment.
+- Changed piped `--json` output to one flushed value per line.
 - Changed the `srv` alias of `server` to a hidden one.
-- **Breaking:** changed the remaining duration of the timer's text line to jiff's friendly form, as the other Pimalaya CLIs print a duration: `[Work] 25m` instead of `[Work] 25min`, `1h 30m 5s` instead of `1h 30min 5s`, zero units left out (`1h` instead of `1h 0min`), and a day and over in days (`1d 1h` instead of `25h 0min`). The precision truncates as before. The `--json` output and the `$cycleDuration` hook variable keep seconds.
 
 ### Removed
 
-- Removed the humantime dependency, unmaintained (RUSTSEC-2026-0542): the remaining duration prints through pimalaya-cli and `startedAt` through Comodoro's own RFC 3339 writer.
-- **Breaking:** removed the setup wizard, the `configure` command and its `wizard` alias, with the `comodoro-configure` schema. A bare `comodoro` prints the help, and a person without a configuration meets the first-run welcome instead of the wizard: write the configuration from the sample.
-- **Breaking:** removed the library, with the `client`, `server`, `cli` and `schemars` cargo features and the examples: Comodoro ships a binary only, its default features `notify` alone. Nothing in the family consumed it, and the wire protocol, documented for any language, is the contract a third-party client implements.
+- **Breaking:** removed the library, with the `client`, `server`, `cli` and `schemars` features and the examples.
+- **Breaking:** removed the setup wizard and the `configure` command.
+- Removed the humantime dependency, unmaintained (RUSTSEC-2026-0542).
 
 ### Fixed
 
-- Fixed, through pimalaya-cli 0.6.1 and pimalaya-config 0.6.0, a value filled into a hook notification being read as markup by the notification daemon: a cycle name holding `<b>` or `&` is shown as written, its line breaks and tabs as spaces, its other control and bidi override characters dropped. Fixed the text error report writing the control characters of its causes raw to the terminal, `--log-file` creating the file under the umask and following a symbolic link (it is created at 0600 and a link is refused), the manual pages printing `vv<version>`, a TOML parse error of the configuration printing its source line, and a refused secret echoing its value; a secret command that fails names the command and says to run it yourself, never printing its output.
-- Fixed install.sh saving an HTTP error page as the archive and letting `tar` fail on it: it downloads with `curl -fsSLo` and stops on the error.
-- **Breaking:** fixed several accounts marked `default = true` resolving to whichever came first: they are refused, naming them.
-- **Breaking:** fixed `completion` writing files to the working directory instead of printing the script to stdout.
+- Fixed a hook notification value being read as markup by the notification daemon.
+- Fixed error reports printing raw control characters, a refused secret, a secret command's output or a configuration source line.
+- Fixed `--log-file` creating the file under the umask and following symbolic links.
+- Fixed the manual pages printing `vv<version>`.
+- Fixed install.sh saving an HTTP error page as the archive.
+- **Breaking:** fixed several accounts marked `default = true` resolving to the first one: they are refused.
+- **Breaking:** fixed `completion` writing files instead of printing to stdout.
 
-  It broke every packaging helper capturing stdout. `manual` and `json-schema` now share its shape: a positional list selecting what to generate, printed to stdout, and an optional `--dir` deciding where it lands instead of the directory they used to take as a positional argument.
+  `manual` and `json-schema` share its shape: print to stdout, or write under `--dir`.
 
-  `comodoro manual ./man` becomes `comodoro manual --dir ./man`, and the three accept command names (`comodoro`, `comodoro-get`) to generate a single item.
 
 ## [2.0.0] - 2026-08-14
 
