@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Comodoro joins the standard the Pimalaya CLIs share. MIGRATION.md lists what to act on when upgrading from 2.x.
+## [3.0.0] - 2026-11-21
+
+Comodoro joins the standard the Pimalaya CLIs share. MIGRATION.md lists what to act on when upgrading from 2.x, and from 1.x.
 
 ### Added
 
@@ -326,6 +328,8 @@ Comodoro joins the standard the Pimalaya CLIs share. MIGRATION.md lists what to 
 [#6]: https://github.com/pimalaya/comodoro/issues/6
 [#8]: https://github.com/pimalaya/comodoro/issues/8
 
+[unreleased]: https://github.com/pimalaya/comodoro/compare/v3.0.0...master
+[3.0.0]: https://github.com/pimalaya/comodoro/compare/v2.0.0...v3.0.0
 [2.0.0]: https://github.com/pimalaya/comodoro/compare/v1.0.0...v2.0.0
 [1.0.0]: https://github.com/pimalaya/comodoro/compare/v0.1.2...v1.0.0
 [0.1.2]: https://github.com/pimalaya/comodoro/compare/v0.1.1...v0.1.2

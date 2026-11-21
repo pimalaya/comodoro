@@ -37,7 +37,7 @@ rustPlatform.buildRustPackage (finalAttrs: {
   inherit buildNoDefaultFeatures;
 
   pname = "comodoro";
-  version = "2.0.0";
+  version = "3.0.0";
   cargoHash = "";
 
   src = fetchFromGitHub {
