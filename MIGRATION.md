@@ -1,173 +1,73 @@
 # Migration guide
 
-One section per major version, the newest first: what to change in a configuration, a script and a JSON consumer when upgrading. The CHANGELOG lists every change; these are the ones to act on.
-
 ## From v2 to v3
 
-v3 brings Comodoro onto the standard the Pimalaya CLIs share: no configuration wizard, one configuration path per `-c`, a timer printed by every command, kebab-case values on the wire, hook variables, a session and an MCP server. A v2 configuration loads as it is, unless it marks several accounts default, holds a hook name no event fires, a hook doing nothing, a notification naming a variable its hook does not fill, an empty `cycles`, or a cycle key other than `name` and `duration`.
+v3 aligns Comodoro on the other Pimalaya CLIs. A v2 configuration loads as it is unless it marks several accounts default, holds a hook no event fires or a hook doing nothing, or a cycle key other than `name` and `duration`. The [CHANGELOG](./CHANGELOG.md) lists every change; these are the ones to act on.
 
-### Upgrading a running timer
+### Configuration
 
-- **Restart the server after upgrading**, and any status bar running `comodoro watch`. The wire values changed (below), so a v3 client and a v2 server cannot read each other: a v3 command meeting a v2 server fails with "Cannot read the timer server's answer, it may run another Comodoro version: restart it with this one", coded `server-mismatch` under `--json`. A remote server reached over TCP needs upgrading too.
-- **The per-second notification is `timer.ticked`**, where v2 sent `timer.running`: a client of your own subscribing over JSON-RPC renames it. The timer's `state` still reads `running`.
-- **The `timer.get` result spells `startedAt`**, where v2 spelled `started_at`, and its values are kebab-case: `state` is `running`, `paused` or `stopped`, and the schedule's `loops` is a number of loops or `null`, where v2 sent `"Running"` and `"Infinite"` or `{"Fixed": 4}`.
-- **`startedAt` on the wire is an RFC 3339 instant in UTC**, `2026-08-14T12:41:38Z`, whole seconds, where v2 sent epoch seconds: a client of your own parses the instant (or sends it, for a server of your own) and refuses any other form, as a v3 client does.
-- **Every object on the wire refuses a key it does not read**: the timer, its schedule, a cycle and an event inside a result, as the parameters and results around them already did. A server of your own sends only the documented keys: a v3 client meeting a result with an unknown key fails as `server-mismatch`, and ignores a notification whose cycle carries one.
-
-A client of your own, reading over JSON-RPC:
-
-```jsonc
-// v2
-{"jsonrpc":"2.0","method":"timer.running","params":{"cycle":{"name":"Work","duration":1499}}}
-{"jsonrpc":"2.0","id":1,"result":{"schedule":{"cycles":[{"name":"Work","duration":1500}],"loops":"Infinite"},"state":"Running","cycle":{"name":"Work","duration":1499},"started_at":1786711298,"elapsed":0}}
-// v3
-{"jsonrpc":"2.0","method":"timer.ticked","params":{"cycle":{"name":"Work","duration":1499}}}
-{"jsonrpc":"2.0","id":1,"result":{"schedule":{"cycles":[{"name":"Work","duration":1500}],"loops":null},"state":"running","cycle":{"name":"Work","duration":1499},"startedAt":"2026-08-14T12:41:38Z","elapsed":0}}
-```
-
-### Configuration and first run
-
-- **The wizard is gone.** Bare `comodoro` prints the help, `comodoro configure` (alias `wizard`) and its `comodoro-configure` schema no longer exist, and no command offers to create a configuration. Write it from config.sample.toml, which releases and packages ship as share/doc/comodoro/config.sample.toml: run at a terminal without a configuration, Comodoro prints the commands copying it in place.
-- **The sample holds its cycles in sections.** A copied config.sample.toml sets no `cycles` until one of its presets, Pomodoro, 52/17 or 112/26, is uncommented.
-- **`-c` takes one path per flag.** A value is no longer split on `:`, so a Windows path stays whole. Repeat the flag to merge several files: `-c public.toml -c private.toml`.
-- **`COMODORO_CONFIG` is no longer read.** Pass `-c "$COMODORO_CONFIG"` for one path, and one `-c` per path for what was a `:`-separated list.
-- **Every default path is read, as layers.** $XDG_CONFIG_HOME/comodoro/config.toml, $HOME/.config/comodoro/config.toml and $HOME/.comodororc are each deep-merged on top of the ones before, where v2 read the first one found. An rc file left beside a config.toml now overrides it: delete the one you do not use.
-- **Several `default = true` accounts are refused**, naming them, where v2 picked one at random. Keep it on one account.
-- **An account with no cycle is refused** when a command resolves it, where v2 loaded it and the server failed once started.
-- **A cycle key other than `name` and `duration` is refused**, naming it, where v2 ignored it; every other table already refused a key it does not read.
-
-```sh
-# v2
-COMODORO_CONFIG=public.toml:private.toml comodoro get
-comodoro -c public.toml:private.toml get
-# v3
-comodoro -c public.toml -c private.toml get
-```
-
-```toml
-# v2: two defaults, an extra cycle key
-[accounts.work]
-default = true
-cycles = [{ name = "Work", duration = 1500, color = "red" }, { name = "Rest", duration = 300 }]
-
-[accounts.study]
-default = true
-cycles = [{ name = "Study", duration = 3120 }, { name = "Rest", duration = 1020 }]
-
-# v3: one default, only `name` and `duration`
-[accounts.work]
-default = true
-cycles = [{ name = "Work", duration = 1500 }, { name = "Rest", duration = 300 }]
-
-[accounts.study]
-cycles = [{ name = "Study", duration = 3120 }, { name = "Rest", duration = 1020 }]
-```
+- **The wizard is gone**, with `comodoro configure`. Start from [config.sample.toml](./config.sample.toml), which packages ship as share/doc/comodoro/config.sample.toml, and uncomment one of its cycle presets.
+- **`-c` takes one path per flag**, no longer split on `:`: write `-c public.toml -c private.toml`.
+- **`COMODORO_CONFIG` is no longer read**: pass `-c "$COMODORO_CONFIG"`.
+- **Every default path is read**, each deep-merged on top of the previous one, where v2 read the first found: delete the file you do not use.
+- **Several `default = true` accounts are refused**: keep it on one.
+- **`-a default` names the account called `default`**: omit `-a` to take the account marked default.
+- **An account without `cycles` is refused**, and so is a cycle key other than `name` and `duration`: remove it.
 
 ### Hooks
 
-- **`on-<cycle>-running` is now `on-<cycle>-tick`**, the hook firing every second a cycle runs: rename it. The old name is refused as any hook name no event fires.
-- **A 1.x `cmd` key reads again**, as the alias of `command` wherever the family configures a command, where v2 refused it as an unknown key: nothing to change, write `command` in a new hook.
-- **A hook name no event fires is refused**, naming the account's cycles and the events, where v2 loaded it and never ran it. A typo like `on-wrok-end` now fails every command: fix it.
-- **A hook with neither `command` nor `notify` is refused**, where v2 loaded it and did nothing: give it one, or delete it.
-- **A hook can run a command and show a notification both**, the command first, and fills `$cycleName` and `$cycleDuration` (the remaining seconds): one `notify.summary = "$cycleName ended"` serves every cycle, and a command reads them from its environment. A notification naming another variable is refused, and so is `$cycleName` on `on-timer-start` and `on-timer-stop`, which fill none. A notification is now templated, so a literal `$` in it is written `$$`.
+- **`on-<cycle>-running` is `on-<cycle>-tick`**: rename it.
+- **A hook name no event fires is refused**, a typo such as `on-wrok-end` included: fix the name or delete the hook.
+- **A hook with neither `command` nor `notify` is refused**: give it one or delete it.
+- **A notification is a template**: write a literal `$` as `$$`. A cycle hook fills `$cycleName` and `$cycleDuration`, a timer hook none.
 
-```toml
-# v2
-hooks.on-work-running.command = "echo tick >> /tmp/comodoro.log"
-hooks.on-work-end.notify.summary = "Work ended"
-hooks.on-rest-end.notify.summary = "Rest ended"
-hooks.on-work-begin.notify.summary = "Earn $5 an hour"
+  ```toml
+  # v2
+  hooks.on-work-running.command = "echo tick >> /tmp/comodoro.log"
+  hooks.on-work-end.notify.summary = "Work ended, earn $5"
+  # v3
+  hooks.on-work-tick.command = "echo tick $cycleDuration >> /tmp/comodoro.log"
+  hooks.on-work-end.notify.summary = "$cycleName ended, earn $$5"
+  ```
 
-# v3
-hooks.on-work-tick.command = "echo tick $cycleDuration >> /tmp/comodoro.log"
-hooks.on-work-end.notify.summary = "$cycleName ended"
-hooks.on-rest-end.notify.summary = "$cycleName ended"
-hooks.on-work-begin.notify.summary = "Earn $$5 an hour"
-```
+### Commands
 
-### Scripts
+- **The controls print the timer**, as `get` does, instead of a sentence such as "Timer successfully started": check the exit status.
+- **The remaining time prints as `25m` or `1h 30m 5s`**, instead of `25min` or `1h 30min 5s`. A status bar parsing it moves to `--json`, which counts seconds.
+- **`completion`, `manual` and `json-schema` print to stdout**, or write under `--dir`: `comodoro manual --dir ./man` instead of `comodoro manual ./man`, `comodoro completion bash > comodoro.bash`.
+- **`server start` and `watch` stop on a signal with exit 0**, printing `Server stopped` or `Watch stopped`, where v2 died with 130 or 143: a service treating 143 as a clean stop treats 0 as one.
 
-- **The controls print the timer.** `start`, `pause`, `resume`, `stop` and `set` print the timer as it is after their change, as `get` does, where v2 printed a sentence such as "Timer successfully started": the one-line status as text (`[Work] 25m`, `[Work] paused`, `OFF`), the timer object under `--json`. A script checking the sentence checks the exit status instead, 0 on success.
-- **The remaining duration prints in jiff's friendly form**, as the other Pimalaya CLIs print a duration: `[Work] 25m`, `[Work] 1h 30m 5s`, `[Work] 1d 1h`, where v2 printed `[Work] 25min`, `[Work] 1h 30min 5s` and `[Work] 25h 0min`, and a zero unit is left out (`1h`, where v2 printed `1h 0min`). A status bar parsing the line reads `m` for minutes, or reads the seconds under `--json`.
-- **`completion`, `manual` and `json-schema` print to stdout**, or write into the directory `--dir` names, where v2's `manual` and `json-schema` took the directory as a positional argument and `completion` wrote its file to the working directory. Each takes a list of what to generate (shells, or command names such as `comodoro-get`), every item when given none, which requires `--dir`.
-- **A refused command line still exits 2**, and under `--json` now prints the failure object coded `usage-invalid` on stdout, where v2 printed clap's text on stderr (below).
-- **`-a default` names the account called `default`**, where v2 took the account marked `default = true` whatever its name: omit `-a` to take that one. With no account called `default`, `-a default` fails saying to omit `-a`.
-- **`server start` stops cleanly on a signal** (SIGINT, SIGTERM, SIGHUP, Ctrl-C): it removes its socket, prints `Server stopped` (`{"stoppedBy":"signal"}` under `--json`) and exits 0, where v2 died with 130 or 143 and left the socket behind. A service unit or script treating 143 as a clean stop treats 0 as one instead, and one capturing the server's stdout reads that line once it stops.
-- **A server finding its address busy fails coded `address-busy`**, and a socket path the platform refuses (one longer than a socket address holds) fails `server start` and every client command coded `socket-path-invalid`, where v2 printed no code: shorten `socket.path`.
+### Output
 
-```sh
-# v2
-comodoro server start; [ $? -eq 143 ] && echo stopped
-# v3
-comodoro server start && echo stopped
-```
+- **`started_at` is `startedAt`**, an RFC 3339 instant in UTC instead of epoch seconds.
 
-```sh
-# v2
-comodoro start | grep -q successfully && echo started
-comodoro -a default get   # the account marked default
-comodoro manual ./man
-comodoro json-schema ./schemas
-comodoro completion bash   # wrote a file in the working directory
-# v3
-comodoro start >/dev/null && echo started
-comodoro get              # the account marked default
-comodoro manual --dir ./man
-comodoro json-schema --dir ./schemas
-comodoro completion bash > comodoro.bash
-```
+  ```sh
+  # the epoch seconds v2 printed
+  comodoro get --json | jq '.startedAt | if . then fromdateiso8601 else null end'
+  ```
 
-### JSON output
+- **Values are kebab-case**: `state` is `running`, `paused` or `stopped`, and `loops` is a number or `null` instead of `{"Fixed": n}` or `"Infinite"`.
+- **`watch --json` streams `timer-changed` events**, one per line, then `{"stoppedBy":"signal"}`: select `.event == "timer-changed"`.
+- **A failure carries a stable `code`** under `--json`, such as `server-unreachable`: match on it rather than on the wording of `error`.
+- **A refused command line exits 2 coded `usage-invalid`**, printed on stdout under `--json` instead of clap's text on stderr. A bare `comodoro --json` is one.
 
-- **`startedAt` is an RFC 3339 instant** under `--json`, in UTC (`2026-08-14T12:41:38Z`), where v2 printed epoch seconds under `started_at`, as the JSON-RPC protocol now carries it too.
-- **Values are kebab-case**, on the wire and under `--json` alike: `state` is `running`, `paused` or `stopped`, and the schedule's `loops` is a number of loops, or `null` when the timer loops forever, where v2 printed `"Infinite"` or `{"Fixed": 4}`.
-- **`watch` streams events**: each change is one `timer-changed` event line, the timer's keys beside `"event": "timer-changed"`, flushed as it comes, where v2 printed bare timer objects glued together and held in the buffer. A status bar script selects `.event == "timer-changed"` lines. A signal (SIGINT, SIGTERM, Ctrl-C) now ends it with one last line, `{"stoppedBy":"signal"}` (`Watch stopped` as text), and exit 0, where v2 died silently; the server going away fails coded `server-closed` and exits 1, where v2 exited 0. The text lines reach a pipe too, as before.
-- **A failure names its cause** in the `--json` failure object: `code` is `server-unreachable` when no server listens, `server-closed`, `server-error` or `server-mismatch`, and `account-missing`, `account-default-missing` or `account-default-several` when `-a` names no account, no account is marked default or several are, `address-busy` and `socket-path-invalid` (above), where v2 printed `null`; a `watch` whose server goes away fails coded `server-closed`.
-- **A refused command line is a failure object** under `--json`: an unknown flag or command, a missing argument or a bad value prints the failure object coded `usage-invalid` on stdout and exits 2, where v2 printed clap's text on stderr; a refused REPL line and a refused MCP tool call carry the same code. A bare `comodoro --json` is one too, ``A command is required, see --help``, where it printed the help's text.
-- **The JSON Schemas carry an `$id`** naming the contract version, and the schedule and the cycle say `additionalProperties: false`.
+### Protocol
 
-```jsonc
-// v2: comodoro get --json
-{"schedule":{"cycles":[{"name":"Work","duration":1500}],"loops":"Infinite"},"state":"Running","cycle":{"name":"Work","duration":1493},"started_at":1786711298,"elapsed":0}
-// v3: comodoro get --json
-{"schedule":{"cycles":[{"name":"Work","duration":1500}],"loops":null},"state":"running","cycle":{"name":"Work","duration":1493},"startedAt":"2026-08-14T12:41:38Z","elapsed":0}
+- **Restart the server after upgrading**, and every `comodoro watch`: a v3 client fails on a v2 server coded `server-mismatch`.
+- **A client of your own follows the new wire**: `timer.running` is `timer.ticked`, and the timer reads as under `--json` above. An object carrying a key it does not read is refused.
 
-// v2: comodoro watch --json, piped
-{"schedule":{"cycles":[{"name":"Work","duration":1500}],"loops":"Infinite"},"state":"Running","cycle":{"name":"Work","duration":1499},"started_at":1786711298,"elapsed":0}{"schedule":...}
-// v3: comodoro watch --json, piped, then SIGTERM
-{"event":"timer-changed","schedule":{"cycles":[{"name":"Work","duration":1500}],"loops":null},"state":"running","cycle":{"name":"Work","duration":1499},"startedAt":"2026-08-14T12:41:38Z","elapsed":0}
-{"stoppedBy":"signal"}
+  ```jsonc
+  // v2
+  {"jsonrpc":"2.0","method":"timer.running","params":{"cycle":{"name":"Work","duration":1499}}}
+  {"jsonrpc":"2.0","id":1,"result":{"schedule":{"cycles":[{"name":"Work","duration":1500}],"loops":"Infinite"},"state":"Running","cycle":{"name":"Work","duration":1499},"started_at":1786711298,"elapsed":0}}
+  // v3
+  {"jsonrpc":"2.0","method":"timer.ticked","params":{"cycle":{"name":"Work","duration":1499}}}
+  {"jsonrpc":"2.0","id":1,"result":{"schedule":{"cycles":[{"name":"Work","duration":1500}],"loops":null},"state":"running","cycle":{"name":"Work","duration":1499},"startedAt":"2026-08-14T12:41:38Z","elapsed":0}}
+  ```
 
-// v3: comodoro --json get --nope, exit 2, on stdout
-{"code":"usage-invalid","error":"unexpected argument '--nope' found\n\n...","sources":[],"backtrace":null}
-```
+### Building
 
-Reading the new output with jq:
-
-```sh
-# the state, then the seconds left in the current cycle
-comodoro get --json | jq -r '.state, .cycle.duration'
-# the cycle name while the timer runs, nothing otherwise
-comodoro get --json | jq -r 'select(.state == "running") | .cycle.name'
-# when the timer started, as the epoch seconds v2 printed
-comodoro get --json | jq '.startedAt | if . then fromdateiso8601 else null end'
-# how many loops the timer runs, endless when unbounded
-comodoro get --json | jq '.schedule.loops // "endless"'
-# a status bar line on every change
-comodoro watch --json | jq -r --unbuffered 'select(.event == "timer-changed") | "\(.cycle.name) \(.cycle.duration)s"'
-# a refused command line, told apart from a failed one
-comodoro --json get; [ $? -eq 2 ] && echo "bad command line"
-```
-
-### Library
-
-- **The library is gone**: Comodoro ships a binary only, and the `client`, `server`, `cli` and `schemars` features are gone with it. A program of your own talks JSON-RPC 2.0 to `comodoro server start`, as cairn/spec/protocol.md documents, in Rust or any other language; `--features cli` builds become plain builds, `--no-default-features` still leaves the notifications out.
-
-### New commands
-
-- **`comodoro account list`** lists the accounts of the configuration with the transports each declares, and **`comodoro account check`** reads the timer over each of them, one row each, exiting 3 when one fails, as the other Pimalaya CLIs' account group does.
-- **`comodoro repl`** runs commands over one account, one per stdin line, as the other Pimalaya CLIs do; `watch` and `server start` are refused in it.
-- **`comodoro mcp`** serves the timer to an agent over the Model Context Protocol, `get` always and the controls under `--allow-write`.
+- **The library is gone**, with the `client`, `server`, `cli` and `schemars` features: build with no feature flag, `--no-default-features` still leaving the notifications out. A program of your own speaks [the JSON-RPC protocol](./cairn/spec/protocol.md) to `comodoro server start`.
 
 ## From v1 to v2
 
