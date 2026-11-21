@@ -43,12 +43,6 @@ Comodoro joins the standard the Pimalaya CLIs share. MIGRATION.md lists what to 
 - Changed piped `--json` output to one flushed value per line.
 - Changed the `srv` alias of `server` to a hidden one.
 
-### Removed
-
-- **Breaking:** removed the library, with the `client`, `server`, `cli` and `schemars` features and the examples.
-- **Breaking:** removed the setup wizard and the `configure` command.
-- Removed the humantime dependency, unmaintained (RUSTSEC-2026-0542).
-
 ### Fixed
 
 - Fixed a hook notification value being read as markup by the notification daemon.
@@ -61,6 +55,11 @@ Comodoro joins the standard the Pimalaya CLIs share. MIGRATION.md lists what to 
 
   `manual` and `json-schema` share its shape: print to stdout, or write under `--dir`.
 
+### Removed
+
+- **Breaking:** removed the library, with the `client`, `server`, `cli` and `schemars` features and the examples.
+- **Breaking:** removed the setup wizard and the `configure` command.
+- Removed the humantime dependency, unmaintained (RUSTSEC-2026-0542).
 
 ## [2.0.0] - 2026-08-14
 
