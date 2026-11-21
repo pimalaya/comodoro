@@ -1,17 +1,17 @@
 [accounts.example]
-default = true				# make this account the default one used
-precision = "minute"			# print the remaining minutes
-#precision = "second"			# print the remaining minutes and seconds
-#precision = "hour"			# print the remaining hours only
-#cycles-count = 4			# stop after that many loops, endless when absent
+default = true				# the account commands run on without -a
+#precision = "minute"			# the unit the remaining time stops at [second, hour]
+#cycles-count = 4			# the loops run before stopping, endless when absent
 
-#socket.path = "/run/user/1000/comodoro.sock"	# comodoro.sock in $XDG_RUNTIME_DIR by default
+#socket.path = "/run/user/1000/comodoro.sock"	# comodoro.sock in $XDG_RUNTIME_DIR, else in the temporary directory
+#socket.default = true				# talk over the socket when a command names no transport, the default
 #tcp.host = "127.0.0.1"				# the TCP host, unauthenticated so keep it on loopback
 #tcp.port = 9999				# the TCP port
-#tcp.default = true				# talk over TCP when a command names no transport
+#tcp.default = true				# talk over TCP when a command names no transport, unless socket.default
 
-#hooks.on-timer-start.command = "exit 127"		# a shell line, or a program and its arguments
-#hooks.on-work-end.notify.summary = "$cycleName ended"	# a notification, $cycleName and $cycleDuration filled
+#hooks.on-timer-start.command = "exit 127"	# on-timer-<event> [start, stop]: a shell line, or a program and its arguments
+#hooks.on-work-end.command = "exit 127"		# on-<cycle>-<event>, the cycle in kebab-case [begin, tick, set, pause, resume, end]
+#hooks.on-work-end.notify = { summary = "$cycleName ended", body = "Time for a break" }	# a notification, $cycleName and $cycleDuration filled
 
 # Pomodoro
 #

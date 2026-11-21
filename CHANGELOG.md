@@ -37,7 +37,7 @@ Comodoro joins the standard the Pimalaya CLIs share. MIGRATION.md lists what to 
 - **Breaking:** changed a hook notification into a template, a literal `$` being written `$$`.
 - **Breaking:** changed a refused command line under `--json`, a bare `comodoro --json` included, to print a `usage-invalid` failure object, exit 2.
 - **Breaking:** changed the remaining duration to jiff's friendly form (`25m`, `1h 30m 5s`).
-- Changed config.sample.toml to one `[accounts.example]` table, its cycle presets to uncomment.
+- Changed config.sample.toml to one `[accounts.example]` table, every key commented at its default or an example, its cycle presets to uncomment.
 - Changed piped `--json` output to one flushed value per line.
 - Changed the `srv` alias of `server` to a hidden one.
 
