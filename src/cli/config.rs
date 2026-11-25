@@ -231,49 +231,231 @@ fn tcp_port() -> u16 {
 
 #[cfg(test)]
 mod tests {
-    use std::{fs, path::PathBuf, slice};
+    use std::{collections::HashMap, fs, path::PathBuf, slice};
 
-    use pimalaya_config::{sample::variants, toml::TomlConfig};
     use tempfile::TempDir;
 
-    use crate::cli::{account::Account, config::Config};
+    use crate::cli::{account::Account, take_account};
 
-    /// The headings of the cycle presets, one of which a user uncomments.
-    const SECTIONS: [&str; 3] = ["# Pomodoro", "# 52/17", "# 112/26"];
-
-    /// Checks config.sample.toml: one `[accounts.example]` table and no
-    /// other, its preset sections each read through the loader `-c` uses
-    /// with every variant on top.
+    /// Checks config.sample.toml is refused as written for its missing
+    /// `cycles` alone, then loads once per rank fully uncommented, each
+    /// preset taking its rank, `example` the default each time.
     ///
-    /// A build without notifications skips the notification variants,
-    /// which it refuses as it should.
+    /// A build without notifications drops the `notify` lines, which it
+    /// refuses as it should.
     #[test]
     fn the_sample_configuration_parses_with_each_variant() {
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("config.sample.toml");
-        let text = fs::read_to_string(&path).unwrap();
-        let headers: Vec<_> = text.lines().filter(|l| l.starts_with('[')).collect();
+        let sample = fs::read_to_string(&path).unwrap();
+        let headers: Vec<_> = sample.lines().filter(|l| l.starts_with('[')).collect();
         assert_eq!(headers, ["[accounts.example]"]);
 
         let dir = TempDir::new().unwrap();
-        let path = dir.path().join("config.toml");
 
-        for variant in variants(&text, &SECTIONS) {
-            let name = variant.name;
+        let err = load_sample(&dir, &sample).unwrap_err();
+        let err = format!("{err:?}");
+        assert!(err.contains("missing field `cycles`"), "as written: {err}");
 
-            if cfg!(not(feature = "notify")) && name.contains("notify") {
-                continue;
+        let paragraphs = sample_paragraphs(&sample);
+        let mut presets = Vec::new();
+
+        for rank in 1..=sample_ranks(&paragraphs) {
+            let mut text = sample_variant(&paragraphs, rank);
+
+            if cfg!(not(feature = "notify")) {
+                let lines = text.lines().filter(|line| !line.contains(".notify."));
+                text = lines.collect::<Vec<_>>().join("\n");
             }
 
-            fs::write(&path, &variant.text).unwrap();
+            let account = load_sample(&dir, &text).unwrap_or_else(|err| {
+                panic!("config.sample.toml, variant {rank}: {err:?}\n{text}")
+            });
 
-            let (account_name, account) = Config::load(slice::from_ref(&path))
-                .and_then(|mut config| Ok(config.take_account(Some("example"))?))
-                .unwrap_or_else(|err| {
-                    panic!("config.sample.toml with {name} uncommented: {err:?}")
+            assert_eq!(account.name, "example", "variant {rank}");
+            presets.push(account.schedule.cycles[0].duration);
+        }
+
+        assert_eq!(presets, [1500, 3120, 6720]);
+    }
+
+    /// One line of config.sample.toml.
+    struct SampleLine<'a> {
+        /// The line as written.
+        line: &'a str,
+        /// The code before the comment, one `#` off when commented.
+        code: &'a str,
+        /// Whether the code is commented.
+        commented: bool,
+        /// The field the code sets, a secret's `raw` and `command` being
+        /// one.
+        field: Option<&'a str>,
+        /// The other values the comment lists in brackets.
+        values: Vec<&'a str>,
+    }
+
+    impl<'a> SampleLine<'a> {
+        fn parse(line: &'a str) -> Self {
+            let (code, comment) = line.split_once('\t').unwrap_or((line, ""));
+            let commented = code.starts_with('#');
+            let code = code.strip_prefix('#').unwrap_or(code);
+
+            let field = code
+                .split_once(" = ")
+                .map(|(key, _)| key)
+                .filter(|key| {
+                    key.chars()
+                        .all(|c| c.is_ascii_alphanumeric() || "-_.".contains(c))
+                })
+                .map(|key| {
+                    let secret = key.strip_suffix(".raw").or(key.strip_suffix(".command"));
+                    secret.unwrap_or(key)
                 });
 
-            let account = Account::new(account_name, account).unwrap();
-            assert!(!account.schedule.cycles.is_empty(), "{name}");
+            let values = comment
+                .trim_end()
+                .strip_suffix(']')
+                .and_then(|comment| comment.rsplit_once('['))
+                .map(|(_, values)| values.split(", ").collect())
+                .unwrap_or_default();
+
+            Self {
+                line,
+                code,
+                commented,
+                field,
+                values,
+            }
         }
+
+        /// The first two segments of the field, the table a replacing
+        /// paragraph shares with the one above it (`hooks.on-work-end`).
+        fn table(&self) -> Option<&'a str> {
+            let field = self.field?;
+            let end = field
+                .match_indices('.')
+                .nth(1)
+                .map_or(field.len(), |(i, _)| i);
+            Some(&field[..end])
+        }
+
+        /// The values the line offers: its code as written, then each
+        /// bracketed value in its place, typed like the written one.
+        fn options(&self) -> Vec<String> {
+            let (key, value) = self.code.split_once(" = ").unwrap();
+            let mut options = vec![self.code.to_owned()];
+
+            for other in &self.values {
+                if value.starts_with('"') {
+                    options.push(format!("{key} = \"{other}\""));
+                } else {
+                    options.push(format!("{key} = {other}"));
+                }
+            }
+
+            options
+        }
+    }
+
+    /// Writes `text` to config.toml in `dir` and takes its default account
+    /// through the loader `-c` uses.
+    fn load_sample(dir: &TempDir, text: &str) -> anyhow::Result<Account> {
+        let path = dir.path().join("config.toml");
+        fs::write(&path, text).unwrap();
+        take_account(slice::from_ref(&path), None)
+    }
+
+    fn sample_paragraphs(sample: &str) -> Vec<Vec<SampleLine<'_>>> {
+        let paragraphs = sample.split("\n\n");
+        let paragraphs = paragraphs.map(|p| p.lines().map(SampleLine::parse).collect());
+        paragraphs.collect()
+    }
+
+    /// Whether `below`, all commented, replaces `above`, setting keys under
+    /// a table one of its lines sets.
+    ///
+    /// A paragraph setting a field `above` sets, as a preset's `cycles`,
+    /// replaces nothing: the field's values take their ranks instead.
+    fn sample_replaces(above: &[SampleLine], below: &[SampleLine]) -> bool {
+        let mut code = below.iter().filter(|line| line.field.is_some());
+        let Some(first) = code.next() else {
+            return false;
+        };
+
+        if !first.commented || code.any(|line| !line.commented) {
+            return false;
+        }
+
+        if above.iter().any(|line| line.field == first.field) {
+            return false;
+        }
+
+        above
+            .iter()
+            .filter_map(SampleLine::table)
+            .any(|t| Some(t) == first.table())
+    }
+
+    /// The values each field takes in turn, the lines setting it in their
+    /// order, each followed by its bracketed values.
+    fn sample_options<'a>(lines: &[&'a SampleLine<'a>]) -> HashMap<&'a str, Vec<String>> {
+        let mut options: HashMap<&str, Vec<String>> = HashMap::new();
+
+        for line in lines {
+            if let Some(field) = line.field {
+                options.entry(field).or_default().extend(line.options());
+            }
+        }
+
+        options
+    }
+
+    /// How many variants give every value its turn: the most values of
+    /// one field, two when a paragraph replaces another.
+    fn sample_ranks(paragraphs: &[Vec<SampleLine>]) -> usize {
+        let lines: Vec<&SampleLine> = paragraphs.iter().flatten().collect();
+        let options = sample_options(&lines);
+        let values = options.values().map(Vec::len).max().unwrap_or(0);
+
+        let replaces = paragraphs.windows(2).any(|w| sample_replaces(&w[0], &w[1]));
+
+        if replaces { values.max(2) } else { values }
+    }
+
+    /// The sample at `rank`, every line uncommented, each field set to its
+    /// value of that rank (the last when it has fewer).
+    ///
+    /// A replacing paragraph stays out at rank 1 and replaces the one
+    /// above it from rank 2.
+    fn sample_variant(paragraphs: &[Vec<SampleLine>], rank: usize) -> String {
+        let mut dropped = vec![false; paragraphs.len()];
+
+        for i in 1..paragraphs.len() {
+            if sample_replaces(&paragraphs[i - 1], &paragraphs[i]) {
+                let i = if rank == 1 { i } else { i - 1 };
+                dropped[i] = true;
+            }
+        }
+
+        let kept = paragraphs
+            .iter()
+            .zip(&dropped)
+            .filter(|(_, dropped)| !**dropped);
+        let lines: Vec<&SampleLine> = kept.flat_map(|(lines, _)| lines).collect();
+
+        let mut options = sample_options(&lines);
+        let mut text = Vec::with_capacity(lines.len());
+
+        for line in lines {
+            let Some(field) = line.field else {
+                text.push(line.line.to_owned());
+                continue;
+            };
+
+            if let Some(values) = options.remove(field) {
+                text.push(values[rank.min(values.len()) - 1].clone());
+            }
+        }
+
+        text.join("\n")
     }
 }

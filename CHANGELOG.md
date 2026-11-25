@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Changed config.sample.toml to Himalaya's shape: one commented key per line, alternative values in brackets, the hook notification as the flat keys `notify.summary` and `notify.body`.
+
 ## [3.0.0] - 2026-11-21
 
 Comodoro joins the standard the Pimalaya CLIs share. MIGRATION.md lists what to act on when upgrading from 2.x, and from 1.x.

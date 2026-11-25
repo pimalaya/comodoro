@@ -9,18 +9,16 @@ default = true				# the account commands run on without -a
 #tcp.port = 9999				# the TCP port
 #tcp.default = true				# talk over TCP when a command names no transport, unless socket.default
 
-#hooks.on-timer-start.command = "exit 127"	# on-timer-<event> [start, stop]: a shell line, or a program and its arguments
-#hooks.on-work-end.command = "exit 127"		# on-<cycle>-<event>, the cycle in kebab-case [begin, tick, set, pause, resume, end]
-#hooks.on-work-end.notify = { summary = "$cycleName ended", body = "Time for a break" }	# a notification, $cycleName and $cycleDuration filled
+#hooks.on-timer-start.command = "exit 127"		# on-timer-start or on-timer-stop: a shell line, or a program and its arguments
+#hooks.on-work-end.command = "exit 127"			# on-<cycle>-<event>, the cycle in kebab-case, the event begin, tick, set, pause, resume or end
+#hooks.on-work-end.notify.summary = "$cycleName ended"	# a notification, $cycleName and $cycleDuration filled
+#hooks.on-work-end.notify.body = "Time for a break"	# its body, empty otherwise
 
 # Pomodoro
-#
 #cycles = [{ name = "Work", duration = 1500 }, { name = "Rest", duration = 300 }, { name = "Work", duration = 1500 }, { name = "Rest", duration = 300 }, { name = "Work", duration = 1500 }, { name = "Long rest", duration = 1800 }]
 
 # 52/17
-#
 #cycles = [{ name = "Work", duration = 3120 }, { name = "Rest", duration = 1020 }]
 
 # 112/26
-#
 #cycles = [{ name = "Work", duration = 6720 }, { name = "Rest", duration = 1560 }]
